@@ -33,7 +33,7 @@ Each person stores $N - 1$ keys. Both counts grow like $N^2$, so this is called 
 
 \begin{center}
 \begin{tikzpicture}[font=\footnotesize]
-\foreach \n [count=\i] in {A,B,C,D,E} \node[kmu] (m\n) at ({90+72*(\i-1)}:1.3) {\n};
+\foreach \n [count=\i] in {A,B,C,D,E} \node[kmu] (m\n) at ({90+72*(\i-1)}:1.75) {\n};
 \foreach \a/\b in {A/B,A/C,A/D,A/E,B/C,B/D,B/E,C/D,C/E,D/E} \draw[gray] (m\a) -- (m\b);
 \node at (0,-2.3) {without a KDC: $\binom{5}{2} = 10$ pairwise keys};
 \begin{scope}[xshift=7cm]
@@ -295,7 +295,8 @@ Overhead & smaller & larger\\
 AS verifies the user once (password $\to \kmK{A-AS}$), TGS issues server tickets (single sign-on), timestamps stop replays.
 \end{mustknow}
 
-\subsection{Comparing the KDC-based protocols}
+\subsection{Comparing the KDC-based protocols \new}
+\likely{``Compare Needham--Schroeder, Otway--Rees and Kerberos'' (3 marks).}
 \begin{center}\small
 \begin{tabularx}{\textwidth}{@{}l>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}X@{}}
 \toprule
@@ -306,7 +307,7 @@ Who talks to the KDC & Alice & Bob, carrying both requests & Alice (AS, then TGS
 Freshness by & nonces $R_A$, $R_B$ & nonces $R_A$, $R_B$ and common nonce $R$ & timestamps and lifetimes\\
 Replay of an old ticket & possible (Denning--Sacco) & prevented by $R_B$ & prevented by timestamp\\
 Synchronised clocks & not needed & not needed & needed\\
-Proof of Bob's identity & implicit (only Bob reads the ticket) & implicit & explicit, message 6\\
+Proof of Bob's identity & message 4 (only Bob can read the ticket) & implicit (only Alice confirms the key) & explicit, message 6\\
 Single sign-on & no & no & yes, through the TGS\\
 \bottomrule
 \end{tabularx}
@@ -549,7 +550,7 @@ In asymmetric-key cryptography the private key never leaves its owner and the pu
 \end{center}
 In message 2 the \textbf{signature} (encryption with $PR_{\text{auth}}$) lets Alice verify with the authority's public key that the reply really comes from the authority and was not altered. The copy of the \textbf{request} lets her check that the reply answers her question, so Eve cannot change ``Bob'' into ``Eve'' on the way. The \textbf{timestamp} $T_1$ shows that the reply is fresh, so Eve cannot replay an old reply carrying an old (perhaps revoked) key of Bob. Messages 3--7 then authenticate the two parties: only Bob can read $N_1$ in message 3 and return it in message 6, and only Alice can read $N_2$ in message 6 and return it in message 7. (This is the Needham--Schroeder public-key protocol; Lowe showed in 1995 that message 6 should also contain Bob's identity.) \textbf{Disadvantage.} The authority must be online for every request, so it is a bottleneck and an attractive target, and its directory must be protected.
 
-\subsection{Certification authority and certificates \hot\new}
+\subsection{Certification authority and certificates \new}
 \likely{``What is a public-key certificate? Why is it signed by the CA? How does it solve the problems of announcement and the trusted center?'' (3--4 marks).}
 
 The idea is to let the authority sign the binding between a name and a key \emph{once, in advance}, instead of answering every request online. \imp{A certificate binds an identity to a public key and is signed with the private key of a certification authority (CA).} Bob goes to the CA with his public key and proof of identity (for example a passport); the CA checks the identity and that Bob holds the matching private key (Bob signs the request with it). The CA then writes a certificate containing Bob's identity, his public key, a validity period, a serial number and the CA's name, and signs it with the CA's private key. Bob can now publish the certificate anywhere or send it inside a protocol (as in station-to-station). Alice verifies it with the CA's public key, which she obtained securely in advance (for example pre-installed in the browser or operating system); if the signature is valid, the key in the certificate is Bob's.
@@ -642,7 +643,7 @@ A \textbf{public-key infrastructure (PKI)} is a model for creating, distributing
   \item \textbf{Providing access control.} A PKI can give different levels of access to the information in its database; an organisation's PKI may give top management access to the whole database and employees access only to their own records.
 \end{itemize}
 
-\subsection{Trust models and certificate chains \hot\new}
+\subsection{Trust models and certificate chains \new}
 \likely{``Explain the hierarchical, mesh and web-of-trust models; show how User1 verifies User3's public key'' (5 marks).}
 
 No single CA can certify everyone in the world, so there are many CAs, each responsible for creating, storing, issuing and revoking a limited number of certificates. A user, however, holds securely the key of only one or a few CAs. A \textbf{trust model} defines the rules by which a user can verify a certificate issued by a CA she does not know directly.
@@ -698,7 +699,7 @@ Example & a national or corporate PKI & linked government PKIs & PGP\\
 \end{tabularx}
 \end{center}
 
-\subsection{KDC versus public-key distribution}
+\subsection{KDC versus public-key distribution \new}
 \noindent\begin{minipage}{\textwidth}
 \likely{``Differentiate symmetric-key distribution (KDC) and public-key distribution (CA)'' (3 marks).}
 \begin{center}\small
