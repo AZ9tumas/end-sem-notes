@@ -1,7 +1,36 @@
-% College Lecture 3 (security goals, attacks) + Lecture 5 (Kerckhoff, cryptanalysis attack types)
+% Sources: college Lecture 3 (security trends, goals, attacks) + Lecture 1 (history) + Lecture 5 (Kerckhoff, cryptanalysis
+% attack types); Forouzan ch. 1 (goals, attacks, X.800 services and mechanisms) and ch. 3; Stallings ch. 1.
+% CERT-In totals and the ADFGVX/ADFGX examples recomputed by script (scratchpad/r1/verify.py).
 \section{Security Goals, Attacks and Cryptanalysis}\label{sec:attacks}
+\usetikzlibrary{backgrounds}
+
+Information is an asset with a value like any other asset, and like any other asset it must be protected. Lecture~3 builds the subject in Forouzan's order: what we want to achieve (the \textbf{security goals}), what can go wrong (the \textbf{attacks}), and what we use against it (the \textbf{services} and \textbf{mechanisms} of ITU-T X.800). The last part of this section turns to attacks on the cipher itself (\textbf{cryptanalysis}).
+
+\subsection{Security trends}
+The lecture opens with the yearly reports of CERT-In (the Indian Computer Emergency Response Team) to show that the threat is real and growing. The number of incidents it handled grew about 26-fold between 2017 and 2021, and the mix changed: in 2017 more than half of the incidents were website defacements, while from 2018 onwards unauthorised network scanning, probing and exploitation of vulnerable services dominate. Most incidents are thus automated reconnaissance and malware, not the breaking of ciphers.
+\begin{center}\small
+\begin{tabular}{@{}lrrrrr@{}}
+\toprule
+Year & Total & Scanning, probing, vuln.\ services & Virus, malicious code & Website defacements & Phishing\\
+\midrule
+2017 & 53\,117 & 9\,383 (17.7\%) & 9\,750 (18.4\%) & \textbf{29\,518 (55.6\%)} & 552\\
+2018 & 208\,456 & \textbf{127\,481 (61.2\%)} & 61\,055 (29.3\%) & 16\,655 (8.0\%) & 454\\
+2019 & 394\,499 & \textbf{305\,276 (77.4\%)} & 62\,163 (15.8\%) & 24\,366 (6.2\%) & 472\\
+2020 & 1\,158\,208 & \textbf{1\,028\,881 (88.8\%)} & 99\,986 (8.6\%) & 25\,969 (2.2\%) & 280\\
+2021 & 1\,402\,809 & \textbf{1\,160\,333 (82.7\%)} & 209\,110 (14.9\%) & 27\,408 (2.0\%) & 523\\
+\bottomrule
+\end{tabular}
+\end{center}
+{\footnotesize Remaining incidents: website intrusion and malware propagation, and ``others''. The 2021 slide lists scanning/probing (432\,057) and vulnerable services (728\,276) separately; they are added here. Every row was checked to sum to its total.}
 
 \subsection{Security goals (CIA)}
+To be secure, information must be hidden from unauthorised access (\textbf{confidentiality}), protected from unauthorised change (\textbf{integrity}), and available to an authorised entity when it is needed (\textbf{availability}). These three goals are the CIA triad, and every attack below is classified by the goal it threatens.
+
+\textbf{Confidentiality.} \imp{Confidentiality means that information is concealed from everyone who is not authorised to see it.} It is the oldest goal and the one most people associate with security. In the military, concealment of sensitive information is the main concern; in industry, hiding information from competitors is vital; in banking, customers' accounts must be kept secret. Confidentiality applies both to \emph{storage} and to \emph{transmission}: when a piece of information is stored on or retrieved from a remote computer, it must be concealed while it travels.
+
+\textbf{Integrity.} Information changes constantly: when a customer deposits or withdraws money, her balance must change. \imp{Integrity means that changes are made only by authorised entities and through authorised mechanisms.} A violation need not be malicious; an interruption in the system, such as a power surge, can also corrupt information. Integrity is therefore about \emph{detecting} unwanted change as much as preventing it.
+
+\textbf{Availability.} Information that cannot be reached is useless. \imp{Availability means that information is accessible to authorised entities when it is needed.} Since information is constantly updated, it must stay accessible to those allowed to update it, and its unavailability is as harmful as a loss of confidentiality or integrity: a bank whose customers cannot reach their accounts cannot do business.
 \begin{center}\small
 \begin{tabularx}{\textwidth}{@{}l X@{}}
 \toprule
@@ -11,8 +40,55 @@
 \bottomrule
 \end{tabularx}
 \end{center}
+Stallings adds two goals that are often listed with the triad: \textbf{authenticity}, being able to verify that users are who they claim to be and that each message came from a trusted source, and \textbf{accountability}, being able to trace every action to the entity responsible (which is what non-repudiation supports).
 
-\subsection{Attacks (Forouzan's taxonomy)}
+\subsection{Attacks (Forouzan's taxonomy) \hot}
+\likely{``Explain the security attacks that threaten confidentiality, integrity and availability'' or ``differentiate passive and active attacks with examples'' (4--5 marks).}
+
+Forouzan groups the attacks by the goal they threaten. Two threaten confidentiality, four threaten integrity and one threatens availability.
+\begin{center}
+\begin{tikzpicture}[ab/.style={box,fill=white,minimum width=25mm,font=\footnotesize},
+                    grp/.style={draw,fill=gray!18,rounded corners=2pt,inner sep=4pt}]
+  \node[box,fill=acc!10] (root) at (0,0) {Security attacks};
+  \node[ab] (s1) at (-5,-1.3) {Snooping};
+  \node[ab,below=1.5mm of s1] (s2) {Traffic analysis};
+  \node[ab] (i1) at (0,-1.3) {Modification};
+  \node[ab,below=1.5mm of i1] (i2) {Masquerading};
+  \node[ab,below=1.5mm of i2] (i3) {Replaying};
+  \node[ab,below=1.5mm of i3] (i4) {Repudiation};
+  \node[ab] (a1) at (5,-1.3) {Denial of service};
+  \begin{scope}[on background layer]
+    \node[grp,fit=(s1)(s2)] (gs) {};
+    \node[grp,fit=(i1)(i4)] (gi) {};
+    \node[grp,fit=(a1)] (ga) {};
+  \end{scope}
+  \node[below=0.5mm of gs,font=\footnotesize,align=center] {Threat to\\confidentiality (passive)};
+  \node[below=0.5mm of gi,font=\footnotesize,align=center] {Threat to integrity (active)};
+  \node[below=0.5mm of ga,font=\footnotesize,align=center] {Threat to\\availability (active)};
+  \draw[thick] (root.south) -- ++(0,-0.3) coordinate (j);
+  \draw[thick] (gs.north |- j) -- (ga.north |- j);
+  \draw[thick] (gs.north |- j) -- (gs.north); \draw[thick] (gi.north |- j) -- (gi.north); \draw[thick] (ga.north |- j) -- (ga.north);
+\end{tikzpicture}
+\end{center}
+
+\textbf{Attacks threatening confidentiality.}
+\begin{itemize}[leftmargin=1.4em]
+  \item \textbf{Snooping} is unauthorised access to or interception of data. A file sent over the Internet may contain confidential information; an unauthorised entity intercepts the transmission and uses the contents for her own benefit. Snooping is prevented by making the data unintelligible to the interceptor with \emph{encipherment}.
+  \item \textbf{Traffic analysis} works even when the data is enciphered. By monitoring the traffic, the attacker learns the electronic addresses (e.g.\ e-mail addresses) of sender and receiver, the times, sizes and frequency of messages, and pairs of requests and responses, which help her guess the nature of the transaction. A burst of messages between a company and a law firm can reveal a takeover without a single message being read. Encryption does not stop it; traffic padding and routing control (below) do.
+\end{itemize}
+
+\textbf{Attacks threatening integrity.}
+\begin{itemize}[leftmargin=1.4em]
+  \item \textbf{Modification}: after intercepting or accessing information, the attacker changes it to benefit herself. A customer sends her bank a transaction request; the attacker intercepts it and changes the type of transaction or the beneficiary. Simply \emph{deleting} or \emph{delaying} the message, to harm the system or profit from it, also counts as modification.
+  \item \textbf{Masquerading} (spoofing) happens when the attacker impersonates somebody else, for example by stealing a customer's bank card and PIN and pretending to be that customer. She may also pretend to be the \emph{receiver}: a user tries to contact his bank, but another site poses as the bank and collects his information (phishing).
+  \item \textbf{Replaying}: the attacker obtains a copy of a message sent by a user and later sends it again. A person asks her bank to pay the attacker for a job; the attacker intercepts the request and resends it to receive a second payment. The slide's figure makes a further point: if Alice logs in by sending hash(password), Eve can sniff the hash and replay it without ever learning the password. Replay is stopped by making every message fresh (a sequence number, timestamp or nonce), not by encryption or hashing, since the replayed copy is a perfectly valid message.
+  \item \textbf{Repudiation} is different from all the others because it is performed by one of the two parties to the communication, not by an outsider. The sender may later deny that she sent a message (a customer orders her bank to transfer money and later denies having made the request), or the receiver may deny having received it (a manufacturer is paid electronically and later claims he never received the payment).
+\end{itemize}
+
+\textbf{Attack threatening availability.}
+\begin{itemize}[leftmargin=1.4em]
+  \item \textbf{Denial of service} (DoS) slows down or totally interrupts the service of a system. The attacker may send so many bogus requests to a server that it crashes under the load; intercept and delete the server's responses so that the client believes the server is down; or intercept the clients' requests, so that the clients resend them many times and overload the system. When the flood comes from many machines at once (a botnet) it is a distributed DoS (DDoS).
+\end{itemize}
 \begin{center}\small
 \begin{tabularx}{\textwidth}{@{}l l l X@{}}
 \toprule
@@ -28,17 +104,136 @@ Attack & Threatens & Type & What happens\\
 \bottomrule
 \end{tabularx}
 \end{center}
-\textbf{Passive} attacks only obtain information: they don't change data, are hard to \emph{detect}, and are prevented by encipherment. \textbf{Active} attacks change data or harm the system: they are easier to detect than to prevent.
 
-\textbf{Stallings' four-way picture} (normal flow source $\to$ destination): \textbf{interruption} (availability), \textbf{interception} (confidentiality), \textbf{modification} (integrity), \textbf{fabrication} (authenticity / masquerade).
+\textbf{Passive versus active attacks.} In a \textbf{passive} attack the attacker's goal is only to obtain information: the attack does not modify data or harm the system, although the revealed information may harm the sender or receiver. Snooping and traffic analysis, the attacks on confidentiality, are passive. Since nothing in the system changes, there is nothing to notice, so a passive attack is \emph{difficult to detect} until the victim finds out that confidential information has leaked. It can, however, be \emph{prevented}, by encipherment of the data (plus padding against traffic analysis). An \textbf{active} attack changes the data or harms the system; the attacks on integrity and availability are active. Active attacks are normally \emph{easier to detect than to prevent}: the change leaves evidence (a wrong digest, a duplicate sequence number, a server that stops answering), but the attacker can launch them in so many ways and places that blocking all of them in advance is impractical. The defensive goal is therefore to detect them and recover.
+\begin{center}\small
+\begin{tabularx}{\textwidth}{@{}l X X@{}}
+\toprule
+ & Passive attack & Active attack\\
+\midrule
+Goal & obtain information & change data or harm the system\\
+Attacks & snooping, traffic analysis & modification, masquerading, replaying, repudiation, DoS\\
+Threatens & confidentiality & integrity and availability\\
+Detection & difficult (nothing changes) & relatively easy (effects are visible)\\
+Strategy & prevent (encipherment, padding) & detect and recover (integrity checks, authentication, freshness)\\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\textbf{Stallings' four-way picture} (normal flow source $\to$ destination): \textbf{interruption} (availability), \textbf{interception} (confidentiality), \textbf{modification} (integrity), \textbf{fabrication} (authenticity / masquerade). The lecture shows the figure below: in each panel the information should flow from the source $S$ to the destination $D$, and the third node is the attacker.
+\begin{center}
+\begin{tikzpicture}[nd/.style={circle,draw,fill=gray!20,minimum size=4mm,inner sep=0pt,font=\tiny}]
+  \foreach \i/\lab in {0/(a) Normal flow, 1/(b) Interruption, 2/(c) Interception, 3/(d) Modification, 4/(e) Fabrication}{
+    \pgfmathsetmacro{\x}{3.45*\i}
+    \draw[rounded corners=2pt,gray] (\x,0) rectangle ++(3.1,1.7);
+    \node[font=\footnotesize] at (\x+1.55,-0.25) {\lab};
+    \node[nd] (S\i) at (\x+0.35,1.35) {S};
+    \node[nd] (D\i) at (\x+2.75,1.35) {D};
+    \coordinate (M\i) at (\x+1.55,1.35);
+    \coordinate (B\i) at (\x+1.55,0.4);
+  }
+  \draw[arr] (S0) -- (D0);
+  \draw[thick] (S1) -- (M1); \draw[very thick,warn] ($(M1)+(0,-0.2)$) -- ($(M1)+(0,0.2)$);
+  \node[nd,fill=warn!30] (E2) at (B2) {E}; \draw[arr] (S2) -- (D2); \draw[arr,warn] (M2) -- (E2);
+  \node[nd,fill=warn!30] (E3) at (B3) {E}; \draw[arr] (S3) -| ($(B3)+(-0.3,0)$) -- (E3); \draw[arr] (E3) -- ($(B3)+(0.3,0)$) |- (D3);
+  \node[nd,fill=warn!30] (E4) at (B4) {E}; \draw[arr] (E4) -- ($(B4)+(0.3,0)$) |- (D4);
+\end{tikzpicture}
+\end{center}
+\textbf{Interruption} destroys the flow or makes it unusable (cutting a line, DoS), an attack on availability. \textbf{Interception} gives an unauthorised party access to the flow (wiretapping, copying files), an attack on confidentiality and the only passive one of the four. \textbf{Modification} lets the attacker capture and alter the flow before it reaches $D$, an attack on integrity. \textbf{Fabrication} inserts counterfeit messages that appear to come from $S$, an attack on authenticity (masquerade). In Stallings' own list of attacks the passive ones are \emph{release of message contents} (Forouzan's snooping) and \emph{traffic analysis}, and the active ones are \emph{masquerade}, \emph{replay}, \emph{modification of messages} and \emph{denial of service}.
 
 \begin{trap}[: repudiation is not an outsider attack]
 Every other attack is by a third party (Eve). Repudiation is done by Alice or Bob themselves. It is countered by digital signatures (non-repudiation), not encryption.
 \end{trap}
 
+\subsection{Security services and mechanisms (ITU-T X.800) \hot}
+\likely{``List the security services of X.800 and the mechanisms that provide each one'' (Forouzan Table 1.1, 4--5 marks), or ``which service/mechanism defeats replaying / repudiation / traffic analysis?''}
+
+The goals say what we want and the attacks say what can go wrong; a system designer also needs a standard vocabulary for the protection itself. The ITU-T (International Telecommunication Union, Telecommunication Standardization Sector) provides it in Recommendation \textbf{X.800}, the security architecture for OSI. It separates three notions (Stallings): a \textbf{security attack} is any action that compromises the security of information; a \textbf{security mechanism} is a process (or a device incorporating one) designed to detect, prevent or recover from an attack; and a \textbf{security service} is a processing or communication service that enhances the security of data processing and information transfer, is intended to counter attacks, and is implemented by one or more mechanisms. In short, \imp{a service is \emph{what} is provided, a mechanism is \emph{how} it is provided.}
+
+\textbf{Security services.} X.800 defines five services, two of which have two flavours each.
+\begin{center}
+\begin{tikzpicture}[sv/.style={box,fill=acc!8,text width=28mm,font=\footnotesize,minimum height=16mm,anchor=north}]
+  \node[box,fill=acc!20] (root) at (0,0) {Security services};
+  \node[sv] (c) at (-6.4,-1) {\textbf{Data confidentiality}\\[1pt]whole message,\\selected fields,\\traffic flow};
+  \node[sv] (i) at (-3.2,-1) {\textbf{Data integrity}\\[1pt]anti-change\\anti-replay};
+  \node[sv] (a) at (0,-1) {\textbf{Authentication}\\[1pt]peer entity\\data origin};
+  \node[sv] (n) at (3.2,-1) {\textbf{Nonrepudiation}\\[1pt]proof of origin\\proof of delivery};
+  \node[sv] (x) at (6.4,-1) {\textbf{Access control}\\[1pt]read, write, modify, execute};
+  \draw[thick] (root.south) -- ++(0,-0.25) coordinate (j);
+  \draw[thick] (c.north |- j) -- (x.north |- j);
+  \foreach \n in {c,i,a,n,x} \draw[thick] (\n.north |- j) -- (\n.north);
+\end{tikzpicture}
+\end{center}
+\begin{itemize}[leftmargin=1.4em]
+  \item \textbf{Data confidentiality} protects data from disclosure. It may cover the whole message or selected fields, and it includes protection against \emph{traffic analysis} (traffic-flow confidentiality). It counters snooping and traffic analysis.
+  \item \textbf{Data integrity} protects data from modification, insertion, deletion and replaying by an adversary. The \emph{anti-change} part detects altered content; the \emph{anti-replay} part detects an old valid message sent again.
+  \item \textbf{Authentication} assures each party of the identity of the other. \emph{Peer entity authentication} is used in connection-oriented communication: it authenticates the sender or receiver when the connection is established. \emph{Data origin authentication} is used in connectionless communication: it authenticates the source of each piece of data. It counters masquerading.
+  \item \textbf{Nonrepudiation} protects against a sender or receiver who later denies the communication. With \emph{proof of origin}, the receiver can later prove the identity of the sender if she denies having sent the message; with \emph{proof of delivery}, the sender can later prove that the data was delivered to the intended recipient. It counters repudiation.
+  \item \textbf{Access control} protects against unauthorised access to data and resources; ``access'' covers reading, writing, modifying and executing programs. It counters intruders who try to use a system they are not entitled to.
+\end{itemize}
+Availability is not one of the five services. X.800 treats it as a property supported by other services (access control and authentication keep bogus users out) and by system management, which is why denial of service has no purely cryptographic cure.
+
+\textbf{Security mechanisms.} X.800 also recommends eight mechanisms.
+\begin{itemize}[leftmargin=1.4em]
+  \item \textbf{Encipherment} hides or covers data to provide confidentiality; it uses cryptography or steganography.
+  \item \textbf{Data integrity}: a short check value, created by a specific process from the data itself, is appended to the data. The receiver computes a new check value from the received data and compares the two; any difference shows that the data was changed (hash, MAC, \S\ref{sec:integrity}).
+  \item \textbf{Digital signature}: the sender electronically signs the data with her private key and the receiver verifies the signature with the sender's public key. Since only the sender has the private key, the signature proves who signed and that the data has not changed since.
+  \item \textbf{Authentication exchange}: two entities exchange messages to prove their identity to each other, for example by showing that one knows a secret that only it should know (\S\ref{sec:entityauth}).
+  \item \textbf{Traffic padding} inserts bogus data into the traffic so that its volume and timing no longer reveal anything, which thwarts traffic analysis.
+  \item \textbf{Routing control} selects, and keeps changing, the routes between sender and receiver so that the opponent cannot eavesdrop on one particular route.
+  \item \textbf{Notarization} selects a trusted third party to control the communication between two entities. The notary records the request and the time, so that neither party can later deny it; this prevents repudiation.
+  \item \textbf{Access control} uses methods (passwords, PINs, access lists) to prove that a user has the right to the data or resources of a system.
+\end{itemize}
+
+\textbf{Relation between services and mechanisms.} Each service is implemented by one or more mechanisms, and one mechanism can serve several services. Forouzan's Table~1.1 gives the relation; the last column links it back to the attacks.
+\begin{center}\small
+\begin{tabularx}{\textwidth}{@{}l X X@{}}
+\toprule
+Security service & Security mechanisms (Forouzan Table 1.1) & Main attacks countered\\
+\midrule
+Data confidentiality & encipherment and routing control & snooping; traffic analysis (with traffic padding)\\
+Data integrity & encipherment, digital signature, data integrity & modification; replaying (anti-replay)\\
+Authentication & encipherment, digital signature, authentication exchange & masquerading\\
+Nonrepudiation & digital signature, data integrity, notarization & repudiation\\
+Access control & access control mechanism & unauthorised access to the system\\
+\bottomrule
+\end{tabularx}
+\end{center}
+The entries can be derived from what each mechanism does. Encipherment appears three times because a message that decrypts correctly under a shared key also shows that it was produced by a key holder and not altered meaningfully. A digital signature appears three times because it binds the data to the one person who holds the private key: altering the data breaks the signature (integrity), a valid signature identifies the signer (authentication), and the signer cannot later deny it (nonrepudiation). Nonrepudiation needs more than integrity or encipherment with a \emph{shared} key, since the receiver could have produced such a message himself; only a private-key signature or a notary provides evidence a third party will accept. Traffic padding is not listed in Forouzan's table, but it is the mechanism X.800 pairs with routing control for traffic-flow confidentiality.
+
 \subsection{Kerckhoff's principle and cryptanalysis attacks \hot}
 \asked{2024--25 Q3(a): Eve types ``abcdefghij'' on Alice's computer and reads the output: which attack? (\textbf{chosen-plaintext}, since she chose the plaintext and saw its ciphertext).}
-\textbf{Kerckhoff's principle}: assume Eve knows the algorithm; security must rest \emph{only} on the secrecy of the key.
+
+\textbf{Kerckhoff's principle.} It may seem that a cipher would be more secure if both the algorithm and the key were hidden. Kerckhoff's principle says this is the wrong design target: \imp{one should always assume that the adversary, Eve, knows the encryption/decryption algorithm; the resistance of the cipher to attack must be based only on the secrecy of the key.} Guessing the key should be so hard that there is no need to hide the algorithm. There are good reasons for this. Algorithms leak: they are built into products that can be bought and reverse-engineered, and every engineer who worked on them knows them. A published algorithm can be studied by the whole research community, so its weaknesses are found by friends rather than by enemies. And a key compromised can be replaced in minutes, while a compromised algorithm means rebuilding the whole system. The principle is clearest for modern ciphers: there are only a few standard algorithms (AES, RSA), but each has a key domain so large that the key cannot be found.
+
+\textbf{Cryptanalysis.} Cryptography is the science of making secret codes; \textbf{cryptanalysis} is the science of breaking them, that is, recovering the plaintext or, better, the key without being given the key. Designers study it in order to measure how strong their ciphers are. The attacks are classified by \emph{what Eve has} besides the algorithm, from least to most information.
+\begin{center}
+\begin{tikzpicture}[ev/.style={box,fill=red!8,font=\footnotesize,text width=31mm}]
+  \node[box,fill=cyan!10,minimum width=30mm] (al) at (0,0) {Alice's machine\\$C = E_K(P)$};
+  \node[box,fill=cyan!10,minimum width=30mm] (bo) at (11.25,0) {Bob's machine\\$P = D_K(C)$};
+  \draw[arr] (al) -- node[above,font=\footnotesize]{ciphertext $C$ over the channel} (bo);
+  \node[ev] (cp) at (0,-2.1) {\textbf{(3) Chosen-plaintext}: Eve uses Alice's machine, picks $P$, sees $C$};
+  \node[ev] (co) at (3.75,-2.1) {\textbf{(1) Ciphertext-only}: Eve taps the channel and has only $C$};
+  \node[ev] (kp) at (7.5,-2.1) {\textbf{(2) Known-plaintext}: Eve also holds earlier pairs $(P_i, C_i)$};
+  \node[ev] (cc) at (11.25,-2.1) {\textbf{(4) Chosen-ciphertext}: Eve uses Bob's machine, picks $C$, sees $P$};
+  \draw[arr,dashed,red!70!black] (cp) -- (al);
+  \draw[arr,dashed,red!70!black] (co.north) -- (co.north |- al.east);
+  \draw[arr,dashed,red!70!black] (kp.north) -- (kp.north |- al.east);
+  \draw[arr,dashed,red!70!black] (cc) -- (bo);
+\end{tikzpicture}
+\end{center}
+
+\textbf{Ciphertext-only attack.} Eve has access only to some ciphertext and tries to find the key and the plaintext. She is assumed to know the algorithm and to be able to intercept ciphertext. This is the \emph{most probable} attack, because intercepting ciphertext is all it needs, so a cipher must above all resist it. Three methods are used. In a \textbf{brute-force} (exhaustive-key-search) attack, Eve knows the algorithm and the key domain and decrypts the ciphertext with every possible key until the plaintext makes sense; it is prevented only by a very large key domain (\S\ref{sec:schemes}). In a \textbf{statistical} attack, Eve uses inherent properties of the plaintext language: E is the most frequent letter in English, so she assumes the most frequent ciphertext character stands for E, and after a few such pairs she finds the key; it is prevented by ciphers that hide the characteristics of the language. In a \textbf{pattern} attack, Eve exploits patterns that a cipher leaves in the ciphertext even when it hides single-letter frequencies, so a good cipher must make its ciphertext look as random as possible.
+
+\textbf{Known-plaintext attack.} Eve has some plaintext/ciphertext pairs, collected earlier, in addition to the ciphertext she wants to break. For example, Alice sent Bob a secret message but later made its contents public; Eve kept both and uses the pair to analyse Alice's next message, assuming Alice has not changed her key. The same methods as before apply, but with more information the attack is \emph{easier}. It is \emph{less likely}, because Alice may have changed her key or never disclosed an old message. The Hill cipher is the classic victim (\S\ref{sec:classextra}).
+
+\textbf{Chosen-plaintext attack.} The pairs are chosen by Eve herself. This can happen if Eve has access to Alice's computer: she types plaintext of her choice and intercepts the ciphertext it produces. She still does not have the key, which is normally embedded in the encryption software. Choosing the plaintext lets her design inputs that expose the key (all-\ttx{a} text, or the alphabet in order, which shows a transposition's permutation directly), so the attack is \emph{much easier}, but \emph{much less likely}.
+
+\textbf{Chosen-ciphertext attack.} The mirror image: Eve chooses some ciphertext and has it decrypted, forming ciphertext/plaintext pairs. This can happen if Eve has access to Bob's computer. Public-key schemes must resist it, since textbook RSA does not (\S\ref{sec:rsa}).
+
+\begin{mustknow}[: the four cryptanalysis attacks (Eve always knows the algorithm)]
+\textbf{Ciphertext-only}: only ciphertext (most likely; brute force, statistical, pattern). \textbf{Known-plaintext}: plus old $(P, C)$ pairs under the same key. \textbf{Chosen-plaintext}: Eve picks $P$ and sees $C$ (access to Alice's machine). \textbf{Chosen-ciphertext}: Eve picks $C$ and sees $P$ (access to Bob's machine). Each step gives Eve more power and is less likely to happen.
+\end{mustknow}
 \begin{center}\small
 \begin{tabularx}{\textwidth}{@{}l X X@{}}
 \toprule
@@ -47,15 +242,33 @@ Attack & Eve has & Note\\
 \textbf{Ciphertext-only} & only ciphertext & most probable. Methods: brute force (key space must be huge), statistical (letter frequencies), pattern attacks.\\
 \textbf{Known-plaintext} & earlier plaintext/ciphertext pairs (same key) & easier, less likely (key may have changed).\\
 \textbf{Chosen-plaintext} & pairs for plaintexts she chose (access to Alice's machine) & much easier, much less likely.\\
-\textbf{Chosen-ciphertext} & plaintexts for ciphertexts she chose (access to Bob's machine) & \\
+\textbf{Chosen-ciphertext} & plaintexts for ciphertexts she chose (access to Bob's machine) & mirror of chosen-plaintext; must be resisted by public-key schemes.\\
 \bottomrule
 \end{tabularx}
 \end{center}
+To classify an attack in an exam, ask two questions: \emph{whose machine does Eve use} (none, Alice's encryptor, Bob's decryptor), and \emph{who picked the text} (nobody, Eve). Knowing old pairs without having chosen them is known-plaintext; choosing them is chosen-plaintext or chosen-ciphertext.
+
+\begin{worked}[: Mid-sem 2024--25 Q3(a)]
+\textbf{Q.} Eve secretly gets access to Alice's computer and, using its cipher, types ``\ttx{abcdefghij}''. The screen shows ``\ttx{CABDEHFGIJ}''. What type of attack is Eve launching?
+
+\textbf{A.} Eve does not have the key, but she uses Alice's encryption machine, \emph{chooses} the plaintext herself and observes the corresponding ciphertext. That is a \textbf{chosen-plaintext attack}. It is not known-plaintext, because the pair was not collected from earlier traffic but created by Eve; it is not chosen-ciphertext, because she used the encryptor, not Bob's decryptor. The choice of input is also typical: since the plaintext letters are all different and in alphabetical order, the ciphertext directly shows where each position went (here \ttx{abcde} $\to$ \ttx{CABDE} and \ttx{fghij} $\to$ \ttx{HFGIJ}, a keyed transposition with block size 5; part (b) is solved in the Question Bank).
+\end{worked}
 
 \subsection{History notes from the slides}
-Atbash (Hebrew, reversed alphabet), scytale (Greek, rod transposition), Caesar (shift 3), Vigen\`ere (1587, broken by Kasiski 1863), Enigma (Scherbius 1918, rotor machine), Shannon (1949, proved OTP unbreakable), DES (IBM, 1970s), Diffie--Hellman (1976), RSA (1977), ECC (Miller, Koblitz 1985), MD5 (Rivest 1991), AES (2001), SHA-512 (2001).
+Lecture~1 traces cryptography from hiding messages to the mathematics of today. The milestones, each with the idea it introduced:
+\begin{itemize}[leftmargin=1.4em]
+  \item \textbf{3500 BC}, Sumerian cuneiform writing, and \textbf{1900 BC}, Egypt: the first known use of cryptography (non-standard hieroglyphs).
+  \item \textbf{500--600 BC, Atbash} (Hebrew scribes): a substitution cipher using the reversed alphabet ($a \leftrightarrow z$, $b \leftrightarrow y$, \dots). It has no key at all.
+  \item \textbf{486 BC, scytale} (Greece): a strip of leather wound round a rod of fixed diameter, written along the rod and unwound; the letters are only rearranged, so it is a \emph{transposition} cipher whose key is the rod's diameter.
+  \item \textbf{60--50 BC, Caesar}: shift every letter by $X$ positions ($X = 3$: A$\to$D, B$\to$E, \dots), \S\ref{sec:caesar}. Its weakness is \emph{frequency analysis} (the slide dates it to about 1000 AD; the Arab scholar al-Kindi described it in the 9th century): a monoalphabetic substitution keeps the letter frequencies of the language, and there are only 25 shifts to search exhaustively. The slide's goal for designers follows: exhaustive key search is always possible, so it must be made practically infeasible.
+  \item \textbf{1587, Vigen\`ere}: a \emph{polyalphabetic} cipher (one-to-many: the same plaintext letter becomes different ciphertext letters at different positions), \S\ref{sec:poly}. \textbf{1863, Kasiski} broke it: repeated strings in the ciphertext are usually a multiple of the key length apart, so the common divisor of their distances gives the key length $m$; the ciphertext is then written in $m$ columns, each column is a Caesar cipher, and each is solved by frequency analysis.
+  \item \textbf{1845, Morse code}: a representation of letters by on/off signal codes (an encoding, not a cipher, since there is no key).
+  \item \textbf{1918, ADFGVX} (German army, WWI) and \textbf{1918, Enigma} (Arthur Scherbius, for confidential business documents and later the German forces in WWII): a rotor machine performing a different substitution for every letter, because the rotor wiring advances as you type, with no codebooks needed.
+  \item \textbf{1949, Shannon}, ``Communication Theory of Secrecy Systems'': proved the one-time pad unbreakable (perfect secrecy, \S\ref{sec:schemes}).
+  \item \textbf{1970s, DES} (IBM, adopted as a US federal standard); \textbf{1976, Diffie--Hellman} key exchange, which solved the key-exchange problem and started public-key cryptography; \textbf{1977, RSA} (Rivest, Shamir, Adleman, MIT); \textbf{1985, ECC} (Miller at IBM and Koblitz at the University of Washington, independently); \textbf{1991, MD5} (Rivest); \textbf{2001, AES} (published 26 November 2001) and \textbf{SHA-512}.
+\end{itemize}
 
-\textbf{ADFGVX} (German army, WWI): a keyed $6 \times 6$ Polybius square (letters $+$ digits, rows/columns labelled A D F G V X) followed by a \textbf{columnar transposition}.
+\textbf{ADFGVX} (German army, WWI): a keyed $6 \times 6$ Polybius square (letters $+$ digits, rows/columns labelled A D F G V X) followed by a \textbf{columnar transposition}. The square turns each character into a pair of the letters A, D, F, G, V, X (row label, column label), which were chosen because they are very different in Morse code; the transposition then separates the two halves of each pair, so that neither letter frequencies nor pairs survive. It combines substitution and transposition, the idea behind every modern block cipher.
 \begin{center}\small
 \begin{tabular}{@{}c|cccccc@{}}
  & A&D&F&G&V&X\\ \midrule
@@ -73,9 +286,20 @@ Square keyword \ttx{147regiment} (then the rest of a--z, 0--9). Encrypt \ttx{att
 \end{minipage}
 \end{center}
 
+\begin{worked}[: decryption, the slide's second example (ADFGX, keys \ttx{monkeys} and \ttx{zebras})]
+\textbf{Q.} Decrypt \ttx{ADDDF DDAXF XAGGF DXXAX FGXFG G}, encrypted with square keyword \ttx{monkeys} and transposition key \ttx{zebras}.
+
+\textbf{Undo the transposition.} The 26 letters fill 6 columns as 4 full rows plus 2 letters, so the columns under Z and E (the first two key letters) have 5 letters and the others 4. Number the key letters alphabetically: Z\,E\,B\,R\,A\,S $\to$ 6\,3\,2\,4\,1\,5. Cut the ciphertext in that order: A (4) \ttx{ADDD}, B (4) \ttx{FDDA}, E (5) \ttx{XFXAG}, R (4) \ttx{GFDX}, S (4) \ttx{XAXF}, Z (5) \ttx{GXFGG}. Reading the grid row by row gives the intermediate text \ttx{GXFGAX XFDFDA FXDDDX GAAXDF GG}.
+
+\textbf{Undo the square.} This example uses the $5 \times 5$ \textbf{ADFGX} square (letters only, i/j share a cell), keyword \ttx{monkeys} followed by the rest of the alphabet: rows A \ttx{monke}, D \ttx{ysabc}, F \ttx{dfghi}, G \ttx{lpqrt}, X \ttx{uvwxz}. The pairs GX FG AX XF DF DA FX DD DX GA AX DF GG give t h e w a y i s c l e a r, so the plaintext is \textbf{``the way is clear''} \checkmark\ (script-checked).
+\end{worked}
+
 \begin{fixbox}
 \begin{itemize}
-  \item Slide 13's figure lists replaying under integrity (correct) but places it visually near confidentiality; use the table above.
-  \item The ADFGVX decryption example (keys \ttx{monkeys}/\ttx{zebras}): the transposition step with key \ttx{zebras} does give the slide's intermediate text \ttx{GXFGAXXFDFDAFXDDDXGAAXDFGG}, but a square built from \ttx{monkeys} does not give ``the way is clear''; the slide's square is a different (unshown) one. Learn the method from the encryption example.
+  \item In the older year's slide the replaying box sat visually near the confidentiality group. This year's taxonomy figure (L3 slide 13) groups it correctly under integrity; use the table above.
+  \item The ADFGVX decryption example (keys \ttx{monkeys}/\ttx{zebras}): the earlier version of these notes said the square from \ttx{monkeys} does not give ``the way is clear''. It does, once the square is the $5 \times 5$ ADFGX square shown on the slide (not a $6 \times 6$ ADFGVX one); see the worked example. Strictly, that example is the ADFGX cipher (March 1918), the predecessor of ADFGVX (June 1918).
+  \item L1 history slide: DES was adopted in 1977 by the US National Bureau of Standards (NBS); the name NIST dates from 1988.
+  \item L1 ``Mono-alphabetic substitution'' slide: ``only $s = |A|$ keys (25 for the Roman alphabet)'' is true for the \emph{shift} cipher only ($|A| = 26$ shifts, of which 25 change the text). A general monoalphabetic substitution has $26!$ keys and is broken by frequency analysis, not by key search.
+  \item L3 CERT-In 2019 pie chart: scanning/probing/vulnerable services is $305\,276 / 394\,499 = 77.4\%$, not 75\%.
 \end{itemize}
 \end{fixbox}

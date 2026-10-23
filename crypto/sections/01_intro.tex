@@ -60,7 +60,7 @@ The first model protects a \emph{message in transit}. A second class of threats 
   \node[box,fill=red!10,text width=30mm] (op) {\textbf{Opponent}\\Human (attacker)\\Software (virus, worm)};
   \node[box,right=of op,fill=gray!15,minimum width=24mm] (ac) {Access channel};
   \node[box,right=of ac,fill=green!12,text width=22mm] (gk) {\textbf{Gatekeeper function}\\(firewall)};
-  \node[box,right=12mm of gk,fill=cyan!8,text width=42mm,align=left] (is) {\textbf{Information System}\\
+  \node[box,right=12mm of gk,fill=cyan!8,text width=52mm,align=left] (is) {\textbf{Information System}\\
     \footnotesize Computing resources (CPU, memory, I/O)\\ \footnotesize Data \quad Processes \quad Software\\
     \footnotesize\textbf{Internal security controls} (antivirus)};
   \draw[arr] (op)--(ac); \draw[arr] (ac)--(gk); \draw[arr] (gk)--node[above,font=\scriptsize]{allowed} (is);

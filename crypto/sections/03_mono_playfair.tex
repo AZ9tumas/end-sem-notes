@@ -1,29 +1,26 @@
-% Videos: monoalphabetic ciphers, Playfair part 1 & 2, Playfair solved question
-\newcommand{\NESOACADEMY}{{N,E,S,O,A},{C,D,M,Y,B},{F,G,H,{I/J},K},{L,P,Q,R,T},{U,V,W,X,Z}}
-\newcommand{\JUPITER}{{{I/J},U,P,T,E},{R,A,B,C,D},{F,G,H,K,L},{M,N,O,Q,S},{V,W,X,Y,Z}}
-\newcommand{\NESOAPP}{{N,E,S,O,A},{P,B,C,D,F},{G,H,{I/J},K,L},{M,Q,R,T,U},{V,W,X,Y,Z}}
+% Sources: Neso videos (monoalphabetic; Playfair parts 1-2; Playfair solved question; crypto/notes3.md), college Lecture 5
+% (Forouzan 3.2: monoalphabetic key table, statistical attack, Playfair secret key and "hello", cryptanalysis of Playfair),
+% Stallings 2.2 (frequency analysis, homophones, Playfair strength). Every number recomputed by script (scratchpad/r2/verify.py).
+\providecommand{\NESOACADEMY}{{N,E,S,O,A},{C,D,M,Y,B},{F,G,H,{I/J},K},{L,P,Q,R,T},{U,V,W,X,Z}}
+\providecommand{\JUPITER}{{{I/J},U,P,T,E},{R,A,B,C,D},{F,G,H,K,L},{M,N,O,Q,S},{V,W,X,Y,Z}}
+\providecommand{\NESOAPP}{{N,E,S,O,A},{P,B,C,D,F},{G,H,{I/J},K,L},{M,Q,R,T,U},{V,W,X,Y,Z}}
+\providecommand{\PFFOROUZAN}{{L,G,D,B,A},{Q,M,H,E,C},{U,R,N,{I/J},F},{X,V,S,O,K},{Z,Y,W,T,P}}
 
-\section{Monoalphabetic Cipher}
+\section{Monoalphabetic Cipher}\label{sec:monoalpha}
 
-\textbf{Why:} Caesar shifts every letter by the \emph{same} amount, and there are only 25 keys. Find the shift for one letter and you have the whole message.
+The Caesar (shift) cipher has two weaknesses that make it useless. Its key space has only 25 useful keys, so an attacker simply tries them all. Worse, every letter is shifted by the \emph{same} amount, so the shift found for a single letter decrypts the whole message. The monoalphabetic cipher removes both weaknesses at once: instead of shifting the alphabet, it replaces each letter by an \emph{arbitrary} other letter, chosen independently for each of the 26 letters. The only constraint is that the replacement must be one-to-one, so that the receiver can undo it.
 
 \subsection{Permutations}
-\begin{keybox}
-A \textbf{permutation} of a finite set $S$ is an ordered sequence of all the elements of $S$, with \textbf{each element appearing exactly once}.
-\end{keybox}
-$S=\{a,b,c\}$ has $3! = 6$ permutations: \ttx{abc, acb, bac, bca, cab, cba}.\quad
-In general $n$ elements have $n! = n(n-1)\cdots 2\cdot 1$ permutations ($2! = 2$, $4! = 24$).
+A \imp{permutation of a finite set $S$ is an ordered sequence of all the elements of $S$, with each element appearing exactly once.} The set $S = \{a, b, c\}$ has six permutations: \ttx{abc, acb, bac, bca, cab, cba}. In general a set of $n$ elements has $n! = n(n-1)\cdots 2 \cdot 1$ permutations, because the first position can be filled in $n$ ways, the second in $n - 1$ ways (one element is used up), and so on down to one way for the last position. For example $2! = 2$ and $4! = 24$.
+
+Permutations matter here because the key of a monoalphabetic cipher \emph{is} a permutation of the alphabet: writing the ciphertext letters for $a, b, \dots, z$ in order gives a sequence in which each of the 26 letters appears exactly once. The number of possible keys is therefore the number of permutations of 26 letters, $26!$.
 
 \subsection{The cipher}
-\begin{keybox}
-The ``cipher'' line can be \textbf{any permutation of the 26 letters}. Each plaintext letter always maps to the same ciphertext letter, and no two plaintext letters share a ciphertext letter.
-\end{keybox}
-\begin{itemize}
-  \item Key space: $26! \approx 4 \times 10^{26}$ keys. This \emph{seems} to rule out brute force (compare 25 for Caesar).
-  \item It is still a \textbf{substitution} cipher. The permutation is applied to the \emph{alphabet} (to build the key), not to the message (that would be transposition).
-\end{itemize}
+In a \textbf{monoalphabetic substitution cipher} Alice and Bob agree on a table that pairs every plaintext letter with one ciphertext letter. The bottom row of the table, the \textbf{cipher line}, can be any permutation of the 26 letters. To encrypt, each plaintext letter is looked up in the top row and replaced by the letter below it; to decrypt, each ciphertext letter is found in the bottom row and replaced by the letter above it. The relationship between plaintext and ciphertext symbols is \textbf{one-to-one}: a plaintext letter always becomes the same ciphertext letter, and no two plaintext letters share a ciphertext letter. If two letters shared one, the receiver could not tell which was meant, so the table would not be decryptable.
 
-\textbf{Example:} ``Neso'' $\to$ \ttx{DULA}. The distance moved differs for every letter, so one letter's mapping tells you nothing about the others:
+The key space has $26! \approx 4.03 \times 10^{26} \approx 2^{88}$ keys, compared with 25 for the shift cipher. A computer testing $10^{12}$ keys per second would need about 13 million years to try them all, so the slide's conclusion is that the large key space ``would seem to eliminate brute-force techniques''. The shift ciphers are just 26 of these $26!$ permutations, those in which the cipher line is the alphabet rotated. Although a permutation is involved, the monoalphabetic cipher is still a \textbf{substitution} cipher: the permutation is applied to the \emph{alphabet} to build the key, while the letters of the message keep their positions. Rearranging the message itself would be a transposition.
+
+\textbf{Example (lecture).} Under one key, ``Neso'' becomes \ttx{DULA}. The distance each letter moves is different, so learning one pair of the table says nothing about the others; with Caesar the distance is always 3.
 \begin{center}\small\setlength{\tabcolsep}{6pt}
 \begin{tabular}{@{}lcccc@{}}
 \toprule
@@ -32,11 +29,27 @@ Ciphertext & \textbf{D} (3) & \textbf{U} (20) & \textbf{L} (11) & \textbf{A} (0)
 Shift $(C-p) \bmod 26$ & 16 & 16 & 19 & 12\\
 \bottomrule
 \end{tabular}
-\qquad Caesar: shift is always 3.
 \end{center}
 
+\begin{worked}[: the slide's key table (Forouzan)]
+\textbf{Q.} Using the key below, encrypt ``this message is easy to encrypt but hard to find the key'', and show how Bob decrypts.
+\begin{center}\small\setlength{\tabcolsep}{2.4pt}
+\begin{tabular}{@{}l*{26}{c}@{}}
+\toprule
+Plain & a&b&c&d&e&f&g&h&i&j&k&l&m&n&o&p&q&r&s&t&u&v&w&x&y&z\\
+Cipher & N&O&A&T&R&B&E&C&F&U&X&D&Q&G&Y&L&K&H&V&I&J&M&P&Z&S&W\\
+\bottomrule
+\end{tabular}
+\end{center}
+\textbf{A.} Remove the spaces and replace each letter by the one below it: t$\to$I, h$\to$C, i$\to$F, s$\to$V, so ``this'' $\to$ \ttx{ICFV}; ``message'' $\to$ \ttx{QRVVNER}; and so on. The ciphertext is
+\begin{center}\small\ttfamily ICFVQRVVNERFVRNVSIYRGAHSLIOJICNHTIYBFGTICRXRS\end{center}
+Bob finds each ciphertext letter in the bottom row and reads the letter above it (I$\to$t, C$\to$h, F$\to$i, V$\to$s, \dots), which recovers the plaintext. Note that the three \ttx{s} of ``message is'' all became \ttx{V} and every \ttx{e} became \ttx{R}: the frequency pattern of the plaintext survives, which is the subject of the next subsection.
+\end{worked}
+
 \subsection{Breaking it: frequency analysis}
-Letters in English are \textbf{not equally common}. A monoalphabetic cipher only renames letters, so the ciphertext keeps the same frequency pattern.
+The huge key space does not protect the cipher, because the attacker never searches through keys. A monoalphabetic cipher only \emph{renames} letters. If the key maps $x$ to $\pi(x)$, then every occurrence of $x$ in the plaintext becomes an occurrence of $\pi(x)$ in the ciphertext and nothing else becomes $\pi(x)$, so $\pi(x)$ occurs in the ciphertext exactly as often as $x$ occurs in the plaintext. The histogram of ciphertext letters is the histogram of plaintext letters with the bars relabelled. \imp{A monoalphabetic cipher does not change the frequency of characters}, so each letter of the key can be found separately by matching frequencies, and the attack needs a few dozen decisions instead of $26!$ guesses. This is a \textbf{statistical} (frequency) attack, and it needs only the ciphertext, which makes it a ciphertext-only attack, the most likely kind in practice.
+
+The attack works because English letters are far from equally common. The relative frequencies (lecture chart, from a large corpus) are:
 \begin{center}
 \begin{tikzpicture}[x=6.1mm,y=2.5mm]
   \foreach \L/\v [count=\i] in {A/8.167,B/1.492,C/2.782,D/4.253,E/12.702,F/2.228,G/2.015,H/6.094,I/6.996,J/0.153,K/0.772,L/4.025,M/2.406,N/6.749,O/7.507,P/1.929,Q/0.095,R/5.987,S/6.327,T/9.056,U/2.758,V/0.978,W/2.360,X/0.150,Y/1.974,Z/0.074}{
@@ -51,25 +64,39 @@ Letters in English are \textbf{not equally common}. A monoalphabetic cipher only
   \node[font=\scriptsize,rotate=90] at (-1.1,6.5) {\% of letters};
 \end{tikzpicture}
 \end{center}
-Most common: \textbf{E} (12.7\%), \textbf{T} (9.1\%), then A, O, I, N, S, H, R. Rarest: J, X, Q, Z.
+Ranked from most to least common, the letters are
+\begin{center}
+\ttx{e t a o i n s h r d l c u m w f g y p b v k j x q z}.
+\end{center}
+The letter \ttx{e} alone is 12.7\% of English text and \ttx{t} is 9.1\%; the nine letters \ttx{e t a o i n s h r} together make up about 70\% of it, while \ttx{j, x, q, z} are each below 0.2\%. Pairs and triples are just as uneven. The most common \textbf{digrams} (two-letter groups) are \ttx{th, he, in, er, an, re, ed, on, es, st, en, at, to, nt, ha, nd, ou, ea, ng, as, or, ti, is, et, it, ar, te, se, hi, of}, and the most common \textbf{trigrams} are \ttx{the, ing, and, her, ere, ent, tha, nth, was, eth, for, dth} (lecture table, from Forouzan).
 
-\textbf{Method:} count ciphertext letters $\to$ the most frequent one is probably \ttx{e}, the next \ttx{t} $\to$ look for common words (\ttx{the}, \ttx{that}) and fill in the rest by guessing.
+The attack therefore proceeds as follows. Eve counts the ciphertext letters and guesses that the most frequent one stands for \ttx{e} and the next for \ttx{t}. She then tests the guesses against digrams and trigrams: if \ttx{t} has been placed, a frequent pattern ``\ttx{t?e}'' is almost certainly \ttx{the}, which reveals \ttx{h}. Each new letter makes more words partly readable, and the remaining letters are filled in by recognising words. The statistics only become reliable with enough text: with about 100 letters the top two or three ranks usually match English, while the lower ranks are shuffled and have to be fixed by word guessing. For a very short message the counts may mislead completely.
 
-\textbf{Lecture example} (120 letters):
+\begin{worked}[: the lecture's frequency attack (Stallings' ciphertext, 120 letters)]
+\textbf{Q.} The following ciphertext was produced by a monoalphabetic cipher. Use a statistical attack to find the plaintext.
 \begin{center}\small\ttfamily
 UZQSOVUOHXMOPVGPOZPEVSGZWSZOPFPESXUDBMETSXAIZ\\
 VUEPHZHMDZSHZOWSFPAPPDTSVPQUZWYMXUZUHSX\\
 EPYEPOPDZSZUFPOMBZWPFUPZHMDJUDTMOHMQ
 \end{center}
-\begin{enumerate}[leftmargin=1.5em]
-  \item Count: \ttx{P} appears 16 times (13.33\%), \ttx{Z} 14 times (11.67\%). Guess \ttx{P}$=$e, \ttx{Z}$=$t.
-  \item \ttx{ZW} shows up 3 times and \ttx{ZWP} appears once: t?e $\Rightarrow$ ``the'', so \ttx{W}$=$h.
-  \item Keep guessing with common words until it reads as English:
-\end{enumerate}
+\textbf{A. Step 1: count.} The 120 letters occur as follows (C, K, L, N, R do not occur):
+\begin{center}\small\setlength{\tabcolsep}{3pt}
+\begin{tabular}{@{}l*{21}{c}@{}}
+\toprule
+Letter & \textbf{P}&\textbf{Z}&S&U&O&M&H&D&E&V&X&F&W&Q&T&A&B&G&Y&I&J\\
+Count & 16&14&10&10&9&8&7&6&6&5&5&4&4&3&3&2&2&2&2&1&1\\
+\bottomrule
+\end{tabular}
+\end{center}
+\textbf{Step 2: the two peaks.} \ttx{P} is $16/120 = 13.33\%$ and \ttx{Z} is $14/120 = 11.67\%$, close to the 12.7\% of \ttx{e} and 9.1\% of \ttx{t}. Guess \ttx{P} $=$ e and \ttx{Z} $=$ t.
+
+\textbf{Step 3: digrams and trigrams.} The digram \ttx{ZW} occurs 3 times, and \ttx{ZWP} once. With the guesses this is ``t?e'', so \ttx{ZWP} $=$ ``the'' and \ttx{W} $=$ h. Then \ttx{ZWS} $=$ ``th?'', which fits ``that'', so \ttx{S} $=$ a.
+
+\textbf{Step 4: fill in.} With \ttx{e, t, h, a} placed, $16 + 14 + 4 + 10 = 44$ of the 120 letters (37\%) are known and words become guessable. For example, \ttx{ZWSZ OPFPESX} now reads ``that ?e?e?a?'', which suggests ``that several'' and gives \ttx{O} $=$ s, \ttx{F} $=$ v, \ttx{E} $=$ r, \ttx{X} $=$ l. Each guess is checked against the rest of the text, and the remaining letters follow in the same way. The result is
 \begin{center}\small
 \emph{it was disclosed yesterday that several informal but direct contacts have been made with political representatives of the viet cong in moscow}
 \end{center}
-Recovered key (cipher $\to$ plain):
+and the recovered key (cipher $\to$ plain) is
 \begin{center}\small\setlength{\tabcolsep}{2.6pt}
 \begin{tabular}{@{}l*{21}{c}@{}}
 \toprule
@@ -78,26 +105,25 @@ Plain  & b&f&n&r&v&y&c&u&g&o&s&\textbf{e}&w&a&m&i&d&\textbf{h}&l&p&\textbf{t}\\
 \bottomrule
 \end{tabular}
 \end{center}
+\textbf{Check:} applying this table to all 120 letters gives the sentence above. Note that \ttx{S} (a) and \ttx{U} (i) tie at 10, ahead of \ttx{O} (s) at 9: below the top two ranks, a short text does not follow the English ranking exactly, which is why steps 3--4 are needed.
+\end{worked}
 
 \subsection{Pros, cons, countermeasure}
-\begin{minipage}[t]{0.3\textwidth}
-\textbf{Pros}
-\begin{enumerate}[leftmargin=1.5em]
-  \item Better security than Caesar cipher.
-\end{enumerate}
-\end{minipage}\hfill
-\begin{minipage}[t]{0.66\textwidth}
-\textbf{Cons}
-\begin{enumerate}[leftmargin=1.5em]
-  \item Easy to break because the ciphertext reflects the frequency data of the original alphabet.
-  \item Prone to guessing attacks using English letter frequencies.
-\end{enumerate}
-\end{minipage}
+\textbf{Advantages.} The monoalphabetic cipher is as simple to use as the Caesar cipher, but its key space of $26!$ makes brute force impossible, and knowing one letter's substitute reveals nothing about the others. It is therefore much more secure than the Caesar cipher against an attacker who only tries keys.
 
-\textbf{Countermeasure: homophones.} Give a common letter several possible substitutes (e.g.\ \ttx{e} gets many symbols, picked at random each time). This flattens the frequency peaks.
+\textbf{Disadvantages.} Since the ciphertext reflects the frequency data of the original alphabet, the cipher is easy to break with frequency analysis; the guessing attack above needs only a short ciphertext and some knowledge of English letter frequencies. The key is also long (a full table of 26 letters) and awkward to share and memorise, which is why practical versions derive it from a key phrase (see the homework below).
+
+\textbf{Countermeasure: homophones.} A \textbf{homophonic substitution} gives each plaintext letter several possible ciphertext symbols, called \textbf{homophones}, and the encryptor picks one of them at random for each occurrence. The number of homophones is made proportional to the letter's frequency: \ttx{e} (about 13\%) gets about 13 symbols, while \ttx{z} gets one. Since each of the 13 symbols for \ttx{e} is then used for roughly $12.7/13 \approx 1\%$ of the text, every symbol appears with about the same frequency and the peaks in the histogram disappear. The ciphertext alphabet must be larger than 26, for example the numbers 00 to 99. Decryption is still unique, because each symbol belongs to only one plaintext letter.
+
+Homophones flatten the \emph{single-letter} frequencies, but they do not make the cipher secure. Each plaintext letter still affects only one ciphertext symbol, so multi-letter patterns survive: \ttx{t} is still very often followed by \ttx{h}, so the symbols of \ttx{t} are often followed by symbols of \ttx{h}, and the attacker can group the symbols that behave alike and then proceed as before. Two better remedies were developed from this observation: encrypting \emph{several letters together} (Playfair, Hill), and using \emph{several cipher alphabets} chosen by a key (the polyalphabetic ciphers of \S\ref{sec:poly}).
 
 \subsection{Homework: encrypt with a key phrase}
-Key: ``The quick brown fox jumps over the lazy dog''. Drop spaces and every repeated letter. It uses all 26 letters, so it becomes the whole cipher line:
+Since a random 26-letter table is hard to remember, the key is often derived from a key phrase: write the phrase without spaces, delete every letter that has already appeared, and use the result as the cipher line. If the phrase does not contain all 26 letters, the unused letters are appended in alphabetical order (exactly as in the Playfair square below).
+
+\begin{worked}[: lecture homework]
+\textbf{Q.} Encrypt ``Attack postponed to tomorrow and do not use our secret paper until further info'' with a monoalphabetic cipher whose key is ``The quick brown fox jumps over the lazy dog'' (ignore the second and later occurrences of a letter in the key).
+
+\textbf{A.} Removing spaces and repeated letters from the key phrase leaves \ttx{THEQUICKBROWNFXJMPSVLAZYDG}. The phrase is a pangram, so this already contains all 26 letters and is the whole cipher line:
 \begin{center}\small\setlength{\tabcolsep}{2.4pt}
 \begin{tabular}{@{}l*{26}{c}@{}}
 \toprule
@@ -106,272 +132,11 @@ Cipher & T&H&E&Q&U&I&C&K&B&R&O&W&N&F&X&J&M&P&S&V&L&A&Z&Y&D&G\\
 \bottomrule
 \end{tabular}
 \end{center}
-``Attack postponed to tomorrow and do not use our secret paper until further info'' $\to$
+Substituting letter by letter (spaces kept only for readability):
 \begin{center}\small\ttfamily
 TVVTEO JXSVJXFUQ VX VXNXPPXZ TFQ QX FXV LSU XLP SUEPUV JTJUP LFVBW ILPVKUP BFIX
 \end{center}
-(Check one: a$\to$T, t$\to$V, t$\to$V, a$\to$T, c$\to$E, k$\to$O $\Rightarrow$ \ttx{TVVTEO}.)
+\textbf{Check} on the first word: a$\to$T, t$\to$V, t$\to$V, a$\to$T, c$\to$E, k$\to$O gives \ttx{TVVTEO}. The doubled \ttx{tt} became the doubled \ttx{VV}, another pattern a monoalphabetic cipher cannot hide.
+\end{worked}
 
-\section{Playfair Cipher \hothot}\label{sec:playfair}
-\asked{2024--25 Q2 (3 marks): key ``GUIDANCE'', message ``The key is hidden under the door pad''. 2025--26 Q3 (4 marks): given key matrix, ``Insta Reels Pe Time Waste Na Kar'', filler X, I/J in one cell. Both solved in \S\ref{sec:pastpapers}.}
-
-\begin{itemize}
-  \item Also called the Playfair square or Wheatstone--Playfair cipher. A manual \textbf{symmetric} technique.
-  \item \textbf{Invented} in 1854 by \textbf{Charles Wheatstone}; named after \textbf{Lord Playfair}, who \textbf{promoted} it.
-  \item The first literal \textbf{digram} substitution cipher: it encrypts \textbf{two letters at a time}.
-\end{itemize}
-
-\begin{keybox}[title=Single-letter vs.\ multiple-letter]
-Caesar and monoalphabetic: a letter always becomes the \emph{same} ciphertext letter.\\
-Playfair: a letter's ciphertext depends on its \emph{partner} in the pair, so the same letter can become different letters. Single-letter frequencies are hidden.
-\end{keybox}
-
-\subsection{Building the 5$\times$5 key matrix}
-\begin{minipage}[c]{0.6\textwidth}
-\begin{enumerate}[leftmargin=1.5em]
-  \item Write the keyword row by row, \textbf{skipping repeated letters}.
-  \item Fill the remaining cells with the unused letters \textbf{in alphabetical order}.
-  \item 26 letters, 25 cells: \textbf{I and J share one cell}. If the keyword contains I or J, that cell is already used.
-\end{enumerate}
-Keyword \textbf{MONARCHY} (highlighted), then B, D, E, F, G, I/J, K, L, P, Q, S, T, U, V, W, X, Z.
-\end{minipage}\hfill
-\begin{minipage}[c]{0.36\textwidth}
-\centering
-\begin{tikzpicture}[x=6.5mm,y=6.5mm]
-  \foreach \c in {1,...,5}{\pfcell{\c}{1}{yellow!35}}
-  \foreach \c in {1,2,3}{\pfcell{\c}{2}{yellow!35}}
-  \pfletters{\MONARCHY}
-\end{tikzpicture}
-\end{minipage}
-
-\subsection{Step 1: split the plaintext into digrams}
-\begin{itemize}
-  \item Split into pairs. \textbf{Two identical letters in one pair} $\Rightarrow$ insert filler \ttx{x} between them and re-pair from there.
-  \item \textbf{Odd letter left over} at the end $\Rightarrow$ add filler \ttx{x}.
-\end{itemize}
-\begin{center}\small
-\begin{tabular}{@{}lll@{}}
-\toprule
-Plaintext & Digrams & Why\\
-\midrule
-attack & \ttx{at ta ck} & nothing to fix (\ttx{tt} is split across two pairs)\\
-neso academy & \ttx{ne so ac ad em yx} & 11 letters: \ttx{y} is left over, add \ttx{x}\\
-balloon & \ttx{ba lx lo on} & \ttx{ll} in one pair: \ttx{l x}, then re-pair \ttx{l o o n}\\
-\bottomrule
-\end{tabular}
-\end{center}
-
-\subsection{Step 2: encrypt each pair (three cases) \hot}
-\begin{keybox}[title=Encryption rules]
-\begin{enumerate}[leftmargin=1.5em]
-  \item \textbf{Same row}: take the letter to the \textbf{right} of each (wrap to the start of the row).
-  \item \textbf{Same column}: take the letter \textbf{below} each (wrap to the top).
-  \item \textbf{Rectangle} (different row and column): each letter is replaced by the letter \textbf{in its own row}, in the \textbf{other letter's column}. Order matters: \ttx{at}$\to$\ttx{RS} but \ttx{ta}$\to$\ttx{SR}.
-\end{enumerate}
-\end{keybox}
-
-\begin{center}
-\begin{tikzpicture}[x=5.6mm,y=5.6mm]
-  % same row: mo -> ON
-  \begin{scope}
-    \pfcell{1}{1}{cyan!25}\pfcell{2}{1}{cyan!25}\pfcell{3}{1}{warn!25}
-    \pfletters{\MONARCHY}
-    \draw[arr,warn] (0.5,0) to[bend left=50] (1.5,0);
-    \draw[arr,warn] (1.5,0) to[bend left=50] (2.5,0);
-    \node[font=\small,align=center] at (2.5,-6) {\textbf{Same row} $\to$\\\ttx{mo} $\to$ \ttx{ON}};
-  \end{scope}
-  % same column: ue -> ML
-  \begin{scope}[xshift=50mm]
-    \pfcell{1}{3}{cyan!25}\pfcell{1}{5}{cyan!25}\pfcell{1}{4}{warn!25}\pfcell{1}{1}{warn!25}
-    \pfletters{\MONARCHY}
-    \draw[arr,warn] (0,-2.5) to[bend right=50] (0,-3.5);
-    \draw[arr,warn,dashed] (0,-4.5) to[bend left=35] node[left,font=\scriptsize]{wrap} (0,-0.5);
-    \node[font=\small,align=center] at (2.5,-6) {\textbf{Same column} $\downarrow$\\\ttx{ue} $\to$ \ttx{ML}};
-  \end{scope}
-  % rectangle: at -> RS
-  \begin{scope}[xshift=100mm]
-    \pfcell{4}{1}{cyan!25}\pfcell{5}{4}{cyan!25}\pfcell{5}{1}{warn!25}\pfcell{4}{4}{warn!25}
-    \pfletters{\MONARCHY}
-    \draw[very thick,warn] (3,0) rectangle (5,-4);
-    \draw[arr,warn] (3.75,-0.5) -- (4.25,-0.5);
-    \draw[arr,warn] (4.25,-3.5) -- (3.75,-3.5);
-    \node[font=\small,align=center] at (2.5,-6) {\textbf{Rectangle}\\\ttx{at} $\to$ \ttx{RS}};
-  \end{scope}
-\end{tikzpicture}\\[2pt]
-{\footnotesize blue = plaintext pair, red = ciphertext}
-\end{center}
-
-\subsection{Worked examples (keyword MONARCHY)}
-\begin{minipage}[t]{0.48\textwidth}
-\textbf{``attack''} $\to$ \ttx{at ta ck}
-\begin{itemize}
-  \item \ttx{at}: rectangle $\to$ \ttx{RS}
-  \item \ttx{ta}: rectangle $\to$ \ttx{SR}
-  \item \ttx{ck}: rectangle (C row 2, K row 3) $\to$ \ttx{DE}
-\end{itemize}
-Answer: \textbf{\ttx{RSSRDE}}
-\end{minipage}\hfill
-\begin{minipage}[t]{0.48\textwidth}
-\textbf{``mosque''} $\to$ \ttx{mo sq ue}
-\begin{itemize}
-  \item \ttx{mo}: same row $\to$ \ttx{ON}
-  \item \ttx{sq}: same row $\to$ \ttx{TS}
-  \item \ttx{ue}: same column, U wraps to top $\to$ \ttx{ML}
-\end{itemize}
-Answer: \textbf{\ttx{ONTSML}}
-\end{minipage}
-
-\medskip
-\textbf{Rapid fire:}
-\begin{center}\small\setlength{\tabcolsep}{5pt}
-\begin{tabular}{@{}l*{8}{c}@{}}
-\toprule
-Digram & \ttx{oa} & \ttx{ab} & \ttx{gk} & \ttx{dc} & \ttx{rz} & \ttx{zr} & \ttx{mz} & \ttx{rm}\\
-Case & row & column & row & row & column & column & rectangle & row\\
-Wrap? & & & K$\to$E & D$\to$C & Z$\to$R & Z$\to$R & & R$\to$M\\
-Answer & \textbf{NR} & \textbf{BI} & \textbf{IE} & \textbf{CH} & \textbf{DR} & \textbf{RD} & \textbf{RU} & \textbf{MO}\\
-\bottomrule
-\end{tabular}
-\end{center}
-(\ttx{BI}/\ttx{IE}: the I/J cell can be written as I or J.)
-
-\subsection{Solved question}
-\textbf{Encrypt ``Hide the gold under the carpet'' with keyword ``Neso Academy''.}
-
-\begin{minipage}[c]{0.36\textwidth}
-\centering
-\begin{tikzpicture}[x=6.5mm,y=6.5mm]
-  \foreach \c in {1,...,5}{\pfcell{\c}{1}{yellow!35}}
-  \foreach \c in {1,...,4}{\pfcell{\c}{2}{yellow!35}}
-  \pfletters{\NESOACADEMY}
-\end{tikzpicture}\\[2pt]
-{\footnotesize Keyword letters: N E S O A C D M Y}
-\end{minipage}\hfill
-\begin{minipage}[c]{0.6\textwidth}
-25 letters (odd), so the last \ttx{t} gets a filler \ttx{x}. No pair has a repeated letter.\\[3pt]
-\ttx{hi de th eg ol du nd er th ec ar pe tx}\\[3pt]
-\small
-\begin{tabular}{@{}lll|lll@{}}
-\toprule
-Pair & Case & Out & Pair & Case & Out\\
-\midrule
-hi & row & IK & er & rect. & OP\\
-de & column & GD & th & rect. & QK\\
-th & rect. & QK & ec & rect. & ND\\
-eg & column & DP & ar & rect. & OT\\
-ol & rect. & NR & pe & column & VD\\
-du & rect. & CV & tx & rect. & RZ\\
-nd & rect. & EC & & &\\
-\bottomrule
-\end{tabular}
-\end{minipage}
-
-\medskip
-Answer: \textbf{\ttx{IKGDQKDPNRCVECOPQKNDOTVDRZ}}
-
-The plaintext \ttx{e} became \ttx{D} (in \ttx{de}, \ttx{eg}, \ttx{pe}), \ttx{O} (in \ttx{er}) and \ttx{N} (in \ttx{ec}). That is the multiple-letter property.
-But the same \emph{pair} always gives the same output (\ttx{th}$\to$\ttx{QK} both times). \emph{(Not in the lecture: this is why Playfair can still be attacked using pair frequencies.)}
-
-\subsection{When I or J is in the keyword or the message \hot}
-\begin{keybox}[title=I/J rules]
-\begin{itemize}
-  \item I and J share one cell, so \textbf{replace every J with I before you do anything else}.
-  \item In the \textbf{keyword}: a J takes the I/J cell. A later I (or J) in the keyword is then a \textbf{repeat}, so skip it.
-  \item In the \textbf{message}: after the swap, \ttx{ij} or \ttx{ji} becomes \ttx{ii}, which is a \textbf{double letter} and needs a filler.
-  \item The ciphertext never contains J; the cell is written as I. The receiver uses context to decide between i and j.
-\end{itemize}
-\end{keybox}
-
-\textbf{Example:} encrypt ``meet me in fiji'' with keyword \textbf{JUPITER}.
-
-\begin{minipage}[c]{0.36\textwidth}
-\centering
-\begin{tikzpicture}[x=6.5mm,y=6.5mm]
-  \foreach \c in {1,...,5}{\pfcell{\c}{1}{yellow!35}}
-  \pfcell{1}{2}{yellow!35}
-  \pfletters{\JUPITER}
-\end{tikzpicture}\\[2pt]
-{\footnotesize Keyword: J U P \sout{I} T E R}
-\end{minipage}\hfill
-\begin{minipage}[c]{0.6\textwidth}
-\textbf{Matrix:} J goes into the first cell as I/J. The I in ``JUPITER'' is a repeat of that cell, so it is skipped. Then come U P T E R and the rest of the alphabet.
-
-\textbf{Digrams:} \ttx{meetmeinfiji} $\to$ swap J: \ttx{meetmeinfi\underline{i}i}
-\begin{itemize}
-  \item \ttx{me et}: the \ttx{ee} is split across two pairs, so \textbf{no filler}.
-  \item \ttx{fi}, then \ttx{ii} (was \ttx{ji}) is a double: \ttx{ix}, then the last \ttx{i} is alone: \ttx{ix}.
-\end{itemize}
-\ttx{me et me in fi ix ix}
-\end{minipage}
-
-\begin{center}\small
-\begin{tabular}{@{}llll|llll@{}}
-\toprule
-Pair & Case & & Out & Pair & Case & & Out\\
-\midrule
-me & rectangle & & SI & fi & column & F$\to$M, I$\to$R & MR\\
-et & row & E wraps to I & IE & ix & rectangle & I$\to$P, X$\to$V & PV\\
-me & rectangle & & SI & ix & rectangle & & PV\\
-in & rectangle & I$\to$U, N$\to$M & UM & & & &\\
-\bottomrule
-\end{tabular}
-\end{center}
-Ciphertext: \textbf{\ttx{SIIESIUMMRPVPV}}.\quad
-Decrypting gives \ttx{me et me in fi ix ix}. Drop the fillers to get ``meet me in fiii''; context says \textbf{meet me in fiji}.
-
-\subsection{Decryption}
-\begin{keybox}[title=Reverse the rules]
-Same row $\Rightarrow$ move \textbf{left}.\quad Same column $\Rightarrow$ move \textbf{up}.\quad Rectangle $\Rightarrow$ \textbf{same} rule as encryption. Then drop the filler \ttx{x}'s.
-\end{keybox}
-
-\textbf{Homework:} decrypt \ttx{ODZFQSEZSONTSW} with keyword ``Neso App''.
-
-\begin{minipage}[c]{0.36\textwidth}
-\centering
-\begin{tikzpicture}[x=6.5mm,y=6.5mm]
-  \foreach \c in {1,...,5}{\pfcell{\c}{1}{yellow!35}}
-  \pfcell{1}{2}{yellow!35}
-  \pfletters{\NESOAPP}
-\end{tikzpicture}\\[2pt]
-{\footnotesize Keyword letters: N E S O A P}
-\end{minipage}\hfill
-\begin{minipage}[c]{0.6\textwidth}
-\small
-\begin{tabular}{@{}lll@{}}
-\toprule
-Pair & Case & Plain\\
-\midrule
-OD & column (up; O wraps to bottom) & yo\\
-ZF & column (up) & ua\\
-QS & rectangle & re\\
-EZ & rectangle & aw\\
-SO & row (left) & es\\
-NT & rectangle & om\\
-SW & rectangle & ex\\
-\bottomrule
-\end{tabular}
-\end{minipage}
-
-\medskip
-\ttx{yo ua re aw es om ex} $\to$ drop the filler $\to$ \textbf{you are awesome}.
-
-\begin{examtip}
-\begin{itemize}
-  \item Monoalphabetic key space is $26!$; Caesar's is 25. A bigger key space still falls to \textbf{frequency analysis}.
-  \item Know E and T are the most frequent English letters; know what homophones are for.
-  \item Playfair: inventor \textbf{Wheatstone} (1854), promoter \textbf{Lord Playfair}. It is a \textbf{digram} (multiple-letter) cipher.
-  \item Matrix: keyword without repeats, then the rest of the alphabet, I/J in one cell. Always draw it.
-  \item Fix digrams \emph{before} encrypting: split doubled letters with \ttx{x}, pad an odd length with \ttx{x}.
-  \item Row $\to$ right, column $\to$ down (with wrap), rectangle $\to$ own row, other's column. Decrypt: left, up, rectangle unchanged.
-\end{itemize}
-\end{examtip}
-
-\begin{fixbox}
-\begin{itemize}
-  \item \textbf{Frequency example:} Gemini's copy of the ciphertext has an extra \ttx{Z}. The correct text (above) has 120 letters, with \ttx{P} 16 times and \ttx{Z} 14 times (the notes said 131 letters, \ttx{P} 18 times). In the notes, the step ``\ttx{S} = h, \ttx{ZSZ} = that'' is wrong: \ttx{W} = h (from \ttx{ZWP} = the) and \ttx{S} = a.
-  \item \textbf{Short frequency example} (``\ttx{GZGEWVGRNCP}'' $\to$ ``we execute plan'') is left out. The letters in the notes don't produce that sentence (11 letters vs.\ 13, and the given mapping yields ``ewexcteplan''). Check the video at 11:08 if you need it.
-  \item Neso App homework: \ttx{F}$\to$\ttx{A} is not a wrap (F is in row 2). Only \ttx{O}$\to$\ttx{Y} wraps.
-  \item Video 3 (about 08:00): the speaker says ``W'' / ``MW'' but means \ttx{O} / \ttx{mo}. The slide is right: \ttx{mo}$\to$\ttx{ON}.
-  \item Not covered in the video: if the filler itself would double (e.g.\ \ttx{xx}), a different filler such as \ttx{q} or \ttx{z} is normally used.
-\end{itemize}
-\end{fixbox}
+%%PLAYFAIR%%

@@ -1,69 +1,203 @@
-% Videos: modular arithmetic parts 1-2; college Lecture 4 (residues, inverses, Diophantine)
+% College Lecture 2 (integer division) + Lecture 4 (modular arithmetic, inverses, Z_n, Z_n^*), Neso videos on modular
+% arithmetic (notes7.md), Forouzan ch. 2 (2.1, 2.2, 2.4 linear congruences). Every number recomputed by script (scratchpad/r4/verify.py).
 \section{Modular Arithmetic}\label{sec:modular}
 
-\begin{keybox}[title=Definitions]
-\vspace{-6pt}
-\[
-a \equiv b \pmod m \iff m \mid (a - b) \iff a = km + b \text{ for some } k \in \mathbb{Z}
-\]
-The operator $a \bmod m$ always returns the \textbf{least non-negative residue} $0 \le r < m$. \textbf{Residue class} $[a]_m$: all integers $\equiv a \pmod m$. $\mathbb{Z}_n = \{0, \dots, n-1\}$; $\mathbb{Z}_n^* = \{a \in \mathbb{Z}_n : \gcd(a,n) = 1\}$; for a prime $p$, $\mathbb{Z}_p^* = \{1, \dots, p-1\}$.
-\end{keybox}
+Modular arithmetic is integer arithmetic in which only the remainder after division by a fixed positive integer $n$ is kept, so that counting wraps around to 0 after reaching $n - 1$. Cryptography needs it for two reasons. First, a cipher must map a finite alphabet onto itself: shifting Y by 3 has to land on a letter again, which is achieved by wrapping around after 25. Second, public-key systems compute with numbers that are hundreds of digits long, and modular arithmetic keeps every intermediate result below the modulus however many operations are performed. This section builds the arithmetic from the division algorithm and ends with the two questions that recur in every later chapter: when can we divide modulo $n$, and how do we solve $ax \equiv b \pmod n$.
 
-\textbf{Negative numbers}: $-255 = (-23)(11) + (-2)$ has $r < 0$; fix it by $q \to q - 1$, $r \to r + n$: $-255 = (-24)(11) + 9$, so $-255 \bmod 11 = 9$.
+\subsection{Integer division and residues}
+The set of integers $\mathbb{Z} = \{\dots, -2, -1, 0, 1, 2, \dots\}$ is closed under the three binary operations cryptography uses (addition, subtraction and multiplication) but not under division, since $7/2$ is not an integer. Integer division therefore has two outputs instead of one. \imp{For any integer $a$ and any positive integer $n$ there are unique integers $q$ (the quotient) and $r$ (the remainder) with $a = q \times n + r$ and $0 \le r < n$.} This statement is the \textbf{division algorithm}. For $a = 255$ and $n = 11$ it gives $255 = 23 \times 11 + 2$, so $q = 23$ and $r = 2$.
 
+The pair $(q, r)$ is unique because of the condition $0 \le r < n$: if $a = qn + r = q'n + r'$, then $r - r' = (q' - q)n$ is a multiple of $n$ lying strictly between $-n$ and $n$, so it is 0. Geometrically, $qn$ is the largest multiple of $n$ that does not exceed $a$, and $r$ is the distance from that multiple up to $a$. The picture settles the case of a negative $a$ as well: the largest multiple of $n$ not exceeding $a$ then lies to the \emph{left} of $a$, further from zero, so $r$ is still non-negative.
+\begin{center}
+\begin{tikzpicture}[x=10mm,y=1mm,font=\footnotesize]
+  % positive a
+  \draw[-{Stealth[length=2mm]}] (-0.4,0) -- (8.7,0);
+  \foreach \x/\l in {0/0,1.2/11,2.4/22,6/253,8.2/264}{\draw (\x,1.5) -- (\x,-1.5) node[below]{\l};}
+  \node at (4.2,-4) {$\cdots$};
+  \fill[acc] (6.4,0) circle (0.6mm) node[above=0.5mm,acc]{$a = 255$};
+  \draw[{Stealth[length=1.2mm]}-{Stealth[length=1.2mm]},good,thick] (6,-9) -- node[below]{$r = 2$} (6.4,-9);
+  \node[anchor=west,gray] at (8.9,0) {$a \ge 0$: $255 = 23 \times 11 + 2$};
+  % negative a
+  \begin{scope}[yshift=-27mm]
+  \draw[-{Stealth[length=2mm]}] (-0.4,0) -- (8.7,0);
+  \foreach \x/\l in {0/$-264$,2.2/$-253$,5.8/$-22$,7/$-11$,8.2/0}{\draw (\x,1.5) -- (\x,-1.5) node[below]{\l};}
+  \node at (4,-4) {$\cdots$};
+  \fill[acc] (1.8,0) circle (0.6mm) node[above=0.5mm,acc]{$a = -255$};
+  \draw[{Stealth[length=1.2mm]}-{Stealth[length=1.2mm]},good,thick] (0,-9) -- node[below]{$r = 9$} (1.8,-9);
+  \draw[{Stealth[length=1.2mm]}-,warn,dashed] (1.8,-9) -- (2.2,-9) node[right,warn]{truncated: $-2$};
+  \node[anchor=west,gray] at (8.9,0) {$a < 0$: $-255 = (-24) \times 11 + 9$};
+  \end{scope}
+\end{tikzpicture}
+\end{center}
+
+\textbf{Negative dividends.} C, Java and most calculators divide by truncating towards zero, which for a negative $a$ returns a negative quotient and a negative remainder: $-255 = (-23) \times 11 + (-2)$. Such an $r$ violates $0 \le r < n$. The fix on the slide is to decrement $q$ by 1 and add $n$ to $r$, which leaves the right-hand side unchanged because $(q - 1)n + (r + n) = qn + r$: $-255 = (-24) \times 11 + 9$, so the remainder is 9. In practice the rule is: \textbf{if the remainder comes out negative, add the modulus}. (Python's \ttx{\%} already does this: \ttx{-255 \% 11} is 9.)
+
+\textbf{The modulo operator.} Modular arithmetic keeps only the second output of the division algorithm. \imp{$a \bmod n$ is the remainder $r$ of dividing $a$ by $n$; $n$ is called the modulus and $r$ the residue.} The residue always lies in the \textbf{set of least residues modulo $n$}, $\mathbb{Z}_n = \{0, 1, 2, \dots, n-1\}$; for example $\mathbb{Z}_2 = \{0, 1\}$, $\mathbb{Z}_6 = \{0, 1, \dots, 5\}$ and $\mathbb{Z}_{11} = \{0, 1, \dots, 10\}$. The slide examples are $27 \bmod 5 = 2$, $36 \bmod 12 = 0$, $-18 \bmod 14 = 10$ (truncated remainder $-4$, plus 14) and $-7 \bmod 10 = 3$ (truncated remainder $-7$, plus 10). A 12-hour clock is arithmetic modulo 12 that writes 12 in place of 0: 15:00 shows 3 because $15 \bmod 12 = 3$, and 23:00 shows 11.
+
+\textbf{Divisibility.} When the remainder is zero, $a = q \times n$ and we say that $n$ \emph{divides} $a$, written $n \mid a$; otherwise $n \nmid a$. Thus $4 \mid 32$ because $32 = 8 \times 4$, while $8 \nmid 42$ because $42 = 5 \times 8 + 2$. The properties of divisibility and the greatest common divisor are developed in \S\ref{sec:gcd}.
+
+\subsection{Congruence and residue classes}
+The mod operator sends infinitely many integers to the same residue: 2, 12, 22 and $-8$ all leave remainder 2 on division by 10. In cryptography it is this common remainder that matters, not the particular integer, so we need a relation that says ``same remainder'' without reducing anything. \imp{Two integers are congruent modulo $n$, written $a \equiv b \pmod n$, if $n \mid (a - b)$.} Equivalently, $a = kn + b$ for some integer $k$, or $a \bmod n = b \bmod n$. The slides and videos use the congruence sign $\equiv$ instead of $=$ for exactly this reason.
+
+The last equivalence is what makes the definition useful, and it follows from the division algorithm. Write $a = q_1 n + r_1$ and $b = q_2 n + r_2$ with $0 \le r_1, r_2 < n$. Then $a - b = (q_1 - q_2)n + (r_1 - r_2)$, and since $|r_1 - r_2| < n$, the difference is a multiple of $n$ exactly when $r_1 = r_2$. As a result the fastest validity test for a congruence is to subtract and check divisibility; neither side has to be reduced.
+
+Congruence must be read differently from both equality and the operator. $10 \equiv -2 \pmod{12}$ is true although $10 \ne -2$, and $38 \equiv 14 \pmod{12}$ is true although $38 \bmod 12 = 2$, not 14. The operator ``$\bmod$'' returns one specific number in $\mathbb{Z}_n$, while ``$\equiv \dots \pmod n$'' states that two integers lie in the same class and allows any representative on either side. The eight statements from the lecture video:
 \begin{center}\small
 \begin{tabular}{@{}llll@{}}
 \toprule
-Statement & $a - b$ & Divisible by $m$? & \\
+Statement & $a - b$ & Divisible by $m$? & Verdict\\
 \midrule
+$38 \equiv 2 \pmod{12}$ & 36 & yes & \textbf{valid} (and $38 \bmod 12 = 2$)\\
 $38 \equiv 14 \pmod{12}$ & 24 & yes & \textbf{valid} (but $38 \bmod 12 = 2$, not 14)\\
+$5 \equiv 0 \pmod 5$ & 5 & yes & \textbf{valid}\\
 $10 \equiv 2 \pmod 6$ & 8 & no & \textbf{invalid}\\
 $13 \equiv 3 \pmod{13}$ & 10 & no & \textbf{invalid}\\
+$2 \equiv -3 \pmod 5$ & 5 & yes & \textbf{valid}\\
 $-8 \equiv 7 \pmod 5$ & $-15$ & yes & \textbf{valid}\\
 $-3 \equiv -8 \pmod 5$ & 5 & yes & \textbf{valid}\\
 \bottomrule
 \end{tabular}
 \end{center}
 
-\subsection{Reduce first}
-\begin{keybox}
-\vspace{-6pt}
+\textbf{Congruence is an equivalence relation.} It is reflexive ($a \equiv a$, since $n \mid 0$), symmetric (if $n \mid a - b$ then $n \mid b - a$) and transitive (if $n \mid a - b$ and $n \mid b - c$, then $n$ divides their sum $a - c$). Any equivalence relation splits its set into disjoint classes of mutually related elements. \imp{The residue class $[a]_n$ is the set of all integers congruent to $a$ modulo $n$}, that is, $[a]_n = \{\dots, a - 2n, a - n, a, a + n, a + 2n, \dots\}$. Modulo $n$ there are exactly $n$ classes, one for each possible remainder. For $n = 5$:
 \[
-(a \pm b) \bmod n = [(a \bmod n) \pm (b \bmod n)] \bmod n \qquad (a b) \bmod n = [(a \bmod n)(b \bmod n)] \bmod n
+\begin{aligned}
+[0] &= \{\dots, -15, -10, -5, 0, 5, 10, 15, \dots\} & [1] &= \{\dots, -14, -9, -4, 1, 6, 11, 16, \dots\} & [2] &= \{\dots, -13, -8, -3, 2, 7, 12, 17, \dots\}\\
+[3] &= \{\dots, -12, -7, -2, 3, 8, 13, 18, \dots\} & [4] &= \{\dots, -11, -6, -1, 4, 9, 14, 19, \dots\}
+\end{aligned}
 \]
-There is \textbf{no division rule}: dividing by $a$ means multiplying by $a^{-1}$, which exists only if $\gcd(a, n) = 1$.
-\end{keybox}
-E.g.\ $(123 \times 456) \bmod 7 = (4 \times 1) \bmod 7 = 4$; \; $3^{100} \bmod 10 = (3^4)^{25} \bmod 10 = 1$.
+$\mathbb{Z}_n$ is obtained by choosing the smallest non-negative member of each class, which is why its elements are called the \emph{least residues}. Any member of a class can stand in for any other inside a congruence, so $-8 \equiv 2 \equiv 12 \equiv 22 \pmod{10}$ all describe the single element 2 of $\mathbb{Z}_{10}$. The slides draw $\mathbb{Z}$ as a line and $\mathbb{Z}_n$ as a circle of $n$ points: moving $n$ steps along the line brings you back to the same point of the circle.
 
-\subsection{Properties of $\mathbb{Z}_n$ and inverses \hot}
-$+$ and $\times$ are commutative, associative, distributive; identities 0 and 1. Subtraction is not commutative.
-\begin{itemize}
-  \item \textbf{Additive inverse}: $b = n - a$ (every element has one). Pairs in $\mathbb{Z}_{10}$: (0,0), (1,9), (2,8), (3,7), (4,6), (5,5).
-  \item \textbf{Multiplicative inverse}: $a \cdot a^{-1} \equiv 1 \pmod n$, \textbf{exists iff $\gcd(a, n) = 1$}. Found with the extended Euclidean algorithm (Section~\ref{sec:exteuclid}). $8^{-1}$ in $\mathbb{Z}_{10}$: none. $11^{-1} \bmod 26 = 19$; $23^{-1} \bmod 100 = 87$; $12^{-1} \bmod 26$: none ($\gcd = 2$).
+\subsection{Operations in \texorpdfstring{$\mathbb{Z}_n$}{Zn}: why reducing first is allowed}
+Addition, subtraction and multiplication in $\mathbb{Z}_n$ are defined by computing in $\mathbb{Z}$ and mapping the result back with $\bmod\ n$. The slide examples: adding 7 to 14 in $\mathbb{Z}_{15}$ gives $21 \bmod 15 = 6$; subtracting 11 from 7 in $\mathbb{Z}_{13}$ gives $-4 \bmod 13 = 9$; multiplying 11 by 7 in $\mathbb{Z}_{20}$ gives $77 \bmod 20 = 17$. The difficulty is size. The product $1{,}723{,}345 \times 2{,}124{,}945$ already has 13 digits; in RSA the operands have over 300 digits, and a power such as $C^d$ computed in full would have more digits than there are atoms in the universe. We must reduce the operands \emph{before} operating, and that needs a proof that the result does not change.
+
+\textbf{Derivation.} Write $a = q_1 n + r_1$ and $b = q_2 n + r_2$, where $r_1 = a \bmod n$ and $r_2 = b \bmod n$. Then
+\[
+a \pm b = (q_1 \pm q_2)\,n + (r_1 \pm r_2), \qquad
+a \times b = (q_1 q_2 n + q_1 r_2 + q_2 r_1)\,n + r_1 r_2 .
+\]
+In each case the result differs from $r_1 \pm r_2$ (respectively $r_1 r_2$) by a multiple of $n$, so both have the same remainder. This proves the three properties on the slides:
+\[
+(a + b) \bmod n = [(a \bmod n) + (b \bmod n)] \bmod n, \qquad
+(a - b) \bmod n = [(a \bmod n) - (b \bmod n)] \bmod n,
+\]
+\[
+(a \times b) \bmod n = [(a \bmod n) \times (b \bmod n)] \bmod n .
+\]
+More generally, if $a \equiv a'$ and $b \equiv b' \pmod n$, then $a \pm b \equiv a' \pm b'$ and $ab \equiv a'b'$: congruence is compatible with $+$, $-$ and $\times$, so any operand may be replaced by any member of its residue class, including a negative one when that is smaller. Applying the product rule $k - 1$ times gives $a^k \equiv (a \bmod n)^k \pmod n$, which is the starting point of modular exponentiation (\S\ref{sec:modexp}).
+
+The slides apply the properties with $a = 1{,}723{,}345 \equiv 8$ and $b = 2{,}124{,}945 \equiv 9 \pmod{11}$: $(a + b) \bmod 11 = (8 + 9) \bmod 11 = 6$, $(a - b) \bmod 11 = (8 - 9) \bmod 11 = 10$, and $(a \times b) \bmod 11 = (8 \times 9) \bmod 11 = 6$. Inputs taken from $\mathbb{Z}$ rather than $\mathbb{Z}_n$ are handled the same way: $(17 + 27) \bmod 14 = 2$, $(12 - 43) \bmod 13 = 8$ and $(123 \times (-10)) \bmod 19 = 5$. Two more: $(123 \times 456) \bmod 7 = (4 \times 1) \bmod 7 = 4$, and $3^{100} \bmod 10 = (3^4)^{25} \bmod 10 = 1$ because $3^4 = 81 \equiv 1$.
+
+\textbf{Powers of 10.} Applying the third property $k$ times gives $10^k \bmod x = (10 \bmod x)^k \bmod x$. Since $10 \equiv 1$ modulo 3 and modulo 9, every power of 10 is $\equiv 1$, so a number $\sum d_i 10^i$ is congruent to its digit sum $\sum d_i$ modulo 9 (and modulo 3); the school divisibility test is a consequence. Modulo 7, $10 \equiv 3$, so $10^k \equiv 3^k \pmod 7$.
+
+\textbf{There is no division rule.} Cancelling a common factor is not allowed in general: $6 \equiv 16 \pmod{10}$, but halving both sides gives $3 \not\equiv 8 \pmod{10}$. In modular arithmetic ``dividing by $a$'' means multiplying by an inverse of $a$, and the next subsection shows that such an inverse exists only under a condition.
+
+\textbf{Properties of $\mathbb{Z}_n$.} Addition and multiplication modulo $n$ inherit from $\mathbb{Z}$ the commutative laws, the associative laws and the distributive law $a \times (b + c) \equiv a \times b + a \times c$, with identity 0 for addition and 1 for multiplication. Subtraction is neither commutative nor associative ($5 - 3 \ne 3 - 5$). In the language of \S\ref{sec:algebra}, $\langle \mathbb{Z}_n, +, \times \rangle$ is a commutative ring.
+
+\subsection{Additive and multiplicative inverses \hot}
+\likely{``Find all additive / multiplicative inverse pairs in $\mathbb{Z}_n$'' or ``why has 8 no inverse in $\mathbb{Z}_{10}$?'' (2--3 marks); an inverse is also one step of every Hill, affine and RSA numerical.}
+Encryption must be undone, and in modular arithmetic undoing an addition or a multiplication means applying an inverse. \imp{In $\mathbb{Z}_n$, $b$ is the additive inverse of $a$ if $a + b \equiv 0 \pmod n$, and the multiplicative inverse of $a$ if $a \times b \equiv 1 \pmod n$.} The multiplicative inverse is written $a^{-1}$.
+
+\textbf{Additive inverses always exist.} The additive inverse of $a$ in $\mathbb{Z}_n$ is $n - a$ (and 0 is its own), because $a + (n - a) = n \equiv 0$. It is unique in $\mathbb{Z}_n$, and it is what defines subtraction: $a - b \equiv a + (n - b)$. The six pairs in $\mathbb{Z}_{10}$ are $(0, 0)$, $(1, 9)$, $(2, 8)$, $(3, 7)$, $(4, 6)$ and $(5, 5)$. The shift cipher is the standard application: encryption adds the key $k$ modulo 26, so decryption adds its additive inverse $26 - k$, and Caesar's key 3 is undone by adding 23.
+
+\textbf{Multiplicative inverses may not exist.} In $\mathbb{Z}_{10}$ there are only three pairs, $(1, 1)$, $(3, 7)$ and $(9, 9)$, since $3 \times 7 = 21 \equiv 1$ and $9 \times 9 = 81 \equiv 1$; the elements 0, 2, 4, 5, 6 and 8 have no inverse. The multiplication table of $\mathbb{Z}_{10}$ (from the slides) shows why. A row contains a 1 only when its element is co-prime to 10. The row of 8 contains only even numbers, because $8x - 10k$ is even for all integers $x$ and $k$, so $8x$ can never be congruent to 1. The same row also repeats values ($8 \times 1 \equiv 8 \times 6 \equiv 8$), so multiplication by 8 destroys information and cannot be undone; this is precisely why the key of a multiplicative or affine cipher must be co-prime to 26.
+\begin{center}\small\setlength{\tabcolsep}{4.5pt}
+\begin{tabular}{@{}c|cccccccccc@{}}
+$\times$ & 0&1&2&3&4&5&6&7&8&9\\
+\midrule
+0 & 0&0&0&0&0&0&0&0&0&0\\
+1 & 0&\hl{1}&2&3&4&5&6&7&8&9\\
+2 & 0&2&4&6&8&0&2&4&6&8\\
+3 & 0&3&6&9&2&5&8&\hl{1}&4&7\\
+4 & 0&4&8&2&6&0&4&8&2&6\\
+5 & 0&5&0&5&0&5&0&5&0&5\\
+6 & 0&6&2&8&4&0&6&2&8&4\\
+7 & 0&7&4&\hl{1}&8&5&2&9&6&3\\
+8 & 0&8&6&4&2&0&8&6&4&2\\
+9 & 0&9&8&7&6&5&4&3&2&\hl{1}\\
+\end{tabular}\\[2pt]
+{\footnotesize Multiplication table of $\mathbb{Z}_{10}$: only the rows of 1, 3, 7, 9 (co-prime to 10) contain a 1.}
+\end{center}
+
+\textbf{Theorem.} \imp{$a$ has a multiplicative inverse modulo $n$ if and only if $\gcd(a, n) = 1$; the inverse is then unique in $\mathbb{Z}_n$.} The proof has three short parts.
+\begin{itemize}[leftmargin=1.5em]
+  \item \emph{Only if.} Suppose $ab \equiv 1 \pmod n$, that is, $ab - kn = 1$ for some integer $k$. Any common divisor of $a$ and $n$ divides the left-hand side, hence divides 1, so $\gcd(a, n) = 1$.
+  \item \emph{If.} Suppose $\gcd(a, n) = 1$. Bézout's identity, which the extended Euclidean algorithm makes constructive (\S\ref{sec:exteuclid}), gives integers $s$ and $t$ with $s \times n + t \times a = 1$. Reducing modulo $n$ removes the first term, so $t \times a \equiv 1 \pmod n$ and $a^{-1} = t \bmod n$.
+  \item \emph{Uniqueness.} If $b$ and $b'$ are both inverses of $a$, then $b \equiv b(ab') = (ba)b' \equiv b'$.
 \end{itemize}
+Hence $8^{-1}$ does not exist in $\mathbb{Z}_{10}$ ($\gcd(10, 8) = 2$) and $12^{-1}$ does not exist modulo 26 ($\gcd(26, 12) = 2$), while $11^{-1} \bmod 26 = 19$ ($11 \times 19 = 209 = 8 \times 26 + 1$) and $23^{-1} \bmod 100 = 87$ ($23 \times 87 = 2001$); both are computed with the table in \S\ref{sec:exteuclid}. For a prime modulus every non-zero element is co-prime to it and therefore invertible: in $\mathbb{Z}_{11}$ the pairs are $(1, 1)$, $(2, 6)$, $(3, 4)$, $(5, 9)$, $(7, 8)$ and $(10, 10)$. In $\mathbb{Z}_8$ the invertible elements are the odd ones, and each is its own inverse:
 \begin{center}\small\setlength{\tabcolsep}{6pt}
 \begin{tabular}{@{}l*{8}{c}@{}}
 \toprule
 $a$ in $\mathbb{Z}_8$ & 0&1&2&3&4&5&6&7\\
-$-a$ & 0&7&6&5&4&3&2&1\\
-$a^{-1}$ & --&1&--&3&--&5&--&7\\
+$-a$ (additive inverse) & 0&7&6&5&4&3&2&1\\
+$a^{-1}$ (multiplicative inverse) & --&1&--&3&--&5&--&7\\
 \bottomrule
 \end{tabular}
 \end{center}
-Caesar decryption $=$ adding the additive inverse of the key; Hill decryption needs $(\det K)^{-1} \bmod 26$, so $\gcd(\det K, 26) = 1$.
+The same condition reappears throughout the course. Hill decryption needs $(\det K)^{-1} \bmod 26$, so a valid key matrix has $\gcd(\det K, 26) = 1$; RSA needs $d = e^{-1} \bmod \phi(n)$, so $e$ is chosen with $\gcd(e, \phi(n)) = 1$.
 
-\subsection{Linear congruences $ax \equiv b \pmod n$}
-Let $d = \gcd(a, n)$. If $d \nmid b$: \textbf{no solution}. If $d \mid b$: \textbf{exactly $d$ solutions}. Divide through by $d$, solve $x_0 = (b/d)(a/d)^{-1} \bmod (n/d)$; the solutions are $x_0 + k(n/d)$, $k = 0, \dots, d-1$.
-\begin{itemize}
-  \item $10x \equiv 2 \pmod{15}$: $d = 5 \nmid 2$ $\Rightarrow$ no solution.
-  \item $14x \equiv 12 \pmod{18}$: $d = 2$; $7x \equiv 6 \pmod 9$, $7^{-1} = 4$, $x_0 = 24 \bmod 9 = 6$; solutions \textbf{6, 15}.
-  \item $3x + 4 \equiv 6 \pmod{13}$: $3x \equiv 2$, $3^{-1} = 9$, $x = 18 \bmod 13 = \mathbf{5}$.
-\end{itemize}
+\begin{mustknow}
+$a \equiv b \pmod n \iff n \mid (a - b)$. The operands of $+$, $-$, $\times$ may be reduced at any time; there is no division, only multiplication by an inverse.
+\[
+\text{additive inverse: } n - a \ \ (\text{always exists}), \qquad
+a^{-1} \bmod n \text{ exists} \iff \gcd(a, n) = 1 .
+\]
+\end{mustknow}
 
-\begin{examtip}
-\begin{itemize}
-  \item $a \equiv b \pmod m \iff m \mid (a - b)$: fastest validity test.
-  \item ``$\equiv \pmod m$'' allows any representative; ``$\bmod$'' gives only $0..m-1$.
-  \item $a^{-1} \bmod n$ exists only when $\gcd(a, n) = 1$; a linear congruence has $\gcd(a,n)$ solutions or none.
+\subsection{The sets \texorpdfstring{$\mathbb{Z}_n$, $\mathbb{Z}_n^*$, $\mathbb{Z}_p$ and $\mathbb{Z}_p^*$}{Zn, Zn*, Zp, Zp*}}
+Since multiplicative inverses exist only for residues co-prime to $n$, cryptography works with two sets. $\mathbb{Z}_n = \{0, 1, \dots, n-1\}$ contains every residue; addition and subtraction never leave it, and every element has an additive inverse. $\mathbb{Z}_n^* = \{a \in \mathbb{Z}_n : \gcd(a, n) = 1\}$ contains exactly the residues that have multiplicative inverses. It is closed under multiplication, because a product of two numbers co-prime to $n$ is again co-prime to $n$, so multiplication and division never leave it. The slide examples are $\mathbb{Z}_6^* = \{1, 5\}$, $\mathbb{Z}_7^* = \{1, 2, 3, 4, 5, 6\}$ and $\mathbb{Z}_{10}^* = \{1, 3, 7, 9\}$, and the rule they state is: \imp{use $\mathbb{Z}_n$ when additive inverses are needed and $\mathbb{Z}_n^*$ when multiplicative inverses are needed.}
+
+When the modulus is a prime $p$, every non-zero residue is co-prime to $p$, so $\mathbb{Z}_p^* = \{1, 2, \dots, p-1\}$ is $\mathbb{Z}_p$ without 0; for example $\mathbb{Z}_{13} = \{0, 1, \dots, 12\}$ and $\mathbb{Z}_{13}^* = \{1, 2, \dots, 12\}$. In $\mathbb{Z}_p$ one can add, subtract, multiply and divide by any non-zero element, which makes it the field GF$(p)$ (\S\ref{sec:algebra}); this is why Diffie--Hellman, ElGamal and elliptic-curve cryptography use a prime modulus. The number of elements of $\mathbb{Z}_n^*$ is Euler's totient $\phi(n)$ (\S\ref{sec:totient}).
+
+\subsection{Linear congruences \texorpdfstring{$ax \equiv b \pmod n$}{ax = b (mod n)}}
+\textbf{Problem.} Several cryptanalytic steps reduce to solving $ax \equiv b \pmod n$ for $x$, for example recovering an affine-cipher key from a known plaintext--ciphertext pair or solving the equations of a known-plaintext attack on the Hill cipher. Over the rationals the answer would be $x = b/a$; modulo $n$, division by $a$ is possible only when $a$ is invertible, so solvability depends on $d = \gcd(a, n)$.
+
+\textbf{Case $d = 1$.} Multiplying both sides by $a^{-1}$ gives the unique solution $x \equiv b \times a^{-1} \pmod n$. Forouzan's example is $3x + 4 \equiv 6 \pmod{13}$. Adding $-4$ (the additive inverse of 4) to both sides gives $3x \equiv 2$; since $\gcd(3, 13) = 1$ and $3^{-1} = 9$ ($3 \times 9 = 27 \equiv 1$), $x \equiv 2 \times 9 = 18 \equiv \mathbf{5} \pmod{13}$. Check: $3 \times 5 + 4 = 19 \equiv 6$.
+
+\textbf{General case: derivation.} The congruence says $ax - b = kn$ for some integer $k$, that is, $b = ax - kn$. Since $d$ divides both $a$ and $n$, it divides the right-hand side, so \textbf{if $d \nmid b$ there is no solution}. If $d \mid b$, write $a = da'$, $b = db'$ and $n = dn'$. Dividing $ax - b = kn$ by $d$ shows that $ax \equiv b \pmod n$ is equivalent to $a'x \equiv b' \pmod{n'}$, and now $\gcd(a', n') = 1$, because dividing two numbers by their gcd leaves co-prime numbers. The reduced congruence therefore has the unique solution $x_0 = b' \times (a')^{-1} \bmod n'$, and the solutions in $\mathbb{Z}$ are all $x \equiv x_0 \pmod{n'}$. Inside $\mathbb{Z}_n$ these are
+\[
+x = x_0,\quad x_0 + \tfrac{n}{d},\quad x_0 + 2\tfrac{n}{d},\quad \dots,\quad x_0 + (d-1)\tfrac{n}{d},
+\]
+since the next candidate, $x_0 + d \cdot \frac{n}{d} = x_0 + n$, wraps around to $x_0$. So \textbf{if $d \mid b$ there are exactly $d$ solutions modulo $n$}. Forouzan states the procedure as three steps: divide the whole congruence, modulus included, by $d$; multiply by the inverse of $a/d$ modulo $n/d$ to get $x_0$; add multiples of $n/d$.
+
+For $10x \equiv 2 \pmod{15}$, $d = \gcd(10, 15) = 5$ and $5 \nmid 2$, so there is no solution: every value of $10x - 15k$ is a multiple of 5. For $14x \equiv 12 \pmod{18}$, $d = 2$ divides 12, so there are two solutions. The reduced congruence is $7x \equiv 6 \pmod 9$; $7^{-1} \bmod 9 = 4$ ($28 \equiv 1$), so $x_0 = 6 \times 4 = 24 \bmod 9 = 6$, and the solutions are $\mathbf{6}$ and $6 + 9 = \mathbf{15}$. Check: $14 \times 6 = 84 = 4 \times 18 + 12$ and $14 \times 15 = 210 = 11 \times 18 + 12$.
+
+\begin{worked}[: linear congruence (Forouzan style)]
+\textbf{Q.} Find all solutions in $\mathbb{Z}_{21}$ of (a) $15x \equiv 9 \pmod{21}$ \quad (b) $15x \equiv 10 \pmod{21}$.
+
+\textbf{A.} (a) $d = \gcd(15, 21)$: $21 = 1 \times 15 + 6$, $15 = 2 \times 6 + 3$, $6 = 2 \times 3 + 0$, so $d = 3$. Since $3 \mid 9$, there are exactly 3 solutions.
+Divide everything by 3: $5x \equiv 3 \pmod 7$. Since $5 \times 3 = 15 = 2 \times 7 + 1$, $5^{-1} \bmod 7 = 3$, and $x_0 = 3 \times 3 = 9 \bmod 7 = 2$. Add multiples of $n/d = 7$:
+\begin{center}\small
+\begin{tabular}{@{}cll@{}}
+\toprule
+$x$ & $15x$ & $15x \bmod 21$\\
+\midrule
+$x_0 = 2$ & $30 = 1 \times 21 + 9$ & 9 \checkmark\\
+$2 + 7 = 9$ & $135 = 6 \times 21 + 9$ & 9 \checkmark\\
+$2 + 14 = 16$ & $240 = 11 \times 21 + 9$ & 9 \checkmark\\
+\bottomrule
+\end{tabular}
+\end{center}
+\textbf{Answer: $x \in \{2, 9, 16\}$.}
+
+(b) Again $d = 3$, but $3 \nmid 10$. Every value of $15x - 21k$ is a multiple of 3 and so can never equal 10. \textbf{No solution.}
+\end{worked}
+
+\begin{trap}[: the usual slips]
+\begin{itemize}[leftmargin=1.5em]
+  \item Writing $38 \bmod 12 = 14$. The operator returns the least residue, 2; ``$38 \equiv 14 \pmod{12}$'' is a true congruence, not a value of the operator.
+  \item Leaving a negative remainder: $-18 \bmod 14 = 10$, not $-4$.
+  \item Dividing $a$ and $b$ by $d$ but not the modulus. From $14x \equiv 12 \pmod{18}$ the correct reduction is $7x \equiv 6 \pmod 9$, not $\pmod{18}$, and the answer then has $d = 2$ solutions modulo 18.
+  \item Quoting an inverse without checking $\gcd(a, n) = 1$ first. If the gcd is not 1, write ``no inverse exists'' and give the gcd as the reason.
 \end{itemize}
-\end{examtip}
+\end{trap}
+
+\begin{fixbox}
+\begin{itemize}
+  \item All numbers in this section were recomputed by script (residues, the eight congruences, the $\mathbb{Z}_n$ operations, the inverse tables and the three linear congruences).
+  \item Lecture 4, ``Find all multiplicative inverse pairs in $\mathbb{Z}_{11}$'': the slide says ``seven pairs'' but lists six, and \textbf{six is correct}: $(1, 1)$, $(2, 6)$, $(3, 4)$, $(5, 9)$, $(7, 8)$, $(10, 10)$. All 10 non-zero elements are invertible; 1 and 10 are their own inverses and the other 8 form 4 pairs.
+  \item Lecture 2 says ``when we use a computer or a calculator, $r$ and $q$ are negative when $a$ is negative''. That holds for truncating division (C, Java, most calculators); Python's \ttx{//} and \ttx{\%} already give $q = -24$, $r = 9$ for $-255$ and $11$.
+  \item The lecture video calls 14 and 25 ``remainders'' in $38 \equiv 14 \pmod{12}$ and $35 \equiv 25 \pmod{10}$. These are valid congruences, but the remainders are 2 and 5. The video also states the multiplicative inverse without its condition $\gcd(a, n) = 1$; the slides give it.
+\end{itemize}
+\end{fixbox}

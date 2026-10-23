@@ -53,7 +53,7 @@ A message digest guarantees \textbf{integrity}: if Alice sends $M$ and Bob recom
 \node[draw, dashed, fill=white, align=center, inner sep=2pt] (pkt) at (3.2,0.2) {$M$\\[-1pt]\colorbox{black}{\textcolor{white}{\scriptsize MAC}}};
 \draw[->] (m) -- (h); \draw[->] (h) -- (mac); \draw[->] (mac) -| (pkt); \draw[->] (m) -- (m -| pkt.west);
 \node[draw, dashed, fill=white, align=center, inner sep=2pt] (pkb) at (8.3,0.2) {$M$\\[-1pt]\colorbox{black}{\textcolor{white}{\scriptsize MAC}}};
-\draw[->] (pkt) -- (pkb); \node[above] at (5.7,0.2) {insecure channel: $M + \mathrm{MAC}$};
+\draw[->] (pkt) -- (pkb); \node[above, align=center, font=\footnotesize] at (5.7,0.2) {insecure channel\\$M + \mathrm{MAC}$};
 \node[dsgop] (hb) at (10.4,0.2) {Hash};
 \node (kb) at (10.4,0.95) {$K$}; \draw[->] (kb) -- (hb);
 \node[dsgdia] (cmp) at (12.6,-0.9) {Same?};
@@ -402,13 +402,13 @@ Of the four security services (message confidentiality, message authentication, 
 \begin{tikzpicture}[font=\small, >=Stealth]
 \foreach \x/\n in {0/Alice, 6.6/Trusted center, 13.2/Bob} {
   \node[draw, fill=acc!10, minimum width=2.6cm, minimum height=0.6cm] at (\x,0) {\textbf{\n}};
-  \draw[gray] (\x,-0.3) -- (\x,-5.0);
+  \draw[gray] (\x,-0.3) -- (\x,-5.7);
 }
-\node[draw, fill=white, font=\footnotesize, align=left] at (0,-0.85) {signs $M$ with her private key: $S_A$};
-\draw[->, thick] (0,-1.55) -- node[above]{1.\ $M$, $S_A$, ID$_{\text{Alice}}$, ID$_{\text{Bob}}$} (6.6,-1.55);
-\node[draw, fill=white, font=\footnotesize, align=left] at (6.6,-2.6) {checks Alice's public key is valid; verifies $S_A$;\\archives $M$, ID$_{\text{Alice}}$, ID$_{\text{Bob}}$ and a timestamp;\\signs $M$ with the center's private key: $S_T$};
-\draw[->, thick] (6.6,-3.65) -- node[above]{2.\ $M$, $S_T$, ID$_{\text{Alice}}$, ID$_{\text{Bob}}$} (13.2,-3.65);
-\node[draw, fill=white, font=\footnotesize, align=left] at (13.2,-4.45) {verifies $S_T$ with the\\center's public key};
+\node[draw, fill=white, font=\footnotesize, align=left] at (0,-0.85) {signs $M$ with her\\private key: $S_A$};
+\draw[->, thick] (0,-1.9) -- node[above]{1.\ $M$, $S_A$, ID$_{\text{Alice}}$, ID$_{\text{Bob}}$} (6.6,-1.9);
+\node[draw, fill=white, font=\footnotesize, align=left] at (6.6,-3.0) {checks Alice's public key is valid; verifies $S_A$;\\archives $M$, ID$_{\text{Alice}}$, ID$_{\text{Bob}}$ and a timestamp;\\signs $M$ with the center's private key: $S_T$};
+\draw[->, thick] (6.6,-4.4) -- node[above]{2.\ $M$, $S_T$, ID$_{\text{Alice}}$, ID$_{\text{Bob}}$} (13.2,-4.4);
+\node[draw, fill=white, font=\footnotesize, align=left] at (13.2,-5.1) {verifies $S_T$ with the\\center's public key};
 \end{tikzpicture}
 \end{center}
 \begin{enumerate}[leftmargin=1.6em]
@@ -470,4 +470,519 @@ Selective & a valid $S$ on a message she chose beforehand & Eve & low probabilit
 \end{center}
 Stallings adds two stronger outcomes: a \textbf{universal forgery} (Eve can sign \emph{any} message) and a \textbf{total break} (Eve recovers the private key). A scheme is considered secure only if even the weakest outcome, existential forgery, is infeasible under the strongest attack, the chosen-message attack.
 
-%%%PART3%%%
+\subsection{RSA digital signature scheme \hot\new}
+\likely{``Explain the RSA signature scheme with a diagram; sign and verify with small primes'' (5 marks), Forouzan style.}
+
+The RSA function $x \mapsto x^e \bmod n$ is a permutation of $\mathbb{Z}_n$ whose inverse $x \mapsto x^d$ only the key owner can compute (\S\ref{sec:rsa}). For encryption the public direction locks; for a signature the roles are swapped: Alice applies her \emph{private} exponent to the message, and anyone can undo it with her public exponent and compare.
+
+\begin{mustknow}[: RSA signature]
+\textbf{Key generation (Alice)}: primes $p, q$; $n = pq$; $\phi(n) = (p-1)(q-1)$; $e$ with $\gcd(e, \phi(n)) = 1$; $d = e^{-1} \bmod \phi(n)$. Public $(e, n)$, private $d$ (exactly as RSA).\\
+\textbf{Signing}: $S = M^d \bmod n$; send $(M, S)$. \qquad \textbf{Verifying}: $M' = S^e \bmod n$; accept if $M' \equiv M \pmod n$.\\
+On the digest: $S = h(M)^d \bmod n$, accept if $S^e \bmod n = h(M)$.
+\end{mustknow}
+
+\textbf{Proof that verification succeeds.} Since $ed = 1 + k\,\phi(n)$, $S^e \equiv (M^d)^e = M^{1 + k\phi(n)} = M \cdot (M^{\phi(n)})^k \equiv M \pmod n$, by Euler's theorem when $\gcd(M, n) = 1$ and by the CRT argument of \S\ref{sec:rsa} otherwise. So a correctly signed message always passes: $M' \equiv M \Rightarrow S^e \equiv M \Rightarrow M^{d \times e} \equiv M \pmod n$ (slide 33). Conversely, producing an $S$ with $S^e \equiv M$ for a \emph{given} $M$ means taking an $e$-th root modulo $n$, which requires $d$ (i.e.\ factoring $n$).
+
+\begin{center}
+\begin{tikzpicture}[font=\small, >=Stealth]
+\fill[gray!8] (0,-1.6) rectangle (4.6,1.0); \draw[dashed] (0,-1.6) rectangle (4.6,1.0);
+\fill[gray!8] (5.9,-1.6) rectangle (15.4,1.0); \draw[dashed] (5.9,-1.6) rectangle (15.4,1.0);
+\node[below] at (2.3,-1.6) {Signing (Alice)}; \node[below] at (10.65,-1.6) {Verifying (Bob)};
+\node (m) at (0.35,0.75) {$M$};
+\draw (m) -- (0.35,-1.1); \fill (0.35,0.2) circle (1.5pt);
+\node[dsgop, fill=acc!10] (sg) at (2.6,0.2) {$M^d \bmod n$};
+\node[font=\footnotesize] (k1) at (2.6,1.45) {private $(d, n)$}; \draw[->] (k1) -- (sg);
+\draw[->] (0.35,0.2) -- (sg); \draw[->] (sg) -- (5.25,0.2) node[right]{$S$};
+\draw[->] (0.35,-1.1) -- (5.25,-1.1) node[right]{$M$};
+\node[dsgop, fill=acc!10] (vf) at (7.7,0.2) {$S^e \bmod n$};
+\node[font=\footnotesize] (k2) at (7.7,1.45) {public $(e, n)$}; \draw[->] (k2) -- (vf);
+\draw[->] (5.75,0.2) -- (vf);
+\node[dsgdia] (cmp) at (10.9,0.2) {$M' \equiv M$?};
+\draw[->] (vf) -- node[above]{$M'$} (cmp);
+\draw[->] (5.75,-1.1) -- (10.9,-1.1) -- (cmp.south);
+\node[dsgop] (acc) at (14.1,0.2) {Accept};
+\draw[->] (cmp) -- node[above, font=\footnotesize]{true} (acc);
+\end{tikzpicture}
+\end{center}
+
+\begin{worked}[: the slide example (slide 34)]
+\textbf{Q.} Alice chooses $p = 823$, $q = 953$ and $e = 313$. Find $n$, $\phi(n)$ and $d$. Sign $M = 19070$ and show Bob's verification.
+
+\textbf{Keys.} $n = 823 \times 953 = 784\,319$; \;$\phi(n) = 822 \times 952 = 782\,544$; \;$\gcd(313, 782544) = 1$. $d = 313^{-1} \bmod 782544$:
+\begin{center}\small
+\begin{tabular}{@{}r|rrr|rrr@{}}
+\toprule
+$q$ & $r_1$ & $r_2$ & $r$ & $t_1$ & $t_2$ & $t$\\
+\midrule
+2500 & 782544 & 313 & 44 & 0 & 1 & $-2500$\\
+7 & 313 & 44 & 5 & 1 & $-2500$ & 17501\\
+8 & 44 & 5 & 4 & $-2500$ & 17501 & $-142508$\\
+1 & 5 & 4 & 1 & 17501 & $-142508$ & 160009\\
+4 & 4 & 1 & 0 & $-142508$ & 160009 & $-782544$\\
+ & \textbf{1} & 0 & & \textbf{160009} & $-782544$ & \\
+\bottomrule
+\end{tabular}
+\end{center}
+$d = \mathbf{160009}$. Check: $313 \times 160009 = 50\,082\,817 = 64 \times 782544 + 1$ \checkmark.\\
+\textbf{Sign.} $S = 19070^{160009} \bmod 784319 = \mathbf{210625}$ (by square-and-multiply).\\
+\textbf{Verify.} $M' = 210625^{313} \bmod 784319 = 19070 = M$, so Bob accepts: he has verified Alice's signature.
+\end{worked}
+
+\begin{worked}[: exam-size RSA signature]
+\textbf{Q.} Alice's RSA key uses $p = 7$, $q = 11$, $e = 7$. Find her private key, sign $M = 30$, and verify the signature.
+
+\textbf{Keys.} $n = 77$, $\phi(n) = 6 \times 10 = 60$, $\gcd(7, 60) = 1$. $d = 7^{-1} \bmod 60$:
+\begin{center}\small
+\begin{tabular}{@{}r|rrr|rrr@{}}
+\toprule
+$q$ & $r_1$ & $r_2$ & $r$ & $t_1$ & $t_2$ & $t$\\
+\midrule
+8 & 60 & 7 & 4 & 0 & 1 & $-8$\\
+1 & 7 & 4 & 3 & 1 & $-8$ & 9\\
+1 & 4 & 3 & 1 & $-8$ & 9 & $-17$\\
+3 & 3 & 1 & 0 & 9 & $-17$ & 60\\
+ & \textbf{1} & 0 & & $\mathbf{-17}$ & 60 & \\
+\bottomrule
+\end{tabular}
+\end{center}
+$d = -17 + 60 = \mathbf{43}$. Check: $7 \times 43 = 301 = 5 \times 60 + 1$ \checkmark. Public $(7, 77)$, private $43$.
+
+\textbf{Sign} $S = 30^{43} \bmod 77$, with $43 = 32 + 8 + 2 + 1$:
+\begin{center}\small
+\begin{tabular}{@{}lll@{\qquad}lll@{}}
+\toprule
+Power & Computation & mod 77 & Power & Computation & mod 77\\
+\midrule
+$30^1$ & & 30 & $30^8$ & $37^2 = 1369 = 17 \cdot 77 + 60$ & 60\\
+$30^2$ & $900 = 11 \cdot 77 + 53$ & 53 & $30^{16}$ & $60^2 = 3600 = 46 \cdot 77 + 58$ & 58\\
+$30^4$ & $53^2 = 2809 = 36 \cdot 77 + 37$ & 37 & $30^{32}$ & $58^2 = 3364 = 43 \cdot 77 + 53$ & 53\\
+\bottomrule
+\end{tabular}
+\end{center}
+$30^{32} \cdot 30^8 = 53 \cdot 60 = 3180 \equiv 23$; \;$23 \cdot 53 = 1219 \equiv 64$; \;$64 \cdot 30 = 1920 \equiv 72$. \;$\Rightarrow S = \mathbf{72}$.\\
+\textbf{Verify} $M' = 72^7 \bmod 77$, $7 = 4 + 2 + 1$: $72^2 = 5184 \equiv 25$; $72^4 \equiv 25^2 = 625 \equiv 9$; \;$9 \cdot 25 = 225 \equiv 71$; \;$71 \cdot 72 = 5112 \equiv 30$. $M' = 30 = M$ \checkmark: accept.
+\end{worked}
+
+\subsection{ElGamal digital signature scheme \hot\new}
+\likely{``Explain the ElGamal signature; prove that verification works; sign and verify with given $p, e_1, d, r$'' (5--6 marks). The slide numbers are a likely source.}
+
+The ElGamal signature uses the same keys as the ElGamal cryptosystem (\S\ref{sec:elgamal}) but a different algorithm. Alice proves knowledge of $d$, the discrete logarithm of $e_2$, without revealing it: she commits to a fresh random exponent $r$ through $S_1 = e_1^r$, and then publishes $S_2$, which ties $M$, $d$ and $r$ together by a linear equation in the exponent that only someone knowing $d$ can satisfy.
+
+\begin{mustknow}[: ElGamal signature]
+\textbf{Key generation}: prime $p$, primitive root $e_1$ of $p$, private $d$; $e_2 = e_1^d \bmod p$. Public $(e_1, e_2, p)$, private $d$.\\
+\textbf{Signing}: choose a secret random $r$ with $\gcd(r, p-1) = 1$ (new for every message);
+\[
+S_1 = e_1^r \bmod p, \qquad S_2 = (M - d \times S_1) \times r^{-1} \bmod (p-1).
+\]
+\textbf{Verifying}: check $0 < S_1 < p$ and $0 \le S_2 < p - 1$; compute $V_1 = e_1^M \bmod p$ and $V_2 = e_2^{S_1} \times S_1^{S_2} \bmod p$; accept if $V_1 \equiv V_2$.
+\end{mustknow}
+
+\textbf{Why the arithmetic is modulo $p - 1$.} $S_2$ is used as an exponent of $e_1$, and by Fermat $e_1^{p-1} \equiv 1 \pmod p$, so exponents only matter modulo $p - 1$. That is also why $r$ must be invertible modulo $p - 1$, i.e.\ $\gcd(r, p - 1) = 1$; since $p - 1$ is even, $r$ must in particular be odd.
+
+\textbf{Proof that verification succeeds.} Multiply the definition of $S_2$ by $r$: $S_2\, r \equiv M - d\,S_1 \pmod{p-1}$, i.e.
+\[
+M \equiv d\,S_1 + r\,S_2 \pmod{p-1}.
+\]
+Raising $e_1$ to both sides (allowed, since exponents are taken modulo $p - 1$):
+\[
+V_1 = e_1^{M} \equiv e_1^{d S_1 + r S_2} = (e_1^d)^{S_1}\,(e_1^r)^{S_2} = e_2^{S_1} \times S_1^{S_2} = V_2 \pmod p .
+\]
+(Slide 37 writes the same chain backwards.) Eve, who does not know $d$, cannot solve $M \equiv d S_1 + r S_2$ for $S_2$; choosing $S_1$ and $S_2$ to satisfy $e_1^M \equiv e_2^{S_1} S_1^{S_2}$ directly is a discrete-logarithm problem.
+
+\begin{center}
+\begin{tikzpicture}[font=\small, >=Stealth]
+\fill[gray!8] (0,-1.7) rectangle (5.9,1.2); \draw[dashed] (0,-1.7) rectangle (5.9,1.2);
+\fill[gray!8] (7.0,-1.7) rectangle (16.4,1.2); \draw[dashed] (7.0,-1.7) rectangle (16.4,1.2);
+\node[below] at (2.95,-1.7) {Signing (Alice)}; \node[below] at (11.7,-1.7) {Verifying (Bob)};
+\draw[->] (1.6,1.7) node[above, font=\footnotesize]{$d$ (private)} -- (1.6,1.2);
+\draw[->] (4.4,1.7) node[above, font=\footnotesize]{$r$ (random secret)} -- (4.4,1.2);
+\node (m) at (0.3,0.95) {$M$}; \draw (m) -- (0.3,-1.2);
+\node[dsgop, fill=acc!10] (s1) at (3.1,0.6) {$S_1 = e_1^r \bmod p$};
+\node[dsgop, fill=acc!10] (s2) at (3.1,-0.35) {$S_2 = (M - dS_1)\,r^{-1} \bmod (p-1)$};
+\fill (0.3,-0.35) circle (1.5pt); \draw[->] (0.3,-0.35) -- (s2);
+\draw[->] (s1) -- (s2);
+\draw[->] (s1.east) -- (6.3,0.6) node[right]{$S_1$};
+\draw[->] (s2.east) -- (6.3,-0.35) node[right]{$S_2$};
+\draw[->] (0.3,-1.2) -- (6.3,-1.2) node[right]{$M$};
+\draw[->] (9.6,1.7) node[above, font=\footnotesize]{$(e_1, e_2, p)$ (public)} -- (9.6,1.2);
+\node[dsgop, fill=acc!10, minimum height=1.25cm] (v2) at (9.6,0.15) {$V_2 = e_2^{S_1} S_1^{S_2} \bmod p$};
+\node[dsgop, fill=acc!10] (v1) at (9.6,-1.2) {$V_1 = e_1^{M} \bmod p$};
+\draw[->] (6.85,0.6) -- (v2.west |- 0,0.6); \draw[->] (6.85,-0.35) -- (v2.west |- 0,-0.35);
+\draw[->] (6.85,-1.2) -- (v1);
+\node[dsgdia] (cmp) at (13.0,-0.5) {$V_1 \equiv V_2$?};
+\draw[->] (v2.east) -| (cmp.north); \draw[->] (v1.east) -| (cmp.south);
+\node[dsgop] (acc) at (15.5,-0.5) {Accept};
+\draw[->] (cmp) -- node[above, font=\footnotesize]{true} (acc);
+\end{tikzpicture}
+\end{center}
+
+\textbf{Requirements on $r$.} The random $r$ must be (i) \textbf{coprime} to $p - 1$, otherwise $r^{-1}$ does not exist; (ii) \textbf{secret}, because from one signature and a known $r$ Eve gets $d\,S_1 \equiv M - r\,S_2 \pmod{p-1}$ and hence $d$; and (iii) \textbf{fresh} for every message, because two signatures with the same $r$ reveal $r$ and then $d$ (derived with numbers in \S\ref{sec:dsig-attacks}). It should also be unpredictable, since a guessable $r$ is a known $r$.
+
+\begin{worked}[: the slide examples (slides 38--39), recomputed]
+\textbf{Q.} Alice chooses $p = 3119$, $e_1 = 2$, $d = 127$. Find $e_2$. Sign $M = 320$ with $r = 307$ and $M = 3000$ with $r = 107$, and verify both signatures.
+
+\textbf{A.} $e_2 = 2^{127} \bmod 3119 = \mathbf{1702}$; public $(2, 1702, 3119)$. Both $r$ are odd primes not dividing $3118 = 2 \times 1559$, so $\gcd(r, 3118) = 1$.
+\begin{center}\small
+\begin{tabular}{@{}rrrrrr@{}}
+\toprule
+$M$ & $r$ & $r^{-1} \bmod 3118$ & $S_1 = 2^r \bmod 3119$ & $(M - 127\,S_1) \bmod 3118$ & $S_2$\\
+\midrule
+320 & 307 & 2793 & 2083 & $320 - 264541 \equiv 809$ & $809 \cdot 2793 \equiv \mathbf{2105}$\\
+3000 & 107 & 1661 & 2732 & $3000 - 346964 \equiv 2134$ & $2134 \cdot 1661 \equiv \mathbf{2526}$\\
+\bottomrule
+\end{tabular}
+\\[4pt]
+\begin{tabular}{@{}rrrrr@{}}
+\toprule
+$M$ & $V_1 = 2^M \bmod 3119$ & $1702^{S_1} \bmod 3119$ & $S_1^{S_2} \bmod 3119$ & $V_2$\\
+\midrule
+320 & 3006 & $1702^{2083} \equiv 2648$ & $2083^{2105} \equiv 828$ & $2648 \cdot 828 \equiv \mathbf{3006}$\\
+3000 & 704 & $1702^{2732} \equiv 1388$ & $2732^{2526} \equiv 396$ & $1388 \cdot 396 \equiv \mathbf{704}$\\
+\bottomrule
+\end{tabular}
+\end{center}
+In both cases $V_1 \equiv V_2$, so Bob (and Ted) accept. Note that the second message must use its own $S_1 = 2732$ in $S_2$ and in $V_2$; see the correction box for the slide's slips.\\
+\emph{Check of a reduction}: $-264221 + 85 \times 3118 = 809$ and $2259537 - 724 \times 3118 = 2105$.
+\end{worked}
+
+\begin{worked}[: exam-size ElGamal signature]
+\textbf{Q.} In the ElGamal signature scheme, $p = 23$, $e_1 = 5$, $d = 6$. Find $e_2$. Sign $M = 10$ with $r = 7$ and verify.
+
+\textbf{Keys.} $5^2 = 25 \equiv 2$, $5^4 \equiv 4$, so $e_2 = 5^6 = 5^4 \cdot 5^2 \equiv 8$. Public $(5, 8, 23)$.\\
+\textbf{$r^{-1}$.} $\gcd(7, 22) = 1$; $22 = 3 \cdot 7 + 1$ gives $1 = 22 - 3 \cdot 7$, so $7^{-1} \equiv -3 \equiv \mathbf{19} \pmod{22}$ (check $7 \cdot 19 = 133 = 6 \cdot 22 + 1$).\\
+\textbf{Sign.} $S_1 = 5^7 = 5^4 \cdot 5^2 \cdot 5 \equiv 4 \cdot 2 \cdot 5 = 40 \equiv \mathbf{17}$.\\
+$S_2 = (10 - 6 \cdot 17) \cdot 19 = (-92) \cdot 19$; $-92 \equiv -92 + 110 = 18 \pmod{22}$; $18 \cdot 19 = 342 = 15 \cdot 22 + 12 \Rightarrow S_2 = \mathbf{12}$.\\
+\textbf{Verify.} $V_1 = 5^{10} = 5^8 \cdot 5^2 \equiv 16 \cdot 2 = 32 \equiv \mathbf{9}$ \;($5^8 = 4^2 = 16$).\\
+$e_2^{S_1} = 8^{17}$: $8^2 \equiv 18$, $8^4 \equiv 18^2 = 324 \equiv 2$, $8^8 \equiv 4$, $8^{16} \equiv 16$, $8^{17} \equiv 16 \cdot 8 = 128 \equiv 13$.\\
+$S_1^{S_2} = 17^{12}$: $17^2 = 289 \equiv 13$, $17^4 \equiv 169 \equiv 8$, $17^8 \equiv 64 \equiv 18$, $17^{12} = 17^8 \cdot 17^4 \equiv 18 \cdot 8 = 144 \equiv 6$.\\
+$V_2 = 13 \cdot 6 = 78 \equiv \mathbf{9} = V_1$ \checkmark: accept. \emph{Check}: $d S_1 + r S_2 = 102 + 84 = 186 = 8 \cdot 22 + 10 \equiv M \pmod{22}$.
+\end{worked}
+
+\subsection{Schnorr digital signature scheme \new}
+\likely{``Explain the Schnorr signature scheme; show that verification works'' (4 marks).}
+
+The ElGamal signature is as long as $2|p|$ (2048 bits for a 1024-bit $p$), and all its exponent arithmetic is modulo the large number $p - 1$. Schnorr's idea is to work in a \textbf{subgroup of prime order $q$} of $\mathbb{Z}_p^*$, with $q$ only as large as a hash digest (160 bits). Exponents then live modulo $q$, the two signature components are 160 bits each, and the hash of the message is mixed into $S_1$ itself.
+
+\textbf{Key generation (slide 43).}
+\begin{enumerate}[leftmargin=1.6em]
+  \item Alice selects a prime $p$, usually 1024 bits long.
+  \item She selects another prime $q$ of the same size as the digest of the hash function (160 bits), such that $q$ divides $p - 1$, i.e.\ $(p - 1) \equiv 0 \pmod q$.
+  \item She chooses $e_1$ to be a $q$-th root of 1 modulo $p$: she picks a primitive element $e_0$ of $\mathbb{Z}_p^*$ and computes $e_1 = e_0^{(p-1)/q} \bmod p$. Then $e_1^q = e_0^{p-1} \equiv 1$ while $e_1 \ne 1$, so $e_1$ has order exactly $q$ ($q$ is prime).
+  \item She chooses an integer $d$ (with $1 \le d < q$) as her private key and computes $e_2 = e_1^d \bmod p$.
+  \item Public key $(e_1, e_2, p, q)$; private key $d$.
+\end{enumerate}
+
+\textbf{Signing.} Alice chooses a fresh random $r$ ($1 \le r < q$), computes $e_1^r \bmod p$, concatenates it to the message and hashes:
+\[
+S_1 = h\big(M \,|\, e_1^r \bmod p\big), \qquad S_2 = r + d \times S_1 \bmod q .
+\]
+\textbf{Verifying.} Bob computes $V = h\big(M \,|\, e_1^{S_2}\, e_2^{-S_1} \bmod p\big)$ and accepts if $V = S_1$.
+
+\textbf{Proof that verification succeeds.} Since $e_1$ has order $q$, exponents of $e_1$ can be reduced modulo $q$, and $S_2 \equiv r + d S_1 \pmod q$. Therefore
+\[
+e_1^{S_2}\, e_2^{-S_1} = e_1^{r + d S_1}\,(e_1^{d})^{-S_1} = e_1^{r + dS_1 - dS_1} = e_1^{r} \pmod p ,
+\]
+so Bob hashes exactly the string $M \,|\, e_1^r \bmod p$ that Alice hashed, and $V = S_1$. Here $e_2^{-S_1}$ means $(e_2^{-1})^{S_1} \bmod p$. A forger would need $S_2$ with $e_1^{S_2} = X \cdot e_2^{S_1}$ for an $S_1$ that depends on $X$ through the hash, which requires $d$.
+
+\begin{center}
+\begin{tikzpicture}[font=\small, >=Stealth]
+\fill[gray!8] (0,-1.7) rectangle (5.9,1.2); \draw[dashed] (0,-1.7) rectangle (5.9,1.2);
+\fill[gray!8] (7.0,-1.7) rectangle (16.4,1.2); \draw[dashed] (7.0,-1.7) rectangle (16.4,1.2);
+\node[below] at (2.95,-1.7) {Signing (Alice)}; \node[below] at (11.7,-1.7) {Verifying (Bob)};
+\draw[->] (1.6,1.7) node[above, font=\footnotesize]{$d$ (private)} -- (1.6,1.2);
+\draw[->] (4.4,1.7) node[above, font=\footnotesize]{$r$ (random secret)} -- (4.4,1.2);
+\node (m) at (0.3,0.95) {$M$}; \draw (m) -- (0.3,-1.2);
+\node[dsgop, fill=acc!10] (s1) at (3.1,0.6) {$S_1 = h(M \,|\, e_1^r \bmod p)$};
+\node[dsgop, fill=acc!10] (s2) at (3.1,-0.35) {$S_2 = r + dS_1 \bmod q$};
+\fill (0.3,0.6) circle (1.5pt); \draw[->] (0.3,0.6) -- (s1);
+\draw[->] (s1) -- (s2);
+\draw[->] (s1.east) -- (6.3,0.6) node[right]{$S_1$};
+\draw[->] (s2.east) -- (6.3,-0.35) node[right]{$S_2$};
+\draw[->] (0.3,-1.2) -- (6.3,-1.2) node[right]{$M$};
+\draw[->] (10.2,1.7) node[above, font=\footnotesize]{$(e_1, e_2, p, q)$ (public)} -- (10.2,1.2);
+\node[dsgop, fill=acc!10, minimum height=1.5cm] (vb) at (10.2,-0.55) {$V = h\big(M \,|\, e_1^{S_2} e_2^{-S_1} \bmod p\big)$};
+\fill (7.4,0.6) circle (1.5pt);
+\draw[->] (7.4,0.6) |- (vb.west |- 0,0.0);
+\draw[->] (6.85,-0.35) -- (vb.west |- 0,-0.35); \draw[->] (6.85,-1.2) -- (vb.west |- 0,-1.2);
+\node[dsgdia] (cmp) at (13.6,0.6) {$S_1 \equiv V$?};
+\draw[->] (6.85,0.6) -- (cmp);
+\draw[->] (vb.east) -| node[right, pos=0.8]{$V$} (cmp.south);
+\node[dsgop] (acc) at (15.6,0.6) {Accept};
+\draw[->] (cmp) -- (acc);
+\end{tikzpicture}
+\end{center}
+
+\begin{worked}[: a toy Schnorr signature]
+\textbf{Q.} Take $p = 23$, $q = 11$, $e_0 = 5$, $d = 7$. As a \emph{toy} hash use $h(y) = y \bmod 11$, where $M \,|\, X$ means writing the decimal digits of $X$ after those of $M$ (a real scheme uses SHA-1/SHA-2; this $h$ is not one-way). Find the keys, sign $M = 15$ with $r = 5$, and verify.
+
+\textbf{Keys.} $q = 11$ divides $p - 1 = 22$, and $5$ is a primitive root of 23. $e_1 = 5^{22/11} = 5^2 = 25 \equiv \mathbf{2}$; check $2^{11} = 2048 = 89 \cdot 23 + 1 \equiv 1$, so $e_1$ has order 11. $e_2 = 2^7 = 128 = 5 \cdot 23 + 13 \equiv \mathbf{13}$. Public $(2, 13, 23, 11)$, private $7$.\\
+\textbf{Sign.} $X = e_1^r = 2^5 = 32 \equiv 9$. $M \,|\, X = 15 \,|\, 9 = 159$; $S_1 = 159 \bmod 11 = \mathbf{5}$ ($159 = 14 \cdot 11 + 5$). $S_2 = 5 + 7 \cdot 5 = 40 \equiv \mathbf{7} \pmod{11}$.\\
+\textbf{Verify.} $e_1^{S_2} = 2^7 \equiv 13$. $e_2^{-1} = 13^{-1} \bmod 23 = 16$ ($13 \cdot 16 = 208 = 9 \cdot 23 + 1$). $e_2^{-S_1} = 16^5$: $16^2 = 256 \equiv 3$, $16^4 \equiv 9$, $16^5 \equiv 9 \cdot 16 = 144 \equiv 6$.\\
+$e_1^{S_2} e_2^{-S_1} = 13 \cdot 6 = 78 \equiv 9 = X$ \checkmark; \;$V = h(15 \,|\, 9) = h(159) = 5 = S_1$: \textbf{accept}.
+\end{worked}
+
+\subsection{Digital Signature Standard (DSS / DSA) \hot\new}
+\likely{``Explain DSS key generation, signing and verifying with a diagram; prove $V = S_1$; compare DSS with RSA'' (5--6 marks), possibly with a small numerical.}
+
+The \textbf{Digital Signature Standard} (DSS) was adopted by NIST in 1994 as FIPS 186; its algorithm is the \textbf{Digital Signature Algorithm} (DSA). It combines the two previous ideas: the ElGamal form of $S_2$ (hash plus $d S_1$, divided by $r$) and Schnorr's order-$q$ subgroup, so that $S_1$ and $S_2$ are both reduced modulo the 160-bit prime $q$.
+
+\textbf{Key generation (slide 47).}
+\begin{enumerate}[leftmargin=1.6em]
+  \item Alice chooses a prime $p$ between 512 and 1024 bits long, the number of bits being a multiple of 64.
+  \item She chooses a 160-bit prime $q$ that divides $p - 1$.
+  \item She uses two multiplicative structures: $\mathbb{Z}_p^*$, in which the powers of $e_1$ are computed, and the subgroup of order $q$ generated by $e_1$, whose exponents are computed modulo $q$.
+  \item She creates $e_1$ as a $q$-th root of 1 modulo p ($e_1^q \equiv 1 \pmod p$): she chooses a primitive element $e_0$ of $\mathbb{Z}_p^*$ and computes $e_1 = e_0^{(p-1)/q} \bmod p$.
+  \item She chooses $d$ ($1 \le d < q$) as the private key and computes $e_2 = e_1^d \bmod p$.
+  \item Public key $(e_1, e_2, p, q)$; private key $d$.
+\end{enumerate}
+(The current standard FIPS 186-4 uses $(|p|, |q|) = (2048, 224)$, $(2048, 256)$ or $(3072, 256)$ with SHA-2.)
+
+\begin{mustknow}[: DSS]
+\textbf{Signing}: fresh secret random $r$, $1 \le r < q$;
+\[
+S_1 = (e_1^r \bmod p) \bmod q, \qquad S_2 = \big(h(M) + d \times S_1\big)\, r^{-1} \bmod q .
+\]
+\textbf{Verifying}: check $0 < S_1 < q$, $0 < S_2 < q$; then
+\[
+A = h(M)\,S_2^{-1} \bmod q, \quad B = S_1\,S_2^{-1} \bmod q, \quad V = \big(e_1^{A}\, e_2^{B} \bmod p\big) \bmod q ;\quad \text{accept if } V = S_1 .
+\]
+\end{mustknow}
+
+\textbf{Proof that verification succeeds.} From the definition of $S_2$, $r \equiv \big(h(M) + d S_1\big) S_2^{-1} = h(M) S_2^{-1} + d\,S_1 S_2^{-1} = A + dB \pmod q$. Since $e_1$ has order $q$, exponents of $e_1$ reduce modulo $q$, so
+\[
+e_1^{A}\, e_2^{B} = e_1^{A}\,(e_1^{d})^{B} = e_1^{A + dB} = e_1^{r} \pmod p ,
+\]
+and reducing modulo $q$ gives $V = (e_1^r \bmod p) \bmod q = S_1$. The slide's verification box $\big(e_1^{h(M) S_2^{-1}}\, e_2^{S_1 S_2^{-1}} \bmod p\big) \bmod q$ is the same formula with $A$ and $B$ written out.
+
+\begin{center}
+\begin{tikzpicture}[font=\small, >=Stealth]
+\fill[gray!8] (0,-1.7) rectangle (5.9,1.2); \draw[dashed] (0,-1.7) rectangle (5.9,1.2);
+\fill[gray!8] (7.0,-1.7) rectangle (16.4,1.2); \draw[dashed] (7.0,-1.7) rectangle (16.4,1.2);
+\node[below] at (2.95,-1.7) {Signing (Alice)}; \node[below] at (11.7,-1.7) {Verifying (Bob)};
+\draw[->] (1.6,1.7) node[above, font=\footnotesize]{$d$ (private)} -- (1.6,1.2);
+\draw[->] (4.4,1.7) node[above, font=\footnotesize]{$r$ (random secret)} -- (4.4,1.2);
+\node (m) at (0.3,0.95) {$M$}; \draw (m) -- (0.3,-1.2);
+\node[dsgop, fill=acc!10] (s1) at (3.1,0.6) {$S_1 = (e_1^r \bmod p) \bmod q$};
+\node[dsgop, fill=acc!10] (s2) at (3.1,-0.35) {$S_2 = (h(M) + dS_1)\,r^{-1} \bmod q$};
+\fill (0.3,-0.35) circle (1.5pt); \draw[->] (0.3,-0.35) -- (s2);
+\draw[->] (s1) -- (s2);
+\draw[->] (s1.east) -- (6.3,0.6) node[right]{$S_1$};
+\draw[->] (s2.east) -- (6.3,-0.35) node[right]{$S_2$};
+\draw[->] (0.3,-1.2) -- (6.3,-1.2) node[right]{$M$};
+\draw[->] (10.2,1.7) node[above, font=\footnotesize]{$(e_1, e_2, p, q)$ (public)} -- (10.2,1.2);
+\node[dsgop, fill=acc!10, minimum height=1.5cm] (vb) at (10.2,-0.55) {$A = h(M)\,S_2^{-1},\ B = S_1 S_2^{-1} \bmod q$\\[2pt]$V = (e_1^{A} e_2^{B} \bmod p) \bmod q$};
+\fill (7.4,0.6) circle (1.5pt);
+\draw[->] (7.4,0.6) |- (vb.west |- 0,0.0);
+\draw[->] (6.85,-0.35) -- (vb.west |- 0,-0.35); \draw[->] (6.85,-1.2) -- (vb.west |- 0,-1.2);
+\node[dsgdia] (cmp) at (13.8,0.6) {$S_1 \equiv V$?};
+\draw[->] (6.85,0.6) -- (cmp);
+\draw[->] (vb.east) -| node[right, pos=0.8]{$V$} (cmp.south);
+\node[dsgop] (acc) at (15.7,0.6) {Accept};
+\draw[->] (cmp) -- (acc);
+\end{tikzpicture}
+\end{center}
+
+\begin{worked}[: the textbook DSS example, every value recomputed]
+\textbf{Q.} Alice chooses $q = 443$, $p = 48731$, $e_0 = 7$ and $d = 242$. Find $e_1$ and $e_2$. With $h(M) = 100$ and $r = 427$, find the signature and verify it.
+
+\textbf{Keys.} $p - 1 = 48730 = 110 \times 443$, so $q \mid p - 1$; 7 is a primitive root of 48731. $e_1 = 7^{110} \bmod 48731 = \mathbf{5260}$ (order 443), \;$e_2 = 5260^{242} \bmod 48731 = \mathbf{3438}$.\\
+\textbf{Sign.} $e_1^r = 5260^{427} \bmod 48731 = 2717$; \;$S_1 = 2717 \bmod 443 = 2717 - 6 \cdot 443 = \mathbf{59}$.\\
+$h(M) + d S_1 = 100 + 242 \cdot 59 = 14378 \equiv 14378 - 32 \cdot 443 = 202$; \;$r^{-1} = 427^{-1} \bmod 443 = 83$ ($427 \cdot 83 = 35441 = 80 \cdot 443 + 1$).\\
+$S_2 = 202 \cdot 83 = 16766 \equiv 16766 - 37 \cdot 443 = \mathbf{375}$.\\
+\textbf{Verify.} $S_2^{-1} = 375^{-1} \bmod 443 = 228$ ($375 \cdot 228 = 85500 = 193 \cdot 443 + 1$).\\
+$A = 100 \cdot 228 = 22800 \equiv 207$, \;$B = 59 \cdot 228 = 13452 \equiv 162 \pmod{443}$.\\
+$e_1^A = 5260^{207} \equiv 10322$, \;$e_2^B = 3438^{162} \equiv 25225$, \;$10322 \cdot 25225 \equiv 2717 \pmod{48731}$ (the same $e_1^r$, as the proof predicts).\\
+$V = 2717 \bmod 443 = \mathbf{59} = S_1$ \checkmark: accept. (If $S_2 = 164$ were sent, Bob would get $V = 119 \ne 59$ and reject; see the correction box.)
+\end{worked}
+
+\begin{worked}[: exam-size DSS]
+\textbf{Q.} In DSS, $p = 23$, $q = 11$, $e_0 = 5$, $d = 7$. Find $e_1$ and $e_2$. Sign a message with $h(M) = 5$ using $r = 3$, and verify.
+
+\textbf{Keys.} $q = 11 \mid 22$. $e_1 = 5^{22/11} = 25 \equiv \mathbf{2} \pmod{23}$ (order 11, since $2^{11} \equiv 1$). $e_2 = 2^7 = 128 \equiv \mathbf{13}$.\\
+\textbf{Sign.} $S_1 = (2^3 \bmod 23) \bmod 11 = 8 \bmod 11 = \mathbf{8}$. \;$h(M) + dS_1 = 5 + 56 = 61 \equiv 6 \pmod{11}$; \;$3^{-1} \bmod 11 = 4$ ($3 \cdot 4 = 12$); \;$S_2 = 6 \cdot 4 = 24 \equiv \mathbf{2}$.\\
+\textbf{Verify.} $S_2^{-1} = 2^{-1} \bmod 11 = 6$; \;$A = 5 \cdot 6 = 30 \equiv 8$, \;$B = 8 \cdot 6 = 48 \equiv 4 \pmod{11}$.\\
+$e_1^A = 2^8 = 256 \equiv 3$; \;$e_2^B = 13^4$: $13^2 = 169 \equiv 8$, $8^2 = 64 \equiv 18$; \;$3 \cdot 18 = 54 \equiv 8 \pmod{23}$.\\
+$V = 8 \bmod 11 = \mathbf{8} = S_1$ \checkmark. \emph{Check}: $A + dB = 8 + 28 = 36 \equiv 3 = r \pmod{11}$.
+\end{worked}
+
+\textbf{DSS versus RSA.} The comparison is a standard question.
+\begin{center}\small
+\begin{tabularx}{\textwidth}{@{}l X X@{}}
+\toprule
+ & DSS (DSA) & RSA signature\\
+\midrule
+Hard problem & discrete logarithm (in an order-$q$ subgroup of $\mathbb{Z}_p^*$) & factoring $n = pq$\\
+Use & signatures only; cannot encrypt or exchange keys & signatures, encryption and key transport\\
+Signature size & $2 \times 160 = 320$ bits, independent of $|p|$ & $|n|$ bits (1024--2048)\\
+Randomness & fresh secret $r$ per signature; reuse or leak reveals $d$ & deterministic (unless a randomized padding such as PSS is used)\\
+Signing cost & one exponentiation mod $p$ with a 160-bit exponent; $e_1^r$ and $r^{-1}$ can be precomputed before the message is known & one full exponentiation with the large $d$\\
+Verifying cost & two exponentiations mod $p$ (slower) & one exponentiation with small $e$ (very fast)\\
+\bottomrule
+\end{tabularx}
+\end{center}
+Hence DSS signing is faster than RSA signing for the same size of $p$, but RSA verification is faster, which suits certificates that are verified many times.
+
+\textbf{DSS versus ElGamal.} Both use a random $r$ and the same shape of $S_2$, but DSS reduces $S_1$ and $S_2$ modulo the 160-bit $q$ instead of working modulo $p$ and $p - 1$. The signature therefore shrinks from $2|p|$ (2048 bits) to 320 bits, the inversion $r^{-1}$ and the products are computed modulo a small $q$, and the hash is built into the standard, so the attacks on raw ElGamal below do not apply.
+
+\subsection{Elliptic Curve Digital Signature Algorithm (ECDSA) \new}
+\likely{``Explain the elliptic curve signature scheme; why does verification work?'' (4 marks), or a small curve computation.}
+
+ECDSA (adopted in FIPS 186-2 in 2000) is DSS translated to the group of points of an elliptic curve (\S\ref{sec:elgamal}): exponentiation $e_1^r$ becomes the scalar multiplication $r \times e_1$, and the reduction $(e_1^r \bmod p) \bmod q$ becomes ``take the $x$-coordinate of the point modulo $q$''. Because the best known attack on the ECDLP is generic, a 160-bit $q$ gives the security of a 1024-bit DSA modulus, with much smaller keys.
+
+\begin{mustknow}[: ECDSA]
+\textbf{Key generation}: curve $E_p(a, b)$; a point $e_1$ of prime order $q$ ($q \times e_1 = O$); private $d$, $1 \le d < q$; $e_2 = d \times e_1$. Public $(a, b, p, q, e_1, e_2)$, private $d$.\\
+\textbf{Signing}: fresh secret random $r$, $1 \le r < q$; $P = r \times e_1 = (u, v)$;
+\;$S_1 = u \bmod q$, \;$S_2 = \big(h(M) + d \times S_1\big)\, r^{-1} \bmod q$ (if $S_1 = 0$ or $S_2 = 0$, pick a new $r$).\\
+\textbf{Verifying}: $A = h(M)\,S_2^{-1} \bmod q$, \;$B = S_1\,S_2^{-1} \bmod q$, \;$T = A \times e_1 + B \times e_2 = (x, y)$; accept if $x \bmod q = S_1$.
+\end{mustknow}
+
+\textbf{Proof that verification succeeds.} As for DSS, $A + dB \equiv \big(h(M) + d S_1\big) S_2^{-1} \equiv r \pmod q$. Since $e_1$ has order $q$, multiples of $e_1$ depend only on the multiplier modulo $q$, so
+\[
+T = A \times e_1 + B \times (d \times e_1) = (A + dB) \times e_1 = r \times e_1 = P = (u, v),
+\]
+hence $x \bmod q = u \bmod q = S_1$. Both nonzero checks matter: $S_2 = 0$ has no inverse, and $S_1 = 0$ would make $S_2$ independent of $d$.
+
+\begin{center}
+\begin{tikzpicture}[font=\small, >=Stealth]
+\fill[gray!8] (0,-1.7) rectangle (5.9,1.2); \draw[dashed] (0,-1.7) rectangle (5.9,1.2);
+\fill[gray!8] (7.0,-1.7) rectangle (16.4,1.2); \draw[dashed] (7.0,-1.7) rectangle (16.4,1.2);
+\node[below] at (2.95,-1.7) {Signing (Alice)}; \node[below] at (11.7,-1.7) {Verifying (Bob)};
+\draw[->] (1.6,1.7) node[above, font=\footnotesize]{$d$ (private)} -- (1.6,1.2);
+\draw[->] (4.4,1.7) node[above, font=\footnotesize]{$r$ (random secret)} -- (4.4,1.2);
+\node (m) at (0.3,0.95) {$M$}; \draw (m) -- (0.3,-1.2);
+\node[dsgop, fill=acc!10] (s1) at (3.1,0.6) {$(u, v) = r \times e_1$;\ $S_1 = u \bmod q$};
+\node[dsgop, fill=acc!10] (s2) at (3.1,-0.35) {$S_2 = (h(M) + dS_1)\,r^{-1} \bmod q$};
+\fill (0.3,-0.35) circle (1.5pt); \draw[->] (0.3,-0.35) -- (s2);
+\draw[->] (s1) -- (s2);
+\draw[->] (s1.east) -- (6.3,0.6) node[right]{$S_1$};
+\draw[->] (s2.east) -- (6.3,-0.35) node[right]{$S_2$};
+\draw[->] (0.3,-1.2) -- (6.3,-1.2) node[right]{$M$};
+\draw[->] (10.2,1.7) node[above, font=\footnotesize]{$(a, b, p, q, e_1, e_2)$ (public)} -- (10.2,1.2);
+\node[dsgop, fill=acc!10, minimum height=1.5cm] (vb) at (10.2,-0.55) {$A = h(M)\,S_2^{-1},\ B = S_1 S_2^{-1} \bmod q$\\[1pt]$T = A \times e_1 + B \times e_2 = (x, y)$\\[1pt]$V = x \bmod q$};
+\fill (7.4,0.6) circle (1.5pt);
+\draw[->] (7.4,0.6) |- (vb.west |- 0,0.0);
+\draw[->] (6.85,-0.35) -- (vb.west |- 0,-0.35); \draw[->] (6.85,-1.2) -- (vb.west |- 0,-1.2);
+\node[dsgdia] (cmp) at (13.8,0.6) {$S_1 \equiv V$?};
+\draw[->] (6.85,0.6) -- (cmp);
+\draw[->] (vb.east) -| node[right, pos=0.8]{$V$} (cmp.south);
+\node[dsgop] (acc) at (15.7,0.6) {Accept};
+\draw[->] (cmp) -- (acc);
+\end{tikzpicture}
+\end{center}
+Slide 40 shows the common pattern of DSS and ECDSA: $S_1$ is $f_1(e_1, r, p, q)$ followed by an ``Extract'' step modulo $q$ (the residue mod $q$ in DSS, the $x$-coordinate mod $q$ in ECDSA), and $S_2 = f_2(h(M), d, r, q, S_1)$ is the same formula in both.
+
+\begin{worked}[: ECDSA on a toy curve]
+\textbf{Q.} Use $E_{17}(2, 6)$: $y^2 = x^3 + 2x + 6 \pmod{17}$, with $e_1 = (1, 3)$. Alice's private key is $d = 4$. Find the order $q$ of $e_1$ and $e_2$. Sign a message with $h(M) = 5$ using $r = 3$, and verify.
+
+\textbf{Curve and order.} $4a^3 + 27b^2 = 32 + 972 = 1004 \equiv 1 \not\equiv 0 \pmod{17}$, and $(1, 3)$ is on it: $1 + 2 + 6 = 9 = 3^2$. The curve has 10 affine points plus $O$, i.e.\ 11 points; 11 is prime, so every point other than $O$ has order 11 and $\mathbf{q = 11}$ (confirmed by computing the multiples of $(1, 3)$ in the script: $1e_1, \dots, 10e_1$ are $(1,3)$, $(2,16)$, $(13,11)$, $(11,13)$, $(6,9)$, $(6,8)$, $(11,4)$, $(13,6)$, $(2,1)$, $(1,14)$ and $11e_1 = O$).
+\begin{center}\small
+\begin{tabular}{@{}lllll@{}}
+\toprule
+Step & Slope $s$ (mod 17) & $x_3$ & $y_3$ & Result\\
+\midrule
+$2e_1 = 2(1, 3)$ & $(3 + 2)\cdot 6^{-1} = 5 \cdot 3 = 15$ & $225 - 2 \equiv 2$ & $15(1 - 2) - 3 \equiv 16$ & $(2, 16)$\\
+$e_2 = 4e_1 = 2(2, 16)$ & $14 \cdot 32^{-1} = 14 \cdot 8 \equiv 10$ & $100 - 4 \equiv 11$ & $10(2 - 11) - 16 \equiv 13$ & $(11, 13)$\\
+$P = 3e_1 = (2,16) + (1,3)$ & $(-13)(-1)^{-1} = 13$ & $169 - 3 \equiv 13$ & $13(2 - 13) - 16 \equiv 11$ & $(13, 11)$\\
+$2e_2 = 2(11, 13)$ & $365 \cdot 26^{-1} \equiv 8 \cdot 2 = 16$ & $256 - 22 \equiv 13$ & $16(11 - 13) - 13 \equiv 6$ & $(13, 6)$\\
+$3e_2 = (13, 6) + (11, 13)$ & $7 \cdot (-2)^{-1} = 7 \cdot 8 \equiv 5$ & $25 - 24 = 1$ & $5(13 - 1) - 6 \equiv 3$ & $(1, 3)$\\
+$T = (2, 16) + (1, 3)$ & as row 3 & 13 & 11 & $(13, 11)$\\
+\bottomrule
+\end{tabular}
+\end{center}
+Inverses mod 17: $6 \cdot 3 = 18$, $15 \cdot 8 = 120 = 7 \cdot 17 + 1$ ($32 \equiv 15$, $-2 \equiv 15$), $9 \cdot 2 = 18$ ($26 \equiv 9$); $365 \equiv 8$.\\
+\textbf{Keys.} $e_2 = 4 \times e_1 = (11, 13)$. Public $(2, 6, 17, 11, (1,3), (11,13))$.\\
+\textbf{Sign.} $P = 3 \times e_1 = (13, 11)$, so $u = 13$ and $S_1 = 13 \bmod 11 = \mathbf{2}$. $3^{-1} \bmod 11 = 4$; \;$S_2 = (5 + 4 \cdot 2) \cdot 4 = 52 \equiv \mathbf{8} \pmod{11}$.\\
+\textbf{Verify.} $S_2^{-1} = 8^{-1} \bmod 11 = 7$ ($56 = 5 \cdot 11 + 1$); \;$A = 5 \cdot 7 = 35 \equiv 2$, \;$B = 2 \cdot 7 = 14 \equiv 3$.\\
+$A \times e_1 = 2e_1 = (2, 16)$; \;$B \times e_2 = 3e_2 = (1, 3)$; \;$T = (2, 16) + (1, 3) = (13, 11)$. \;$x \bmod q = 13 \bmod 11 = \mathbf{2} = S_1$ \checkmark: accept.\\
+\emph{Check}: $A + dB = 2 + 12 = 14 \equiv 3 = r \pmod{11}$, so $T$ must equal $3e_1 = P$.
+\end{worked}
+
+\subsection{Security attacks on digital signature schemes \new}\label{sec:dsig-attacks}
+\likely{Assignment topic: ``Explain attacks on RSA / ElGamal / DSS signatures''; ``show that reusing $r$ reveals the private key'' with numbers (5--6 marks).}
+
+The attacks below are of two kinds. The first kind exploits the \emph{algebra} of a scheme applied to raw messages and gives existential or selective forgeries; hashing the message defeats it. The second kind exploits a \emph{misused random number} $r$ in ElGamal, Schnorr, DSS and ECDSA and gives a total break (the private key); hashing does not help against it, only a fresh secret $r$ does.
+
+\textbf{1. RSA, key-only attack: existential forgery.} Eve knows only $(e, n)$. She picks any value $S$ and computes $M = S^e \bmod n$. Then $(M, S)$ is a valid pair, because verification computes exactly $S^e \bmod n = M$. Eve cannot choose $M$ (it is whatever the algebra gives), so the forgery is existential. With Alice's key $(e, n) = (7, 77)$ from the worked example: Eve picks $S = 2$, so $M = 2^7 = 128 \equiv \mathbf{51}$; and indeed Alice's own signature on 51 would be $51^{43} \bmod 77 = 2$.
+
+\textbf{2. RSA, known-message attack: the multiplicative property.} RSA signatures multiply: $(M_1 M_2)^d = M_1^d M_2^d$. If Eve has two genuine pairs $(M_1, S_1)$ and $(M_2, S_2)$, then $S = S_1 S_2 \bmod n$ is a valid signature on $M = M_1 M_2 \bmod n$. With the same key, Alice signed $M_1 = 3$ ($S_1 = 3^{43} \bmod 77 = 38$) and $M_2 = 5$ ($S_2 = 26$). Eve forms $M = 15$ and $S = 38 \cdot 26 = 988 \equiv \mathbf{64}$, and $64^7 \bmod 77 = 15$ \checkmark.
+
+\textbf{3. RSA, chosen-message attack: selective forgery.} Now Eve wants Alice's signature on a \emph{specific} $M$ that Alice would refuse to sign. She picks a random $x$ and asks Alice to sign the harmless-looking $M' = M \cdot x^e \bmod n$. Alice returns $S' = (M x^e)^d = M^d\, x^{ed} \equiv M^d \cdot x$, and Eve computes $S = S' \cdot x^{-1} \bmod n = M^d$, a genuine signature on her chosen message. (Forouzan's version uses two queries: $M_1$ and $M_2 = M \cdot M_1^{-1}$, then $S = S_1 S_2$.) Numerically, target $M = 20$, $x = 2$: $x^e = 2^7 \equiv 51$, $M' = 20 \cdot 51 = 1020 \equiv 19$; Alice signs, $S' = 19^{43} \bmod 77 = 61$; $x^{-1} = 39$; $S = 61 \cdot 39 = 2379 \equiv \mathbf{69}$, and $69^7 \bmod 77 = 20$ \checkmark.
+
+\textbf{Hashing stops all three.} When the digest is signed, verification checks $S^e \equiv h(M)$. In attack 1 Eve gets a value $S^e$ that must be the digest of some message, so she needs a preimage of $h$. In attacks 2 and 3 the product $h(M_1) h(M_2)$ (or $h(M) x^e$) is not the digest of any message she can name. Standard RSA signatures (PKCS\#1 v1.5, PSS) also pad the digest with fixed structure and, in PSS, randomness.
+
+\textbf{4. ElGamal, key-only attack: existential forgery.} Without hashing, Eve can produce a valid triple $(M, S_1, S_2)$ from the public key alone. She chooses integers $u$ and $v$ with $\gcd(v, p-1) = 1$ and sets $S_1 = e_1^u e_2^v \bmod p$. Then
+\[
+e_2^{S_1} S_1^{S_2} = e_2^{S_1}\, e_1^{u S_2}\, e_2^{v S_2} = e_1^{u S_2}\, e_2^{S_1 + v S_2} \pmod p .
+\]
+Choosing $S_2 = -S_1 v^{-1} \bmod (p-1)$ makes $S_1 + v S_2 \equiv 0$, so the $e_2$ factor disappears and the right side is $e_1^{u S_2}$; the message $M = u S_2 \bmod (p-1)$ then satisfies $e_1^M \equiv e_2^{S_1} S_1^{S_2}$. With the slide key ($p = 3119$, $e_1 = 2$, $e_2 = 1702$), $u = 5$, $v = 3$: $S_1 = 2^5 \cdot 1702^3 = 32 \cdot 1158 \equiv \mathbf{2747}$; $v^{-1} = 3^{-1} \bmod 3118 = 2079$; $S_2 = -2747 \cdot 2079 \equiv \mathbf{1163}$; $M = 5 \cdot 1163 = 5815 \equiv \mathbf{2697}$. Check: $V_1 = 2^{2697} \equiv 3072$ and $V_2 = 1702^{2747} \cdot 2747^{1163} \equiv 3072 \pmod{3119}$ \checkmark. With a hash, Eve would need a message with $h(M) = 2697$, a preimage.
+
+\textbf{5. ElGamal with a reused $r$: total break.} Suppose Alice signs two messages $M$ and $M'$ with the same $r$. Then $S_1 = e_1^r$ is the same in both (which also tells Eve that $r$ was reused), and
+\[
+S_2 r \equiv M - d S_1, \quad S'_2 r \equiv M' - d S_1 \pmod{p-1} \;\Longrightarrow\; (S_2 - S'_2)\,r \equiv M - M' \pmod{p-1}.
+\]
+If $\gcd(S_2 - S'_2, p - 1) = 1$, Eve gets $r = (M - M')(S_2 - S'_2)^{-1} \bmod (p-1)$; otherwise there are only $\gcd$ candidates, each tested against $e_1^r = S_1$. Knowing $r$, she solves the signing equation for $d$: $d = (M - r S_2)\,S_1^{-1} \bmod (p-1)$ (again with a few candidates, tested against $e_2 = e_1^d$, if $\gcd(S_1, p-1) \ne 1$). This is also why a leaked $r$ is fatal: the second step alone gives $d$.
+\begin{worked}[: recovering $d$ from a reused $r$ (slide key)]
+\textbf{Q.} Alice ($p = 3119$, $e_1 = 2$, $e_2 = 1702$) signs $M = 320$ and $M' = 1111$ and Eve sees $(S_1, S_2) = (2083, 2105)$ and $(S_1, S'_2) = (2083, 706)$. Find $r$ and $d$.
+
+\textbf{A.} Same $S_1$, so the same $r$ was used. Work modulo $p - 1 = 3118$.\\
+$M - M' = 320 - 1111 = -791 \equiv 2327$; \;$S_2 - S'_2 = 2105 - 706 = 1399$, $\gcd(1399, 3118) = 1$, and $1399^{-1} \bmod 3118 = 1939$ (extended Euclid; $1399 \cdot 1939 = 2712661 = 870 \cdot 3118 + 1$).\\
+$r = 2327 \cdot 1939 \bmod 3118 = \mathbf{307}$. Check: $2^{307} \bmod 3119 = 2083 = S_1$ \checkmark.\\
+$M - r S_2 = 320 - 307 \cdot 2105 = -645915 \equiv 2629 \pmod{3118}$; \;$S_1^{-1} = 2083^{-1} \bmod 3118 = 1919$ ($2083 \cdot 1919 = 3997277 = 1282 \cdot 3118 + 1$).\\
+$d = 2629 \cdot 1919 \bmod 3118 = \mathbf{127}$. Check: $2^{127} \bmod 3119 = 1702 = e_2$ \checkmark. Eve now owns Alice's private key (total break).
+\end{worked}
+
+\textbf{6. DSS, Schnorr and ECDSA with a reused or leaked nonce.} The same algebra breaks the order-$q$ schemes, and more easily, because $q$ is prime and every nonzero difference is invertible.
+\begin{itemize}[leftmargin=1.4em]
+  \item \textbf{DSS/ECDSA}: $S_2 r \equiv h + d S_1$ and $S'_2 r \equiv h' + d S_1 \pmod q$ give $r = (h - h')(S_2 - S'_2)^{-1}$ and then $d = (S_2 r - h)\,S_1^{-1} \bmod q$. With the exam-size DSS key ($q = 11$), signatures $(8, 2)$ on $h = 5$ and $(8, 7)$ on $h' = 9$ (both with $r = 3$): $r = (5 - 9)(2 - 7)^{-1} = 7 \cdot 6^{-1} = 7 \cdot 2 = 14 \equiv \mathbf{3}$, and $d = (2 \cdot 3 - 5) \cdot 8^{-1} = 1 \cdot 7 = \mathbf{7}$ \checkmark. In 2010 the private ECDSA signing key of the Sony PlayStation 3 was recovered exactly this way, because the same $r$ was used for every signature.
+  \item \textbf{Schnorr}: $S_2 = r + d S_1$ and $S'_2 = r + d S'_1 \pmod q$ give $d = (S_2 - S'_2)(S_1 - S'_1)^{-1} \bmod q$ directly. With the toy Schnorr key, $M = 15$ gave $(5, 7)$; $M' = 21$ with the same $r = 5$ gives $S'_1 = h(21 \,|\, 9) = 219 \bmod 11 = 10$ and $S'_2 = 5 + 70 \equiv 9$. Then $d = (7 - 9)(5 - 10)^{-1} = 9 \cdot 6^{-1} = 9 \cdot 2 = 18 \equiv \mathbf{7}$ \checkmark.
+  \item A \textbf{leaked} $r$ gives $d$ from a single signature: $d = (S_2 r - h)S_1^{-1}$ (DSS) or $d = (S_2 - r)S_1^{-1}$ (Schnorr) modulo $q$. Even a few predictable bits of many nonces are enough for lattice attacks, so $r$ must come from a strong random generator (or be derived deterministically from $d$ and $h(M)$, as RFC 6979 does).
+\end{itemize}
+
+\textbf{7. Attacks on the hash.} Signing the digest moves part of the security into $h$. If Eve can find a collision $h(M) = h(M')$ between a fair and a fraudulent document, Alice's signature on $M$ is also a signature on $M'$ (alternate collision attack with $2^{n/2}$ work, \S\ref{sec:integrity}). This is why signature schemes moved from MD5 and SHA-1 to SHA-2.
+
+\begin{center}\small
+\begin{tabularx}{\textwidth}{@{}l l l X@{}}
+\toprule
+Attack & Model & Result & Defence\\
+\midrule
+RSA: $M = S^e$ & key-only & existential & sign $h(M)$: Eve would need a preimage\\
+RSA: $S_1 S_2$ signs $M_1 M_2$ & known-message & existential & sign $h(M)$ (products are not digests); padding\\
+RSA blinding $M x^e$ & chosen-message & selective & sign $h(M)$; never sign raw data for others\\
+ElGamal $(u, v)$ forgery & key-only & existential & sign $h(M)$\\
+Reused / leaked $r$ & known-message & total break & fresh, secret, unpredictable $r$ (hash does not help)\\
+Hash collision & chosen-message & selective & collision-resistant hash ($n \ge 256$)\\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\subsection{Comparison of the five schemes}
+\likely{``Compare RSA, ElGamal, Schnorr, DSS and ECDSA signatures'' (3--4 marks).}
+
+\begin{center}\small
+\begin{tabularx}{\textwidth}{@{}l l l X l l@{}}
+\toprule
+Scheme & Hard problem & Private / public key & Signature & Size (typical) & Random $r$\\
+\midrule
+RSA & factoring & $d$ / $(e, n)$ & $S = h(M)^d \bmod n$ & 1024--2048 bits & no\\
+ElGamal & DLP mod $p$ & $d$ / $(e_1, e_2, p)$ & $S_1 = e_1^r$, $S_2 \bmod (p - 1)$ & $2|p| = 2048$ bits & yes, $\gcd(r, p{-}1) = 1$\\
+Schnorr & DLP, order-$q$ subgroup & $d$ / $(e_1, e_2, p, q)$ & $S_1 = h(M \,|\, e_1^r)$, $S_2 = r + dS_1$ & $2 \times 160 = 320$ bits & yes\\
+DSS & DLP, order-$q$ subgroup & $d$ / $(e_1, e_2, p, q)$ & $S_1 = (e_1^r \bmod p) \bmod q$, $S_2 \bmod q$ & 320 bits & yes\\
+ECDSA & ECDLP & $d$ / $(a, b, p, q, e_1, e_2)$ & $S_1 = x(r \times e_1) \bmod q$, $S_2 \bmod q$ & 320 bits (160-bit $q$) & yes\\
+\bottomrule
+\end{tabularx}
+\end{center}
+Verification conditions: RSA $S^e \equiv h(M)$; ElGamal $e_1^M \equiv e_2^{S_1} S_1^{S_2}$; Schnorr $h(M \,|\, e_1^{S_2} e_2^{-S_1}) = S_1$; DSS $(e_1^A e_2^B \bmod p) \bmod q = S_1$; ECDSA $x(A e_1 + B e_2) \bmod q = S_1$, with $A = h(M) S_2^{-1}$, $B = S_1 S_2^{-1} \bmod q$. RSA is the only deterministic scheme and the only one that also encrypts; the four discrete-logarithm schemes all fail completely if $r$ is reused, and the three order-$q$ schemes have 320-bit signatures.
+
+\begin{trap}[: the usual slips in signature numericals]
+In ElGamal, $S_2$ is reduced modulo $\boldsymbol{p - 1}$ and $r^{-1}$ is taken modulo $p - 1$, never modulo $p$; in DSS, Schnorr and ECDSA everything after $e_1^r$ (or $r \times e_1$) is modulo $\boldsymbol{q}$. In ElGamal verification the base of the first factor is $e_2$ (public), not $d$. Each new message gets a new $S_1$, and that new $S_1$ must be used in $S_2$ and in $V_2$. Turn $M - dS_1$ into a non-negative residue before multiplying by $r^{-1}$.
+\end{trap}
+
+\begin{fixbox}
+\begin{itemize}[leftmargin=1.2em,itemsep=0pt]
+  \item Slides 38--39: $V_2$ is printed as $d^{S_1} \times S_1^{S_2}$. It is $\boldsymbol{e_2}^{S_1} \times S_1^{S_2}$ (the private $d$ is unknown to Bob); the numbers on the slides do use $e_2 = 1702$.
+  \item Slide 39: $S_2 = (3000 - 127 \times 2083) \times 107^{-1}$ uses the \emph{old} $S_1$. With the new $r = 107$, $S_1 = 2^{107} \bmod 3119 = 2732$, and $S_2 = (3000 - 127 \times 2732) \times 107^{-1} = 2134 \times 1661 \bmod 3118 = \mathbf{2526}$, which is the value printed (with 2083 the result would be 1985). Likewise $V_2 = 1702^{2732} \times \mathbf{2732}^{2526} = 704 \bmod 3119$; as printed, $1702^{2732} \times 2083^{2526} \equiv 659$, which would not verify.
+  \item Slide 38: $e_1 = 2$ is not a primitive root of 3119. Since $3119 \equiv 7 \pmod 8$, 2 is a quadratic residue and its order is $1559 = (p-1)/2$. The example still verifies (every exponent identity holds modulo the order, which divides $p - 1$), but the key generation asks for a primitive root (e.g.\ 7 would do).
+  \item Slide 47: ``$e_1^p = 1 \bmod p$'' should read $e_1^{\boldsymbol{q}} \equiv 1 \pmod p$ ($e_1$ is a $q$-th root of 1). ``$\langle \mathbb{Z}_q^*, \times\rangle$ is a subgroup of $\langle \mathbb{Z}_p^*, \times\rangle$'' is loose: the subgroup of $\mathbb{Z}_p^*$ used is the order-$q$ group generated by $e_1$, and its exponents are computed modulo $q$.
+  \item Textbook DSS example ($p = 48731$, $q = 443$, $d = 242$, $r = 427$, $h(M) = 100$): if your copy shows $S_2 = 164$, it is wrong. With these values $S_1 = 59$ and $S_2 = \mathbf{375}$, and $V = 59$; the pair $(59, 164)$ gives $V = 119$ and fails.
+\end{itemize}
+\end{fixbox}

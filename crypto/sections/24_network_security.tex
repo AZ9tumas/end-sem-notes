@@ -7,10 +7,9 @@
   nsC/.style={draw, circle, inner sep=0pt, minimum size=4.6mm, font=\scriptsize},
   nsL/.style={font=\footnotesize, inner sep=1pt},
   nsA/.style={-{Stealth[length=1.6mm]}},
-  nsF/.style={draw, font=\scriptsize, minimum height=0.5cm, inner sep=1pt, anchor=south west},
   nsBr/.style={decorate, decoration={brace, amplitude=3pt}}
 }
-\providecommand{\nsfield}[5]{\node[nsF, minimum width=#3cm, fill=#5] at (#1,#2) {#4};}% x, y, width, label, fill
+\providecommand{\nsrect}[6]{\draw[fill=#6] (#1,#2) rectangle ++(#3,#4); \node[font=\scriptsize, align=center, inner sep=0pt] at (#1+#3/2,#2+#4/2) {#5};}% x, y, w, h, label, fill
 
 \section{Network Security Protocols and System Security}\label{sec:netsec}
 
@@ -23,24 +22,16 @@ Security can be added at three places, and the choice decides who must change an
 \begin{center}
 \begin{tikzpicture}[font=\footnotesize]
 \tikzset{lay/.style={draw, minimum width=2.9cm, minimum height=0.5cm, inner sep=1pt}}
-\foreach \x/\a/\b/\c/\d in {0/{HTTP\ \ FTP\ \ SMTP}/TCP/{IP / IPSec}/{(a) network level},
-                            4.0/{HTTP\ \ FTP\ \ SMTP}/{SSL or TLS}/TCP/{(b) transport level},
-                            8.0/{S/MIME\ \ PGP\ \ SET}/{SMTP\ \ HTTP}/TCP/{(c) application level}} {
-  \node[lay] at (\x,1.5) {\a};
-  \node[lay] at (\x,1.0) {\b};
-  \node[lay] at (\x,0.5) {\c};
-  \node[font=\footnotesize\itshape] at (\x,-0.1) {\d};
-}
-\node[lay, fill=acc!15] at (0,0.5) {IP / IPSec};
-\node[lay, fill=acc!15] at (4.0,1.0) {SSL or TLS};
-\node[lay, fill=acc!15] at (8.0,1.5) {S/MIME\ \ PGP\ \ SET};
-\node[lay] at (8.0,0.0+0.5) {TCP};
+\node[lay] at (0,1.0) {HTTP\ \ FTP\ \ SMTP}; \node[lay] at (0,0.5) {TCP}; \node[lay, fill=acc!15] at (0,0) {IP / IPSec};
+\node[lay] at (4,1.5) {HTTP\ \ FTP\ \ SMTP}; \node[lay, fill=acc!15] at (4,1.0) {SSL or TLS}; \node[lay] at (4,0.5) {TCP}; \node[lay] at (4,0) {IP};
+\node[lay, fill=acc!15] at (8,1.5) {S/MIME\ \ PGP\ \ SET}; \node[lay] at (8,1.0) {SMTP\ \ HTTP}; \node[lay] at (8,0.5) {TCP}; \node[lay] at (8,0) {IP};
+\foreach \x/\d in {0/{(a) network level}, 4/{(b) transport level}, 8/{(c) application level}} \node[font=\footnotesize\itshape] at (\x,-0.6) {\d};
 \end{tikzpicture}
 \end{center}
 \textbf{Network level (IPSec).} Security is applied to every IP packet, so it is transparent to applications and to users: no application has to be rewritten, and all traffic between two sites (web, mail, file transfer) is protected at once. \textbf{Transport level (SSL/TLS).} Security sits just above TCP and is used by the applications that ask for it (a browser opening an \ttx{https} connection); it protects one connection at a time. \textbf{Application level (PGP, S/MIME, SET).} Security is built into the application and can be tailored to it: an e-mail is signed by its author and stays signed in the recipient's mailbox, and SET can show the bank the card number while hiding it from the merchant. The price is that every application must implement its own security.
 
 \begin{center}\small
-\begin{tabularx}{\textwidth}{@{}l X X X@{}}
+\begin{tabularx}{\textwidth}{@{}l *{3}{>{\raggedright\arraybackslash}X}@{}}
 \toprule
  & Network (IPSec) & Transport (SSL/TLS) & Application (PGP, S/MIME, SET)\\
 \midrule
@@ -64,7 +55,7 @@ E-mail is a \textbf{one-way, store-and-forward} service: Alice writes the messag
 
 \textbf{Pretty Good Privacy} (PGP), written by Phil Zimmermann in 1991, is a freely available package that provides confidentiality and authentication for e-mail and file storage. It selected the best available algorithms as building blocks, runs on every platform, and is not controlled by any government or standards body, which explains its spread. PGP offers five services.
 \begin{center}\small
-\begin{tabularx}{\textwidth}{@{}l l X@{}}
+\begin{tabularx}{\textwidth}{@{}l l >{\raggedright\arraybackslash}X@{}}
 \toprule
 Service & Algorithms (classic PGP) & What is done\\
 \midrule
@@ -194,7 +185,7 @@ The important distinction is that \textbf{legitimacy} concerns the key (is it re
 
 \textbf{MIME} (Multipurpose Internet Mail Extensions) solves this within RFC 822 by adding five header fields (MIME-Version, Content-Type, Content-Transfer-Encoding, Content-ID and Content-Description), a set of standard content types, and transfer encodings (7bit, 8bit, binary, quoted-printable for mostly-ASCII text, and \textbf{base64} for arbitrary binary data) that make any content survive the mail system.
 \begin{center}\small
-\begin{tabularx}{\textwidth}{@{}l l X@{}}
+\begin{tabularx}{\textwidth}{@{}l l >{\raggedright\arraybackslash}X@{}}
 \toprule
 Type & Subtypes & Content\\
 \midrule
@@ -220,7 +211,7 @@ application & postscript, octet-stream & other data, e.g.\ arbitrary binary\\
 \subsection{PGP versus S/MIME \new}
 \likely{``Differentiate PGP and S/MIME'' (3--4 marks).}
 \begin{center}\small
-\begin{tabularx}{\textwidth}{@{}l X X@{}}
+\begin{tabularx}{\textwidth}{@{}l *{2}{>{\raggedright\arraybackslash}X}@{}}
 \toprule
  & PGP & S/MIME\\
 \midrule
@@ -236,3 +227,277 @@ Typical users & individuals & organisations and industry\\
 \end{tabularx}
 \end{center}
 Both use the same cryptographic pattern: hash-and-sign with the sender's private key, then hybrid encryption with a one-time session key wrapped in the recipient's public key.
+
+\section{IP Security (IPSec)}\label{sec:ipsec}
+
+\subsection{Why security at the IP level; applications and services \new}
+\likely{``What are the applications and benefits of IPSec? List the services provided by AH and ESP'' (4 marks).}
+
+\textbf{Problem.} IP itself offers no security: the source address of a packet can be forged, and any router or eavesdropper on the path can read or change the contents. Securing each application separately (as PGP does for mail) leaves all other traffic unprotected. \textbf{IPSec} adds authentication, integrity and confidentiality to IP itself, so that every packet between two hosts or two networks can be protected whatever application produced it. It is optional in IPv4 and was designed together with IPv6.
+
+\textbf{Applications.} IPSec is used for secure branch-office connectivity over the Internet (a \textbf{virtual private network}, VPN, instead of leased lines), secure remote access for employees through an ISP, extranet and intranet connections with partners, and as a basis for electronic commerce, since all traffic between the sites is protected without changes to the applications.
+
+\textbf{Benefits.} When IPSec is implemented in a firewall or router, it protects all traffic crossing the perimeter, while traffic inside the site carries no security overhead; and if all outside traffic must use IP through the firewall, IPSec there cannot be bypassed. Because it lies below the transport layer, it is \textbf{transparent to applications and to end users}: no software on the hosts has to change and users need no training or keys. It can also protect individual users where needed, and it secures routing (router advertisements and redirects really come from authorised routers).
+
+\textbf{Architecture and services.} IPSec consists of two traffic protocols, the \textbf{Authentication Header} (AH), which authenticates packets, and the \textbf{Encapsulating Security Payload} (ESP), which encrypts and optionally authenticates them, plus a key-management protocol (IKE) and the documents that define the algorithms. Together they provide the following services.
+\begin{center}\small
+\begin{tabular}{@{}l c c c@{}}
+\toprule
+Service & AH & ESP (encryption only) & ESP (encryption $+$ authentication)\\
+\midrule
+Access control & \checkmark & \checkmark & \checkmark\\
+Connectionless integrity & \checkmark & & \checkmark\\
+Data origin authentication & \checkmark & & \checkmark\\
+Rejection of replayed packets & \checkmark & \checkmark & \checkmark\\
+Confidentiality & & \checkmark & \checkmark\\
+Limited traffic-flow confidentiality & & \checkmark & \checkmark\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection{Security associations, SAD and SPD \hot\new}
+\likely{``What is a security association? What parameters identify it? Explain SAD and SPD'' (4 marks).}
+
+\textbf{Idea.} Before two parties can protect packets they must agree on the protocol (AH or ESP), the algorithms, the keys, the lifetime and so on. IPSec stores such an agreement as a \textbf{security association} (SA): \imp{a one-way relationship between a sender and a receiver that affords security services to the traffic carried on it.} Since it is one-way, a two-way conversation needs two SAs, one in each direction, and an SA covers one protocol only, AH or ESP. An SA is uniquely identified by three parameters:
+\begin{itemize}
+  \item the \textbf{Security Parameters Index} (SPI), a 32-bit value chosen by the receiver and carried in every AH and ESP header, which lets the receiver select the SA for an arriving packet;
+  \item the \textbf{IP destination address}, the address of the SA's endpoint (an end host or a firewall/router);
+  \item the \textbf{security protocol identifier}, which says whether the SA is AH or ESP.
+\end{itemize}
+
+\textbf{Security Association Database (SAD).} Each IPSec host keeps one entry per SA with the parameters needed to process its packets: the sequence number counter and its overflow flag, the anti-replay window, the AH information (authentication algorithm and keys), the ESP information (encryption and authentication algorithms, keys, IVs), the lifetime of the SA, the IPSec mode (transport or tunnel) and the path MTU.
+
+\textbf{Security Policy Database (SPD).} The SPD decides \emph{which} traffic gets \emph{which} protection. Each entry is defined by \textbf{selectors}, values of IP and upper-layer fields (destination and source IP addresses, user ID, data sensitivity level, transport protocol, source and destination ports), and specifies an action: \textbf{discard} the packet, \textbf{bypass} IPSec, or \textbf{protect} it with the SA(s) the entry points to. For every outbound packet IPSec compares the packet's fields with the SPD, finds the matching entry, determines the SA (creating one with IKE if none exists yet) and applies its processing. For an inbound packet the receiver uses the SPI, destination address and protocol to find the SA in the SAD, processes the packet, and then checks that the result is allowed by the SPD.
+
+\subsection{Transport mode and tunnel mode \hot\new}
+\likely{``Differentiate transport and tunnel mode; draw the packet formats for AH and ESP in both modes'' (5 marks).}
+
+Both AH and ESP can be used in two modes, which differ in what is protected and in where the IPSec processing is done.
+
+\textbf{Transport mode} protects the \emph{payload} of the IP packet, i.e.\ the upper-layer segment (TCP or UDP header plus data). The AH or ESP header is inserted between the original IP header and the payload, and the original IP header stays visible. It is used for \textbf{end-to-end} communication between two hosts that both run IPSec, such as a client and a server.
+
+\textbf{Tunnel mode} protects the \emph{entire} original IP packet. After the AH or ESP fields are added, the whole packet (including its original header) becomes the payload of a \textbf{new outer IP packet} with a new header, normally addressed from one security gateway to another. Routers on the path see only the outer header, so the inner source and destination addresses are hidden. Tunnel mode is used when one or both ends of the SA are \textbf{security gateways} (firewalls or routers): hosts behind the gateways need no IPSec at all, and the gateways build a VPN between the sites.
+
+\begin{center}
+\begin{tikzpicture}[font=\scriptsize]
+\def\h{0.5}
+% (a) original
+\node[anchor=east, align=right] at (-0.2,0.25) {original\\IPv4 packet};
+\nsrect{0}{0}{1.6}{\h}{orig IP hdr}{gray!15}\nsrect{1.6}{0}{1.0}{\h}{TCP}{white}\nsrect{2.6}{0}{2.0}{\h}{Data}{white}
+% (b) AH transport
+\begin{scope}[yshift=-1.4cm]
+\node[anchor=east, align=right] at (-0.2,0.25) {AH,\\transport};
+\nsrect{0}{0}{1.6}{\h}{orig IP hdr}{gray!15}\nsrect{1.6}{0}{1.0}{\h}{AH}{gold!30}\nsrect{2.6}{0}{1.0}{\h}{TCP}{white}\nsrect{3.6}{0}{2.0}{\h}{Data}{white}
+\draw[nsBr] (0,0.58) -- node[above=2pt]{authenticated except mutable fields} (5.6,0.58);
+\end{scope}
+% (c) AH tunnel
+\begin{scope}[yshift=-2.8cm]
+\node[anchor=east, align=right] at (-0.2,0.25) {AH,\\tunnel};
+\nsrect{0}{0}{1.6}{\h}{new IP hdr}{acc!15}\nsrect{1.6}{0}{1.0}{\h}{AH}{gold!30}\nsrect{2.6}{0}{1.6}{\h}{orig IP hdr}{gray!15}\nsrect{4.2}{0}{1.0}{\h}{TCP}{white}\nsrect{5.2}{0}{2.0}{\h}{Data}{white}
+\draw[nsBr] (0,0.58) -- node[above=2pt]{authenticated except mutable fields in the new IP header} (7.2,0.58);
+\end{scope}
+% (d) ESP transport
+\begin{scope}[yshift=-4.6cm]
+\node[anchor=east, align=right] at (-0.2,0.25) {ESP,\\transport};
+\nsrect{0}{0}{1.6}{\h}{orig IP hdr}{gray!15}\nsrect{1.6}{0}{1.2}{\h}{ESP hdr}{ok!25}\nsrect{2.8}{0}{1.0}{\h}{TCP}{white}\nsrect{3.8}{0}{2.0}{\h}{Data}{white}\nsrect{5.8}{0}{1.2}{\h}{ESP trlr}{ok!25}\nsrect{7.0}{0}{1.2}{\h}{ESP auth}{ok!25}
+\draw[nsBr] (1.6,0.58) -- node[above=2pt]{authenticated} (7.0,0.58);
+\draw[nsBr] (7.0,-0.08) -- node[below=2pt]{encrypted} (2.8,-0.08);
+\end{scope}
+% (e) ESP tunnel
+\begin{scope}[yshift=-6.4cm]
+\node[anchor=east, align=right] at (-0.2,0.25) {ESP,\\tunnel};
+\nsrect{0}{0}{1.6}{\h}{new IP hdr}{acc!15}\nsrect{1.6}{0}{1.2}{\h}{ESP hdr}{ok!25}\nsrect{2.8}{0}{1.6}{\h}{orig IP hdr}{gray!15}\nsrect{4.4}{0}{1.0}{\h}{TCP}{white}\nsrect{5.4}{0}{2.0}{\h}{Data}{white}\nsrect{7.4}{0}{1.2}{\h}{ESP trlr}{ok!25}\nsrect{8.6}{0}{1.2}{\h}{ESP auth}{ok!25}
+\draw[nsBr] (1.6,0.58) -- node[above=2pt]{authenticated} (8.6,0.58);
+\draw[nsBr] (8.6,-0.08) -- node[below=2pt]{encrypted} (2.8,-0.08);
+\end{scope}
+\end{tikzpicture}
+\end{center}
+
+\begin{center}\small
+\begin{tabularx}{\textwidth}{@{}l *{2}{>{\raggedright\arraybackslash}X}@{}}
+\toprule
+ & Transport mode SA & Tunnel mode SA\\
+\midrule
+AH & authenticates the IP payload and selected (immutable) parts of the IP header & authenticates the entire inner IP packet and selected parts of the outer IP header\\
+ESP & encrypts the IP payload & encrypts the entire inner IP packet (inner header included)\\
+ESP with authentication & encrypts and authenticates the IP payload, but not the IP header & encrypts and authenticates the entire inner IP packet\\
+Endpoints & hosts (end-to-end) & usually security gateways (VPN)\\
+Addresses seen on the path & real source and destination & only the gateways' addresses\\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\subsection{Authentication Header (AH) \hot\new}
+\likely{``Draw the AH format and explain each field; which IP header fields are authenticated?'' (4--5 marks).}
+
+\textbf{Purpose.} AH provides data integrity and data origin authentication of IP packets, plus anti-replay protection. It prevents address spoofing, since the source address is authenticated, and it stops replay through the sequence number. It is based on a MAC (HMAC, \S\ref{sec:integrity}), so the two parties must share a secret key. AH provides \emph{no} confidentiality.
+
+\begin{center}
+\begin{tikzpicture}[font=\scriptsize]
+\def\u{0.2}
+\node[font=\footnotesize\bfseries] at (3.2,2.95) {AH};
+\foreach \b/\x in {0/0, 8/1.6, 16/3.2, 31/6.2} \node at (\x+0.1,2.65) {\b};
+\nsrect{0}{2.0}{1.6}{0.5}{Next header}{gold!20}\nsrect{1.6}{2.0}{1.6}{0.5}{Payload len}{gold!20}\nsrect{3.2}{2.0}{3.2}{0.5}{Reserved}{gold!20}
+\nsrect{0}{1.5}{6.4}{0.5}{Security Parameters Index (SPI)}{white}
+\nsrect{0}{1.0}{6.4}{0.5}{Sequence number}{white}
+\nsrect{0}{0}{6.4}{1.0}{Authentication data (ICV), variable}{acc!10}
+\begin{scope}[xshift=7.3cm]
+\node[font=\footnotesize\bfseries] at (3.2,2.95) {ESP};
+\foreach \b/\x in {0/0, 16/3.2, 24/4.8, 31/6.2} \node at (\x+0.1,2.65) {\b};
+\nsrect{0}{2.0}{6.4}{0.5}{Security Parameters Index (SPI)}{white}
+\nsrect{0}{1.5}{6.4}{0.5}{Sequence number}{white}
+\nsrect{0}{0.5}{6.4}{1.0}{Payload data (variable)}{ok!15}
+\nsrect{0}{0}{6.4}{0.5}{Padding (0--255 bytes)}{ok!15}
+\nsrect{0}{-0.5}{3.2}{0.5}{padding (cont.)}{ok!15}\nsrect{3.2}{-0.5}{1.6}{0.5}{Pad length}{ok!15}\nsrect{4.8}{-0.5}{1.6}{0.5}{Next header}{ok!15}
+\nsrect{0}{-1.3}{6.4}{0.8}{Authentication data (ICV), variable}{acc!10}
+\draw[nsBr] (6.55,1.5) -- node[right=3pt]{encrypted} (6.55,-0.5);
+\draw[nsBr] (7.85,2.5) -- node[right=3pt]{authenticated} (7.85,-0.5);
+\end{scope}
+\end{tikzpicture}
+\end{center}
+
+\textbf{Fields.}
+\begin{itemize}
+  \item \textbf{Next header} (8 bits) identifies the header that follows AH (e.g.\ TCP in transport mode, IP in tunnel mode).
+  \item \textbf{Payload length} (8 bits) is the length of AH in 32-bit words, minus 2.
+  \item \textbf{Reserved} (16 bits) for future use.
+  \item \textbf{SPI} (32 bits) identifies the SA.
+  \item \textbf{Sequence number} (32 bits) is a monotonically increasing counter used for anti-replay.
+  \item \textbf{Authentication data} (variable, a multiple of 32 bits) holds the \textbf{integrity check value} (ICV), a MAC of the packet; the defaults were HMAC-MD5-96 and HMAC-SHA-1-96, i.e.\ the HMAC truncated to its first 96 bits.
+\end{itemize}
+
+\textbf{What the ICV covers.} The MAC must be the same at the sender and at the receiver, but some IP header fields legitimately change on the way. AH therefore computes the MAC over the IP header fields that are \textbf{immutable} in transit (version, header length, total length, identification, protocol, source address, destination address) or \textbf{mutable but predictable} at the endpoint (the destination address when source routing is used, which is set to its final value). The \textbf{mutable, unpredictable} fields (type of service, flags, fragment offset, time to live, header checksum) are set to zero for the calculation at both ends. The MAC also covers the AH header itself, with the authentication data field set to zero, and the entire upper-layer data, which is immutable. Because the source and destination addresses are inside the MAC, an attacker cannot change them without detection; this is also why AH does not work through NAT, which rewrites addresses.
+
+\begin{worked}[: AH length field and packet size]
+\textbf{Q.} AH uses HMAC-SHA-1-96. Find the value of the Payload length field and the size of the packet when a 37-byte TCP segment (20-byte header, 17 data bytes) is sent from a host with a 20-byte IPv4 header in transport mode and in tunnel mode.
+
+\textbf{A.} Fixed AH fields: $1 + 1 + 2 + 4 + 4 = 12$ bytes; ICV $= 96$ bits $= 12$ bytes; AH $= 24$ bytes $= 6$ words, so Payload length $= 6 - 2 = \mathbf{4}$.\\
+Transport: $20 + 24 + 37 = \mathbf{81}$ bytes. Tunnel: new IP header $+$ AH $+$ inner packet $= 20 + 24 + (20 + 37) = \mathbf{101}$ bytes.\\
+\emph{Check}: tunnel mode costs exactly one extra 20-byte IP header.
+\end{worked}
+
+\subsection{Anti-replay service \new}
+\likely{``Explain the IPSec anti-replay window with an example'' (3--4 marks).}
+
+\textbf{Problem.} In a replay attack the attacker records an authenticated packet and sends it again later; the MAC is still valid, so authentication alone cannot reject it. IP gives no ordering guarantee, so the receiver also cannot simply demand increasing numbers: packets may legitimately arrive out of order.
+
+\textbf{Sender side.} When an SA is created, the sender's sequence counter is set to 0; for each packet it is incremented and written into the Sequence number field, so the first packet carries 1. The counter must not wrap around past $2^{32} - 1$: before that the SA is terminated and a new SA with a new key is negotiated, so no number repeats under one key.
+
+\textbf{Receiver side.} The receiver keeps a \textbf{window} of size $W$ (default 64) whose right edge $N$ is the highest sequence number received so far in a valid packet; for each number from $N - W + 1$ to $N$ it remembers whether a valid packet with that number has arrived (marked slot). For an arriving packet:
+\begin{enumerate}
+  \item if its number is \textbf{inside the window} and the slot is unmarked, the MAC is checked; if it is valid, the slot is marked;
+  \item if its number is \textbf{to the right of the window}, the MAC is checked; if it is valid, the window is advanced so that this number becomes the right edge, and its slot is marked;
+  \item if its number is \textbf{to the left of the window}, or the slot is already marked, or the MAC fails, the packet is discarded (and the event is logged).
+\end{enumerate}
+The MAC is checked before the window moves, so a forged packet with a huge sequence number cannot push the window forward.
+
+\begin{worked}[: tracing the anti-replay window]
+\textbf{Q.} $W = 8$ and the right edge is $N = 20$, so the window is 13--20; valid packets 13, 14, 16, 17, 19, 20 have arrived. Packets arrive with numbers 18, 16, 25, 15, 21 (all with valid MACs). What happens to each?
+\begin{center}\small
+\begin{tikzpicture}[font=\scriptsize]
+\foreach \n [count=\i] in {13,...,20} {
+  \pgfmathsetmacro\f{(\n==15 || \n==18) ? 0 : 1}
+  \ifdim\f pt>0.5pt \nsrect{\i*0.6}{0}{0.6}{0.45}{\n}{acc!25}\else\nsrect{\i*0.6}{0}{0.6}{0.45}{\n}{white}\fi
+}
+\node[anchor=west] at (5.6,0.22) {window 13--20 (shaded $=$ received)};
+\draw[nsA] (5.4,-0.25) -- node[below]{advance} (6.2,-0.25);
+\end{tikzpicture}
+\begin{tabular}{@{}c l l@{}}
+\toprule
+Packet & Position & Action and new window\\
+\midrule
+18 & inside, slot unmarked & accept, mark 18; window 13--20\\
+16 & inside, slot marked & \textbf{replay}: discard\\
+25 & right of window & accept; window slides to 18--25 (marked 18, 19, 20, 25)\\
+15 & left of the new window & discard, although 15 was never received\\
+21 & inside, slot unmarked & accept, mark 21\\
+\bottomrule
+\end{tabular}
+\end{center}
+\emph{Check}: packet 15 shows the cost of a finite window: a genuine but very late packet is dropped; a larger $W$ tolerates more reordering.
+\end{worked}
+
+\subsection{Encapsulating Security Payload (ESP) \hot\new}
+\likely{``Draw the ESP format; why is padding needed? Compare AH and ESP'' (5 marks).}
+
+\textbf{Purpose.} ESP provides \textbf{confidentiality} (encryption of the payload), limited traffic-flow confidentiality, and optionally the same authentication, integrity and anti-replay services as AH, all with one header and trailer (format above).
+
+\textbf{Fields.} \textbf{SPI} and \textbf{sequence number} are as in AH. \textbf{Payload data} (variable) is the transport-layer segment (transport mode) or the whole inner IP packet (tunnel mode), encrypted; if the cipher needs an IV (e.g.\ AES-CBC, \S\ref{sec:modes}), it is carried in the clear at the start of this field. \textbf{Padding} (0--255 bytes) is followed by the \textbf{pad length} (8 bits, the number of padding bytes) and the \textbf{next header} (8 bits, the type of the encrypted payload). \textbf{Authentication data} (variable) is the ICV, computed over the ESP packet from the SPI to the next-header field, i.e.\ \emph{after} encryption.
+
+\textbf{Why padding.} Padding is added for three reasons: a block cipher needs the plaintext (payload, padding, pad length and next header) to be a whole number of blocks; ESP requires the pad-length and next-header fields to end on a 32-bit boundary, so the ciphertext is a multiple of 4 bytes; and extra padding can hide the true length of the payload, which gives partial traffic-flow confidentiality.
+
+\textbf{Encrypt-then-MAC.} Because the ICV is computed over the ciphertext, the receiver checks it first and discards bogus or replayed packets \emph{before} spending time on decryption, which reduces the impact of denial-of-service attacks, and the two operations can be done in parallel. Unlike AH, ESP's authentication does \emph{not} cover the IP header in front of the ESP header (in tunnel mode the inner header is covered, being inside the payload).
+
+\begin{worked}[: ESP padding and packet size]
+\textbf{Q.} ESP uses AES-CBC (16-byte blocks, 16-byte explicit IV) and HMAC-SHA-1-96 (12-byte ICV). The same 37-byte TCP segment as above is sent. Find the padding and the total packet size in transport and in tunnel mode (IPv4 header 20 bytes).
+
+\textbf{A.} The encrypted part is payload $+$ padding $+$ pad length (1) $+$ next header (1), a multiple of 16.\\
+Transport: payload $= 37$; $37 + 2 = 39$; padding $= (-39) \bmod 16 = \mathbf{9}$; encrypted part $= 48$ bytes. Total $= 20$ (IP) $+ 8$ (SPI, seq.) $+ 16$ (IV) $+ 48 + 12$ (ICV) $= \mathbf{104}$ bytes.\\
+Tunnel: payload $=$ inner packet $= 20 + 37 = 57$; $57 + 2 = 59$; padding $= (-59) \bmod 16 = \mathbf{5}$; encrypted part $= 64$. Total $= 20 + 8 + 16 + 64 + 12 = \mathbf{120}$ bytes.\\
+\emph{Check}: $48 = 3 \times 16$ and $64 = 4 \times 16$.
+\end{worked}
+
+\subsection{AH versus ESP \new}
+\likely{``Differentiate AH and ESP'' (3 marks).}
+\begin{center}\small
+\begin{tabularx}{\textwidth}{@{}l *{2}{>{\raggedright\arraybackslash}X}@{}}
+\toprule
+ & AH & ESP\\
+\midrule
+Services & integrity, origin authentication, anti-replay & confidentiality, optional integrity/authentication, anti-replay, limited traffic-flow confidentiality\\
+Encryption & none & payload (and inner header in tunnel mode)\\
+Authentication covers & payload, AH header and immutable/predictable fields of the (outer) IP header & ESP header, payload and trailer only, not the IP header in front\\
+Header/trailer & header only & header, trailer and ICV\\
+Works through NAT & no (addresses are authenticated) & yes (transport/UDP encapsulation)\\
+IP protocol number & 51 & 50\\
+\bottomrule
+\end{tabularx}
+\end{center}
+Since ESP with authentication offers almost everything AH does, plus confidentiality, ESP is by far the more widely used; AH is chosen only when the outer IP header itself must be authenticated or when encryption is not allowed.
+
+\subsection{Combining security associations \new}
+\likely{``Explain transport adjacency and iterated tunnelling; give the basic combinations of SAs'' (4 marks).}
+
+One SA implements either AH or ESP, but not both, and a packet may need different services between different pairs of nodes (end-to-end authentication between hosts, plus encryption between the two gateways). IPSec therefore allows a packet to be processed by a sequence of SAs, called an \textbf{SA bundle}. SAs are combined in two ways. In \textbf{transport adjacency} more than one security protocol is applied to the same IP packet without tunnelling, for example ESP and then AH in transport mode between the same two hosts; since both act at the same endpoints, only one level of combination is possible. In \textbf{iterated tunnelling} several layers of protocols are applied by IP tunnelling, one inside the other; each tunnel may start and end at a different IPSec node along the path, so many levels of nesting are possible.
+
+\textbf{Authentication plus confidentiality} can be obtained in three ways: ESP with its authentication option; transport adjacency with an inner ESP SA (no authentication) and an outer AH SA, which has the advantage that the authentication now also covers the IP addresses; or a bundle of an inner AH transport SA and an outer ESP tunnel SA, which authenticates the plaintext before encryption, so the authentication data are protected by encryption and can be stored with the message for later checking.
+
+\textbf{Basic combinations} (Stallings). Case 1: end-to-end security between two IPSec hosts (AH or ESP in transport mode, or one inside the other). Case 2: security only between two gateways, a simple VPN with one tunnel SA, the hosts doing nothing. Case 3: case 2 plus case 1, a gateway-to-gateway tunnel that carries end-to-end transport SAs between the hosts. Case 4: a remote host reaches the organisation's firewall over the Internet with a tunnel SA, and an inner SA protects the traffic all the way to the server inside.
+
+\subsection{Key management: Oakley, ISAKMP and IKE \hot\new}
+\likely{``How does Oakley improve Diffie--Hellman? Explain cookies (clogging attack) and nonces (replay)'' (5 marks).}
+
+\textbf{Problem.} AH and ESP need shared secret keys: two pairs per two-way SA bundle (one for integrity, one for encryption in each direction). With \textbf{manual} key management an administrator configures each system with its own and its peers' keys, which only works for small static networks. \textbf{Automated} management creates keys on demand; the default for IPSec is \textbf{ISAKMP/Oakley}, later called the Internet Key Exchange (\textbf{IKE}). Oakley is a key-determination protocol based on Diffie--Hellman (\S\ref{sec:keymgmt}); ISAKMP is the framework that defines the message formats and procedures for negotiating, establishing, modifying and deleting SAs.
+
+\textbf{Weaknesses of plain Diffie--Hellman.} Diffie--Hellman lets two parties create a shared secret $g^{xy} \bmod p$ over a public channel, but (1) it provides no information about the identities of the parties, so a man in the middle can run one exchange with each side (\S\ref{sec:keymgmt}); and (2) it is computationally intensive, which opens a \textbf{clogging attack}: the attacker sends a flood of requests with forged source addresses, each forcing the victim to compute a modular exponentiation, until its processor is exhausted.
+
+\textbf{Oakley's improvements.} Oakley keeps the advantages of Diffie--Hellman (keys are created only when needed, no pre-existing infrastructure beyond global parameters) and adds five features:
+\begin{itemize}
+  \item \textbf{Cookies} to thwart clogging attacks.
+  \item Negotiation of a \textbf{group}, i.e.\ the global parameters of the exchange (768- or 1024-bit modular exponentiation, or elliptic-curve groups).
+  \item \textbf{Nonces} to ensure against replay attacks.
+  \item Exchange of the Diffie--Hellman public values.
+  \item \textbf{Authentication} of the exchange, by digital signatures, public-key encryption or a symmetric key, to thwart man-in-the-middle attacks.
+\end{itemize}
+
+\textbf{Cookies.} Each side sends a pseudorandom number, the cookie, in its first message, and the other side must echo it in the first message of the Diffie--Hellman exchange. A cookie is sent to the claimed source address, so an attacker who forges the address never receives it and cannot echo it. As a result \imp{the attacker can only make the victim generate cookies, never perform the expensive exponentiation.} A cookie must satisfy three requirements: it must depend on the specific parties (so that a cookie obtained with the attacker's real address cannot be reused from forged addresses and ports); it must be impossible for anyone but the issuer to generate a cookie the issuer will accept (so it depends on a local secret, which cannot be deduced from any cookie); and generating and checking it must be fast. The recommended construction is a fast hash over the source and destination IP addresses, the source and destination ports and a locally generated secret value, $\mathrm{CKY} = H(\mathrm{IP}_s \| \mathrm{IP}_d \| \mathrm{port}_s \| \mathrm{port}_d \| \text{secret})$; the issuer stores nothing and simply recomputes the hash when the cookie comes back.
+
+\begin{center}
+\begin{tikzpicture}[font=\scriptsize]
+\node[draw, fill=gray!10, font=\footnotesize] (i) at (0,0) {Initiator I};
+\node[draw, fill=gray!10, font=\footnotesize] (r) at (12,0) {Responder R};
+\draw[gray] (i) -- (0,-4.6); \draw[gray] (r) -- (12,-4.6);
+\draw[nsA, thick] (0,-1.2) -- node[above, align=center]{\textbf{1}\; CKY$_I$, OK\_KEYX, GRP, $g^x$, EHAO, NIDP, ID$_I$, ID$_R$, $N_I$,\\$S_{KI}[\mathrm{ID}_I \| \mathrm{ID}_R \| N_I \| \mathrm{GRP} \| g^x \| \mathrm{EHAO}]$} (12,-1.2);
+\draw[nsA, thick] (12,-2.6) -- node[above, align=center]{\textbf{2}\; CKY$_R$, CKY$_I$, OK\_KEYX, GRP, $g^y$, EHAS, NIDP, ID$_R$, ID$_I$, $N_R$, $N_I$,\\$S_{KR}[\mathrm{ID}_R \| \mathrm{ID}_I \| N_R \| N_I \| \mathrm{GRP} \| g^y \| g^x \| \mathrm{EHAS}]$} (0,-2.6);
+\draw[nsA, thick] (0,-4.0) -- node[above, align=center]{\textbf{3}\; CKY$_I$, CKY$_R$, OK\_KEYX, GRP, $g^x$, EHAS, NIDP, ID$_I$, ID$_R$, $N_I$, $N_R$,\\$S_{KI}[\mathrm{ID}_I \| \mathrm{ID}_R \| N_I \| N_R \| \mathrm{GRP} \| g^x \| g^y \| \mathrm{EHAS}]$} (12,-4.0);
+\end{tikzpicture}
+\end{center}
+\textbf{The aggressive Oakley exchange} (Stallings) above uses three messages. CKY are cookies, OK\_KEYX marks a key-exchange message, GRP names the Diffie--Hellman group, $g^x$ and $g^y$ are the public values, EHAO and EHAS are the encryption, hash and authentication algorithms offered and selected, NIDP says that the rest of the message is not encrypted, ID are identities, $N$ are nonces, and $S_K[\,\cdot\,]$ is a signature with the sender's private key.
+\begin{itemize}
+  \item \textbf{Message 1.} I sends its cookie, the group and its public value $g^x$, the algorithms it offers, both identities and a fresh nonce $N_I$, and signs the identities, nonce, group, $g^x$ and offer with its private key. The signature binds $g^x$ to I's identity, so a man in the middle cannot substitute his own value.
+  \item \textbf{Message 2.} R returns its cookie and echoes I's, sends $g^y$, the selected algorithms and its nonce $N_R$, echoes $N_I$, and signs all of this \emph{including} $N_I$ and $g^x$. Signing I's fresh nonce proves that the reply is new and not a replay, and signing $g^x$ confirms which exchange it answers.
+  \item \textbf{Message 3.} I echoes R's cookie, which proves that I really receives messages at its claimed address, and signs both nonces and both public values, which proves to R that I is live and holds the private key.
+\end{itemize}
+Both sides then compute $K = g^{xy} \bmod p$ and derive the keys from it. The aggressive mode saves messages but makes R compute $g^y$ before it has seen its own cookie echoed; the six-message \textbf{main mode} first exchanges cookies and the SA proposal (messages 1--2), then the Diffie--Hellman values and nonces (3--4), and only then the identities and authentication, encrypted under the new key (5--6), which also hides the identities from eavesdroppers.
+
+\textbf{ISAKMP and the IKE phases.} An ISAKMP message starts with a header holding the initiator and responder cookies (64 bits each), the type of the next payload, version numbers, the exchange type, flags, a message ID and the length, followed by a chain of payloads (SA, proposal, transform, key exchange, identification, certificate, certificate request, hash, signature, nonce, notification, delete). IKE works in two phases. \textbf{Phase 1} (main or aggressive mode) authenticates the peers and builds a protected \textbf{IKE SA} between them. \textbf{Phase 2} (``quick mode'') runs under the protection of the IKE SA and quickly negotiates the actual AH/ESP SAs, and can be repeated to create more SAs or to rekey without a new Diffie--Hellman exchange. The current version, IKEv2, does the same with four messages (IKE\_SA\_INIT and IKE\_AUTH) and lets a busy responder answer the first message statelessly with a cookie, the same anti-clogging idea.

@@ -333,3 +333,458 @@ Size of $n$ & Trial division & Pollard rho & QS $L[1/2, 1]$ & NFS $L[1/3, 1.923]
 \end{center}
 \textbf{Consequences.} The 1024-bit minimum of the lecture slides (\S\ref{sec:rsa}) is now considered too small for new keys; 2048 bits is the current minimum and 3072 bits matches AES-128. Since NFS is sub-exponential, doubling the key length far less than squares the work, which is why RSA keys grow quickly for each extra bit of security (15360 bits for 256-bit security), and why elliptic-curve keys (256 bits for 128-bit security) are preferred where size matters. Shor's algorithm would factor $n$ in polynomial time on a large quantum computer, which is the reason for the current migration to post-quantum algorithms.
 
+%=====================================================================
+\section{Attacks on RSA: Can Any of Them Succeed?}\label{sec:rsaattacks}
+
+\subsection{The question, the toy key and the reference key \new}
+\likely{``Explain the attacks on RSA. Verify whether any of them can be launched successfully; if not, justify why'' (8--10 marks, the assignment question).}
+
+\S\ref{sec:rsa} lists the attacks on RSA in one line each. The assignment asks for more: for each attack, \emph{why} it works, a demonstration that it really does work on a weak key, and a justification of why it fails against a correctly chosen key. Every attack below exploits one of three things: a mathematical shortcut that exists only for special parameters (small $e$, small $d$, shared $n$, special primes), the \emph{deterministic and multiplicative} structure of textbook RSA, or a leak from the implementation. The demonstrations use the textbook toy key
+\[
+p = 53,\quad q = 61,\quad n = 3233,\quad \phi(n) = 3120,\quad e = 17,\quad d = 2753 \quad (17 \times 2753 = 46801 = 15 \cdot 3120 + 1),
+\]
+and the verdicts are given for the \textbf{reference key} that standards require today: $n$ of 2048 bits or more with random primes $p, q$ of equal length generated independently by each user, $e = 65537$, $d \approx n$ in size, messages encoded with OAEP (\S\ref{sec:oaep}), and a constant-time, blinded implementation.
+
+\subsection{Attack 1: factoring $n$}
+\textbf{Idea.} The private key is a function of the factors: $\phi(n) = (p - 1)(q - 1)$ and $d = e^{-1} \bmod \phi(n)$. Eve, who knows $(e, n)$, repeats Bob's key generation as soon as she factors $n$.
+
+\textbf{Demonstration.} For $n = 3233$, trial division up to $\lfloor\sqrt{3233}\rfloor = 56$ finds $53 \mid 3233$, so $q = 61$, $\phi = 52 \times 60 = 3120$ and $d = 17^{-1} \bmod 3120 = 2753$: the key is completely broken. A related real-world failure is a \emph{shared prime}: if two keys were generated with a poor random-number generator and share a factor, a single gcd breaks both. For $n_1 = 3233 = 53 \cdot 61$ and $n_2 = 4087 = 61 \cdot 67$, Euclid gives $\gcd(3233, 4087) = 61$ immediately. Surveys of public keys on the internet in 2012 found thousands of device keys broken this way.
+
+\textbf{Can it be launched?} Not against the reference key. The special-purpose methods of \S\ref{sec:factoring} need a weakness of one factor (small, $p \approx q$, smooth $p - 1$), and random 1024-bit primes have none of them with any measurable probability; the general NFS needs roughly $2^{112}$ operations for 2048 bits, and the record is 829 bits. Shared primes are avoided by seeding key generation with enough entropy. Factoring remains the ultimate attack, which is why key sizes grow over time and why quantum computers would end RSA.
+
+\subsection{Attack 2: common modulus \hot\new}
+\likely{``Two users share $n$; the same message is sent with $e_1, e_2$. Recover it'' (5 marks).}
+
+\textbf{Setting.} To save work, a trusted centre picks one modulus $n$ and gives each user a different pair $(e_i, d_i)$. Alice sends the same $M$ to two users with exponents $e_1, e_2$, $\gcd(e_1, e_2) = 1$; Eve sees $C_1 = M^{e_1} \bmod n$ and $C_2 = M^{e_2} \bmod n$.
+
+\textbf{Derivation.} Since $\gcd(e_1, e_2) = 1$, the extended Euclidean algorithm gives integers $s, t$ with $s e_1 + t e_2 = 1$ (one of them negative). Then
+\[
+C_1^{\,s}\, C_2^{\,t} \equiv M^{s e_1} M^{t e_2} = M^{s e_1 + t e_2} = M^1 \pmod n .
+\]
+A negative exponent is computed with the inverse: if $s < 0$, use $(C_1^{-1})^{-s}$, which exists unless $\gcd(C_1, n) > 1$ (and that would factor $n$). No private key is needed.
+
+\begin{worked}[: common modulus attack (new)]
+\textbf{Q.} Two users share $n = 3233$ with public exponents $e_1 = 7$ and $e_2 = 11$. The same message is sent to both; Eve intercepts $C_1 = 1844$ and $C_2 = 1268$. Recover $M$.
+
+\textbf{Step 1: $s, t$.} Extended Euclid on $(11, 7)$:
+\begin{center}\small
+\begin{tabular}{@{}c|ccc|ccc|ccc@{}}
+\toprule
+$q$ & $r_1$ & $r_2$ & $r$ & $s_1$ & $s_2$ & $s$ & $t_1$ & $t_2$ & $t$\\
+\midrule
+1 & 11 & 7 & 4 & 1 & 0 & 1 & 0 & 1 & $-1$\\
+1 & 7 & 4 & 3 & 0 & 1 & $-1$ & 1 & $-1$ & 2\\
+1 & 4 & 3 & 1 & 1 & $-1$ & 2 & $-1$ & 2 & $-3$\\
+3 & 3 & 1 & 0 & $-1$ & 2 & $-7$ & 2 & $-3$ & 11\\
+ & \textbf{1} & 0 & & \textbf{2} & $-7$ & & $\mathbf{-3}$ & 11 & \\
+\bottomrule
+\end{tabular}
+\end{center}
+$2 \cdot 11 + (-3) \cdot 7 = 1$, so the exponent of $C_1$ (for $e_1 = 7$) is $-3$ and that of $C_2$ (for $e_2 = 11$) is $2$.
+
+\textbf{Step 2: inverse.} $C_1^{-1} = 1844^{-1} \bmod 3233 = 3098$ (check: $1844 \times 3098 \equiv 1$).
+
+\textbf{Step 3: combine.} $(C_1^{-1})^3 = 3098^3 \bmod 3233 = 3171$; \;$C_2^2 = 1268^2 \bmod 3233 = 1023$; \;$M = 3171 \times 1023 \bmod 3233 = \mathbf{1234}$.
+
+\textbf{Check.} $1234^7 \bmod 3233 = 1844$ and $1234^{11} \bmod 3233 = 1268$ \checkmark.
+\end{worked}
+
+\textbf{The insider attack.} A shared modulus is broken even if no message is ever sent twice, because any user who holds one pair $(e, d)$ can factor $n$. Write $ed - 1 = 2^s t$ with $t$ odd; $ed - 1$ is a multiple of $\phi(n)$, so $a^{ed-1} \equiv 1$ for every $a$ coprime to $n$. Squaring $a^t$ repeatedly therefore reaches 1, and the value just before the first 1 is a square root of 1; with probability at least $1/2$ it is a \emph{nontrivial} one, which factors $n$ exactly as in the Miller--Rabin discussion (\S\ref{sec:primes}). With the toy key, $ed - 1 = 46800 = 2^4 \times 2925$. Base $a = 2$: $2^{2925} \equiv 1514$, $1514^2 \equiv 3232 = -1$, a trivial root, so try again. Base $a = 3$: $3^{2925} \equiv 2256$, $2256^2 \equiv 794$, $794^2 \equiv 1$; so 794 is a nontrivial square root of 1, and $\gcd(793, 3233) = 61$, $\gcd(795, 3233) = 53$. This is also why a leaked $d$ forces Bob to change $n$, not just $d$.
+
+\textbf{Can it be launched?} Only if a modulus is shared, which the recommendations forbid (``the modulus $n$ must not be shared''). With every user generating his own $p, q$, the attack does not apply.
+
+\subsection{Attack 3: H\aa stad's broadcast attack (low encryption exponent) \hot\new}
+\likely{``The same message is sent with $e = 3$ to three users; show how Eve recovers it'' (5 marks).}
+
+\textbf{Setting.} A small public exponent such as $e = 3$ makes encryption cheap. Alice sends the same unpadded $M$ to three receivers with pairwise coprime moduli $n_1, n_2, n_3$, all with $e = 3$: $C_i = M^3 \bmod n_i$.
+
+\textbf{Derivation.} By the CRT (\S\ref{sec:primes}) Eve computes the unique $X < N = n_1 n_2 n_3$ with $X \equiv C_i \pmod{n_i}$ for $i = 1, 2, 3$; this $X$ is $M^3 \bmod N$. Since $M < n_i$ for each $i$, $M^3 < n_1 n_2 n_3 = N$, so no reduction took place: $X = M^3$ \emph{as an integer}, and $M = \sqrt[3]{X}$ is an ordinary cube root, which is easy. In general, $e$ ciphertexts of the same message under exponent $e$ suffice. (If two moduli were not coprime, their gcd would factor both.)
+
+\begin{worked}[: H\aa stad's attack with $e = 3$ (new)]
+\textbf{Q.} Alice sends the same $M$ with $e = 3$ to three users with $n_1 = 187$, $n_2 = 667$, $n_3 = 1927$. The ciphertexts are $C_1 = 111$, $C_2 = 167$, $C_3 = 1814$. Recover $M$.
+
+$N = 187 \times 667 \times 1927 = 240\,352\,783$; $N_i = N / n_i$; $y_i = N_i^{-1} \bmod n_i$:
+\begin{center}\small
+\begin{tabular}{@{}ccccccr@{}}
+\toprule
+$i$ & $n_i$ & $C_i$ & $N_i$ & $N_i \bmod n_i$ & $y_i$ & $C_i N_i y_i$\\
+\midrule
+1 & 187 & 111 & 1\,285\,309 & 58 & 158 & 22\,541\,749\,242\\
+2 & 667 & 167 & 360\,349 & 169 & 371 & 22\,326\,142\,993\\
+3 & 1927 & 1814 & 124\,729 & 1401 & 1154 & 261\,102\,200\,524\\
+\midrule
+ & & & & & sum & 305\,970\,092\,759\\
+\bottomrule
+\end{tabular}
+\end{center}
+$X = 305\,970\,092\,759 \bmod 240\,352\,783 = 1\,000\,000$ (since $1273 \times 240\,352\,783 = 305\,969\,092\,759$).\\
+$M = \sqrt[3]{1\,000\,000} = \mathbf{100}$. \textbf{Check.} $100^3 = 10^6$: $10^6 \bmod 187 = 111$, $\bmod\ 667 = 167$, $\bmod\ 1927 = 1814$ \checkmark. (All three $\phi(n_i) = 160, 616, 1840$ are coprime to 3, so $e = 3$ is a legal exponent for each user.)
+\end{worked}
+
+\textbf{Can it be launched?} Not against the reference setup, for two independent reasons. With $e = 65537$, Eve would need 65537 ciphertexts of the same message under different moduli. More fundamentally, OAEP puts fresh randomness into every encryption, so the three receivers encrypt three \emph{different} numbers and the CRT combination is not a perfect cube. (H\aa stad's general theorem still breaks fixed, known padding such as appending a user number, so the padding must be random.)
+
+\subsection{Attacks 4 and 5: short messages and plaintext--key relations \new}
+\likely{``Why is textbook RSA insecure for short messages? Why are $e = 1$ and small $M$ dangerous?'' (3 marks).}
+
+\textbf{Short-message (dictionary) attack.} Textbook RSA is \emph{deterministic}: the same $M$ always gives the same $C$. If $M$ comes from a small set (a 4-digit PIN, ``yes''/``no'', a bid amount), Eve encrypts every candidate with the public key and compares with $C$. Demonstration: a 2-digit PIN encrypted with $(17, 3233)$ gives $C = 2557$; Eve computes $m^{17} \bmod 3233$ for $m = 0, \dots, 99$ and only $m = 42$ matches ($41 \mapsto 3199$, $42 \mapsto 2557$, $43 \mapsto 706$), so $M = 42$ after at most 100 encryptions.
+
+\textbf{Plaintext--key relation (no modular reduction).} If $M^e < n$, the reduction modulo $n$ never happens and $C = M^e$ over the integers, so $M = \sqrt[e]{C}$ is an ordinary root. With $e = 3$ and $n = 1927$: $M = 12$ gives $C = 1728 < 1927$, and $\sqrt[3]{1728} = 12$. This is realistic: a 128-bit AES key encrypted with $e = 3$ under a 2048-bit modulus is a 384-bit cube that never wraps. The extreme case $e = 1$ is formally allowed ($\gcd(1, \phi) = 1$) but gives $C = M$. Unconcealed messages ($M^e \equiv M$, such as $0, 1, n - 1$) are a related relation; see \S\ref{sec:rsa}.
+
+\textbf{Can they be launched?} Not with OAEP and $e = 65537$. OAEP's random $r$ makes encryption probabilistic, so encrypting a candidate PIN gives a different ciphertext each time and the comparison is useless (Eve would also have to guess $r$, of 256 bits in practice). The encoded block is as long as $n$ (its top byte is zero, the rest random-looking), so $(\text{EM})^{e}$ with $e = 65537$ always wraps around $n$ many times.
+
+\subsection{Attack 6: the cycling attack \new}
+\likely{``Explain the cycling attack with an example'' (3--4 marks).}
+
+\textbf{Idea.} Encryption $x \mapsto x^e \bmod n$ is a permutation of $\mathbb{Z}_n$, so repeated encryption of the ciphertext must eventually return to it: $C, C^e, C^{e^2}, \dots, C^{e^k} = C$. The term just before $C$ reappears is the one whose encryption is $C$, i.e.\ the plaintext $M$. Eve needs only the public key.
+
+\textbf{How long is the cycle?} Let $\lambda(n) = \operatorname{lcm}(p - 1, q - 1)$. Then $x^{\lambda(n)} \equiv 1$ modulo $p$ and modulo $q$ for $x$ coprime to $n$, so $x^{1 + j\lambda(n)} \equiv x \pmod n$. Hence if $e^k \equiv 1 \pmod{\lambda(n)}$, every message returns after $k$ encryptions: the cycle length divides $\operatorname{ord}_{\lambda(n)}(e)$. For the toy key $\lambda(3233) = \operatorname{lcm}(52, 60) = 780$ and $\operatorname{ord}_{780}(17) = 12$, so \emph{every} ciphertext cycles within 12 steps.
+
+\begin{worked}[: cycling attack on $(17, 3233)$]
+\textbf{Q.} Eve intercepts $C = 2790$ sent with the public key $(17, 3233)$. Recover $M$ by cycling.
+
+Re-encrypt repeatedly, $C_{i+1} = C_i^{17} \bmod 3233$:
+\begin{center}\small
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{@{}c|ccccccccccccc@{}}
+$i$ & 0 & 1 & 2 & 3 & 4 & 5 & 6 & 7 & 8 & 9 & 10 & 11 & 12\\ \midrule
+$C_i$ & 2790 & 1452 & 1930 & 2505 & 2973 & 171 & 405 & 1346 & 1082 & 2611 & 588 & \textbf{65} & 2790\\
+\end{tabular}
+\end{center}
+$C_{12} = C_0$, so $C_{11}^{17} \equiv C$, and $\mathbf{M = 65}$. \textbf{Check.} $65^{17} \bmod 3233 = 2790$ \checkmark. A smaller key shows the same thing in four steps: with $(3, 55)$ and $C = 13$, the cycle is $13 \to 52 \to 28 \to 7 \to 13$, so $M = 7$.
+\end{worked}
+
+\textbf{Can it be launched?} No. For random 1024-bit primes, $\lambda(n)$ has large prime factors and the order of $e$ modulo $\lambda(n)$ is astronomically large, so the expected cycle length is far beyond $2^{100}$ steps. Moreover, the cycling attack is a disguised factoring algorithm: at each step $\gcd(C_i - C, n)$ may reveal $p$ (when the cycle closes modulo $p$ before modulo $q$), and it is never faster than the general factoring methods for random primes (Rivest and Silverman, 1999). The toy key fails only because $p - 1 = 52$ and $q - 1 = 60$ are tiny.
+
+\subsection{Attack 7: Wiener's low private exponent attack \new}
+\likely{``Why must $d$ not be small? Show Wiener's attack on a small example'' (4--5 marks).}
+
+\textbf{Setting.} Decryption costs grow with the size of $d$, so a designer may be tempted to pick a small $d$ (e.g.\ for a smart card) and compute $e = d^{-1} \bmod \phi(n)$. Wiener (1990) showed that if $q < p < 2q$ and
+\[
+d < \tfrac13\, n^{1/4},
+\]
+then $d$ can be recovered from the public key alone.
+
+\textbf{Derivation.} From $ed = 1 + k\phi(n)$ for some integer $k$,
+\[
+\frac{e}{n} - \frac{k}{d} = \frac{ed - kn}{nd} = \frac{1 - k\,(n - \phi(n))}{nd}.
+\]
+Here $n - \phi(n) = p + q - 1 < 3\sqrt n$, and $k < d$ (since $k\phi(n) = ed - 1 < ed < \phi(n)\, d$), so $\big|\frac{e}{n} - \frac{k}{d}\big| < \frac{3k\sqrt n}{nd} < \frac{3}{\sqrt n}$. If $d < \frac13 n^{1/4}$, then $\frac{1}{2d^2} > \frac{9}{2\sqrt n} > \frac{3}{\sqrt n}$, so $\big|\frac{e}{n} - \frac{k}{d}\big| < \frac{1}{2d^2}$. A classical theorem of Legendre says that any fraction this close to $e/n$ is one of the \textbf{convergents} of the continued fraction of $e/n$. Eve therefore expands $e/n$, and for each convergent $k/d$ tests:
+\[
+\phi = \frac{ed - 1}{k} \text{ must be an integer;}\qquad x^2 - (n - \phi + 1)\,x + n = 0 \text{ must have integer roots } p, q.
+\]
+The second test works because $p + q = n - \phi(n) + 1$ and $pq = n$ (\S\ref{sec:rsa}).
+
+\begin{worked}[: Wiener's attack]
+\textbf{Q.} Bob's public key is $(e, n) = (17993, 90581)$. Show that Wiener's attack recovers $d$.
+
+\textbf{Continued fraction of $e/n$.} $17993 = 0 \cdot 90581 + 17993$; $90581 = 5 \cdot 17993 + 616$; $17993 = 29 \cdot 616 + 129$; $616 = 4 \cdot 129 + 100$; $129 = 1 \cdot 100 + 29$; $100 = 3 \cdot 29 + 13$; $29 = 2 \cdot 13 + 3$; $13 = 4 \cdot 3 + 1$; $3 = 3 \cdot 1$.\\
+So $e/n = [0; 5, 29, 4, 1, 3, 2, 4, 3]$, with convergents $\frac01, \frac15, \frac{29}{146}, \frac{117}{589}, \dots$
+
+\textbf{Test $k/d = 1/5$.} $\phi = (17993 \cdot 5 - 1)/1 = 89964$ (an integer). $p + q = n - \phi + 1 = 90581 - 89964 + 1 = 618$. Solve $x^2 - 618x + 90581 = 0$: discriminant $618^2 - 4 \cdot 90581 = 381924 - 362324 = 19600 = 140^2$, so $x = (618 \pm 140)/2 = 379, 239$.
+
+\textbf{Result.} $n = 379 \times 239$ and $\mathbf{d = 5}$. \textbf{Check.} $\phi(n) = 378 \times 238 = 89964$ and $17993 \times 5 = 89965 = 89964 + 1$ \checkmark; the condition holds since $\frac13 n^{1/4} = 5.78 > 5$.
+\end{worked}
+
+\textbf{Can it be launched?} No, because with $e = 65537$ the private exponent $d = e^{-1} \bmod \phi(n)$ is essentially a random number of the same size as $n$ (2048 bits), far above $n^{1/4}$ (512 bits). Boneh and Durfee extended the attack to $d < n^{0.292}$, so the rule is simply never to choose $d$ small. The legitimate way to speed up decryption is the CRT (\S\ref{sec:rsa}), which keeps $d$ large.
+
+\subsection{Attack 8: chosen-ciphertext attack (multiplicative property) \new}
+\likely{``Show how Eve decrypts $C$ using Bob's willingness to decrypt other ciphertexts'' (4 marks).}
+
+\textbf{Idea.} Textbook RSA is \emph{malleable}: $(M X)^e = M^e X^e$, so Eve can turn a ciphertext of $M$ into a ciphertext of $MX$ without knowing $M$. Suppose Bob decrypts any ciphertext except the target $C$ (a ``decryption oracle'', e.g.\ a server that returns decrypted data or signs blindly). Eve picks a random $X$, sends $Y = C \cdot X^e \bmod n$, receives $Z = Y^d = (M^e X^e)^d = M X \bmod n$, and computes $M = Z X^{-1} \bmod n$. Bob sees only the random-looking $Y$.
+
+\textbf{Demonstration.} Key $(17, 3233)$, $d = 2753$; target $C = 1892$. Eve picks $X = 2$: $X^e = 2^{17} \bmod 3233 = 1752$, $Y = 1892 \times 1752 \bmod 3233 = 959$. Bob returns $Z = 959^{2753} \bmod 3233 = 1710$. Eve computes $X^{-1} = 2^{-1} \bmod 3233 = 1617$ and $M = 1710 \times 1617 \bmod 3233 = \mathbf{855}$. Check: $855^{17} \bmod 3233 = 1892$ \checkmark.
+
+\textbf{Can it be launched?} Not against OAEP. The decryption of $Y$ is $2 \cdot \text{EM} \bmod n$, which decodes to garbage and fails OAEP's redundancy check, so Bob rejects $Y$ and returns nothing (see the tampering demonstration in \S\ref{sec:oaep}). The attack is not only theoretical: Bleichenbacher's 1998 ``million message'' attack recovered TLS session keys protected by the older PKCS\#1 v1.5 padding, using only the server's ``padding correct/incorrect'' replies as the oracle, and variants (ROBOT, 2017) still worked on many servers. Hence OAEP, uniform error messages, and TLS~1.3's removal of RSA key transport.
+
+\subsection{Attack 9: timing and other implementation attacks \new}
+\likely{``What is a timing attack on RSA? How do blinding and constant-time exponentiation stop it?'' (3--4 marks).}
+
+\textbf{Idea.} Square-and-multiply (\S\ref{sec:modexp}) performs a squaring for every bit of $d$ and an extra multiplication only for the 1-bits. The decryption time therefore depends on the bits of $d$ (and on the ciphertext, through the cost of modular reductions). Kocher (1996) showed that by timing many decryptions of known ciphertexts and correlating the times with the predicted cost of the next bit, an attacker recovers $d$ bit by bit; Brumley and Boneh (2003) did it remotely against an OpenSSL web server. For $d = 2753 = 101011000001_2$ the left-to-right method does 11 squarings and only 4 multiplications, one after each 1-bit following the leading 1; a different $d$ of the same length takes a different time. Power analysis (measuring the current drawn by a smart card) leaks the same pattern even more directly, and fault attacks on CRT decryption factor $n$ from a single faulty result.
+
+\textbf{Countermeasures.}
+\begin{itemize}[leftmargin=1.4em]
+  \item \textbf{Constant-time exponentiation}: perform the same operations for every bit, e.g.\ the Montgomery ladder (one squaring and one multiplication per bit, whatever its value), with no secret-dependent branches or memory accesses.
+  \item \textbf{Blinding}: before decrypting, multiply $C$ by $r^e$ for a fresh random $r$; decrypt $C' = C r^e$ to get $P' = C'^d = P r$; output $P = P' r^{-1}$. The timed computation now runs on a random input unrelated to what the attacker chose. Demonstration with $r = 7$: $r^e = 7^{17} \bmod 3233 = 2369$, $C' = 1892 \times 2369 \bmod 3233 = 1210$, $P' = 1210^{2753} \bmod 3233 = 2752$, $r^{-1} = 462$, $P = 2752 \times 462 \bmod 3233 = 855$ \checkmark.
+  \item Random delays are weak, since averaging over many measurements removes them. Against fault attacks, the implementation re-encrypts the result and checks it before output.
+\end{itemize}
+\textbf{Can it be launched?} Against an unprotected implementation, yes, even over a network; against the reference implementation (constant time plus blinding), no. This attack shows that a mathematically sound key is not sufficient: the code must not leak.
+
+\subsection{Verdict: no attack succeeds against correctly used RSA \hot\new}
+\likely{The conclusion of the assignment answer: a table of attack, required weakness, and defence.}
+
+\begin{center}\small
+\begin{tabularx}{\textwidth}{@{}l >{\raggedright\arraybackslash}X >{\raggedright\arraybackslash}X c@{}}
+\toprule
+Attack & Works only if & Why it fails for the reference key & Succeeds?\\
+\midrule
+Factoring $n$ & $n$ small, $p \approx q$, $p - 1$ smooth, shared prime & 2048-bit random primes: NFS $\approx 2^{112}$, record 829 bits & No\\
+Common modulus & $n$ shared by users & every user has his own $n$ & No\\
+H\aa stad broadcast & small $e$, same unpadded $M$ to $e$ users & $e = 65537$; OAEP randomizes each $M$ & No\\
+Short message & deterministic encryption & OAEP's random $r$ & No\\
+$M^e < n$, $e = 1$ & tiny $e$ or tiny unpadded $M$ & OAEP fills the block; $e = 65537$ & No\\
+Cycling & small $\operatorname{ord}_{\lambda(n)}(e)$ & huge order for random primes; as hard as factoring & No\\
+Wiener & $d < \frac13 n^{1/4}$ & $d \approx n$ when $e = 65537$ & No\\
+Chosen ciphertext & malleable textbook RSA + oracle & OAEP redundancy check rejects modified $C$ & No\\
+Timing / power / fault & leaky implementation & constant-time code, blinding, result check & No\\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\begin{mustknow}[: the assignment's conclusion]
+Each attack was demonstrated successfully on a deliberately weak toy key, which shows that the attacks are real. None of them can be launched against RSA used as recommended (2048-bit or longer $n$ from independent random primes, $e = 65537$, large $d$, OAEP padding, constant-time blinded decryption), because each one needs a weakness that these choices exclude. The only generic attack left is factoring $n$, whose best known cost (NFS, $L_n[1/3, 1.923]$) is infeasible at these sizes.
+\end{mustknow}
+
+%=====================================================================
+\section{Optimal Asymmetric Encryption Padding (OAEP)}\label{sec:oaep}
+
+\subsection{Why textbook RSA must be padded \new}
+\likely{``What are the weaknesses of textbook RSA that OAEP removes?'' (3 marks).}
+
+Textbook RSA, $C = M^e \bmod n$, has three structural weaknesses that the attacks of \S\ref{sec:rsaattacks} exploit. It is \textbf{deterministic}: the same $M$ always gives the same $C$, so Eve can confirm guesses (short-message attack) and recognise repeated messages. It is \textbf{malleable}: from $C$ anyone can compute a valid encryption $C X^e$ of the related message $MX$ (chosen-ciphertext attack). And small or structured messages leak through \textbf{algebraic relations} ($M^e < n$, broadcast, related messages). A probabilistic scheme such as ElGamal (\S\ref{sec:elgamal}) avoids the first problem by encrypting with a fresh random number every time. OAEP (Optimal Asymmetric Encryption Padding, Bellare and Rogaway, 1994) gives RSA the same property and more: before exponentiation, the message is mixed with a random value through two hash-based functions, so that the number actually encrypted looks random, carries a built-in integrity check, and is as long as the modulus.
+
+\subsection{OAEP encoding and decoding \hot\new}
+\likely{``Explain OAEP with a neat diagram; show that the receiver recovers $M$'' (5--6 marks).}
+
+\textbf{Ingredients.} Let the encoded block have $m + k$ bits, slightly fewer than $n$. The message $M$ is padded with a fixed run of zeros to $m$ bits, giving $M_{\text{pad}}$; the zeros are redundancy that the receiver will check. Alice draws a fresh random string $r$ of $k$ bits. Two public \textbf{mask-generation functions} built from a hash function are used: $G$ expands $k$ bits to $m$ bits, and $H$ compresses $m$ bits to $k$ bits.
+
+\textbf{Encoding and encryption (Alice).}
+\[
+P_1 = M_{\text{pad}} \oplus G(r), \qquad P_2 = H(P_1) \oplus r, \qquad C = (P_1 \,\|\, P_2)^{e} \bmod n .
+\]
+\textbf{Decryption and decoding (Bob).} Bob computes $P = C^d \bmod n$, splits it into $P_1$ ($m$ bits) and $P_2$ ($k$ bits), and undoes the two rounds in reverse order:
+\[
+r = H(P_1) \oplus P_2, \qquad M_{\text{pad}} = P_1 \oplus G(r).
+\]
+If the padding zeros of $M_{\text{pad}}$ are not all zero, Bob \textbf{rejects} the ciphertext; otherwise he strips them and outputs $M$.
+
+\textbf{Why decoding works.} Since $x \oplus x = 0$, $H(P_1) \oplus P_2 = H(P_1) \oplus H(P_1) \oplus r = r$; Bob can compute $H(P_1)$ because $P_1$ is part of what he decrypted. With $r$ known, $P_1 \oplus G(r) = M_{\text{pad}} \oplus G(r) \oplus G(r) = M_{\text{pad}}$. The structure is a two-round Feistel network (\S\ref{sec:modern}) with $G$ and $H$ as round functions and no key, which is why it is invertible by anyone who has both halves, and only by them.
+
+\begin{center}
+\begin{tikzpicture}[font=\small, >=Stealth,
+  bx/.style={draw, minimum height=0.6cm, align=center, fill=gray!8},
+  fn/.style={draw, fill=acc!12, minimum width=0.9cm, minimum height=0.6cm},
+  xo/.style={draw, circle, inner sep=0pt, minimum size=0.42cm}]
+\node[bx, minimum width=4.4cm] (m) at (0,3.6) {$M_{\text{pad}} = M \,\|\, 00\cdots0$ \quad ($m$ bits)};
+\node[bx, minimum width=2.0cm] (r) at (4.6,3.6) {$r$ \;($k$ bits)};
+\node[font=\footnotesize, right=2pt of r] {random, fresh};
+\node[xo] (x1) at (0,2.3) {$\oplus$};
+\node[fn] (G) at (2.3,2.3) {$G$};
+\coordinate (jr) at (4.6,2.3);
+\node[fn] (H) at (2.3,1.0) {$H$};
+\node[xo] (x2) at (4.6,1.0) {$\oplus$};
+\coordinate (jp) at (0,1.0);
+\node[bx, minimum width=4.4cm] (p1) at (0,-0.3) {$P_1$ \quad ($m$ bits)};
+\node[bx, minimum width=2.0cm] (p2) at (4.6,-0.3) {$P_2$ \;($k$ bits)};
+\node[draw, fill=gold!20, minimum height=0.6cm] (rsa) at (2.3,-1.5) {$C = (P_1 \,\|\, P_2)^e \bmod n$};
+\draw[->, thick] (m) -- (x1);
+\draw[thick] (r) -- (jr); \draw[->, thick] (jr) -- (G); \draw[->, thick] (G) -- (x1);
+\draw[->, thick] (jr) -- (x2);
+\draw[thick] (x1) -- (jp); \draw[->, thick] (jp) -- (H); \draw[->, thick] (H) -- (x2);
+\draw[->, thick] (jp) -- (p1); \draw[->, thick] (x2) -- (p2);
+\draw[->, thick] (p1.south) |- (rsa.west); \draw[->, thick] (p2.south) |- (rsa.east);
+\fill (jr) circle (1.5pt); \fill (jp) circle (1.5pt);
+\node[font=\footnotesize, align=left] at (-3.6,2.3) {round 1:\\ $P_1 = M_{\text{pad}} \oplus G(r)$};
+\node[font=\footnotesize, align=left] at (-3.6,1.0) {round 2:\\ $P_2 = H(P_1) \oplus r$};
+\end{tikzpicture}
+\end{center}
+
+\subsection{What OAEP achieves \new}
+\likely{``Why is RSA-OAEP randomized, all-or-nothing and non-malleable?'' (3--4 marks).}
+
+\textbf{Randomized.} A fresh $r$ is drawn for every encryption, and $G(r)$ changes all of $P_1$, so the same $M$ gives a different $P_1 \| P_2$, hence a different $C$, every time. Guess-and-compare attacks and broadcast attacks lose their basis: Eve would have to guess $r$ as well.
+
+\textbf{All-or-nothing.} To learn even one bit of $M$, Eve needs the corresponding bit of $G(r)$, hence all of $r$ (a hash output reveals nothing about a partially known input); to get $r$ she needs $P_2$ and $H(P_1)$, hence all of $P_1$. So unless she inverts RSA on the \emph{whole} block, she learns nothing about $M$. Partial information that RSA might leak about $P_1 \| P_2$ (a few bits, a Jacobi symbol) is useless.
+
+\textbf{Non-malleable, plaintext-aware.} Any ciphertext that Eve constructs without knowing a message, such as $C X^e$, decrypts to a block whose $P_1$ and $P_2$ are unrelated to any valid encoding. Decoding then yields an $M_{\text{pad}}$ whose padding bits are effectively random, so the redundancy check fails except with probability $2^{-z}$ for $z$ padding bits, and Bob rejects. A decryption oracle therefore tells Eve nothing she did not already know. Modelling $G$ and $H$ as random oracles, RSA-OAEP was proved secure against adaptive chosen-ciphertext attacks (IND-CCA2) by Fujisaki, Okamoto, Pointcheval and Stern (2001).
+
+\textbf{OAEP as standardised (PKCS\#1 v2.2, RFC 8017).} Real OAEP uses one function, \textbf{MGF1} (a hash in counter mode, e.g.\ SHA-256), for both $G$ and $H$. The data block is $DB = \text{lHash} \,\|\, PS \,\|\, \texttt{0x01} \,\|\, M$, where lHash is the hash of an optional label and $PS$ is a string of zero bytes (the redundancy); seed $=$ random $r$ of $h$ bytes ($h$ = hash length). Then $\text{maskedDB} = DB \oplus \text{MGF1}(\text{seed})$, $\text{maskedSeed} = \text{seed} \oplus \text{MGF1}(\text{maskedDB})$, and the encoded block is $\text{EM} = \texttt{0x00} \,\|\, \text{maskedSeed} \,\|\, \text{maskedDB}$, which is encrypted with RSA. A $k$-byte modulus carries at most $k - 2h - 2$ message bytes: 190 bytes for 2048-bit RSA with SHA-256, plenty for a session key. All decoding failures must produce the same error at the same time; Manger (2001) showed that distinguishing ``leading byte not zero'' from other failures again creates a usable oracle.
+
+\begin{worked}[: a toy OAEP with explicit $G$ and $H$ (new)]
+\textbf{Q.} Toy parameters: 4-bit messages padded with 4 zero bits ($m = 8$), 4-bit random $r$ ($k = 4$), $G(r) = (37r + 11) \bmod 256$ written as 8 bits, and $H(x) = x_L \oplus x_R$ (the XOR of the two 4-bit halves of $x$). RSA key $n = 61 \times 97 = 5917$, $e = 7$, $d = 823$. (a) Encrypt $M = 1011$ with $r = 0110$ and again with $r = 1101$. (b) Decrypt the first ciphertext. (c) Eve multiplies the first ciphertext by $2^e$; show that Bob rejects it.
+
+\textbf{(a) First encryption}, $r = 0110 = 6$. $M_{\text{pad}} = 1011\,0000$. $G(6) = 37 \cdot 6 + 11 = 233 = 1110\,1001$.\\
+$P_1 = 1011\,0000 \oplus 1110\,1001 = 0101\,1001$. \;$H(P_1) = 0101 \oplus 1001 = 1100$. \;$P_2 = 1100 \oplus 0110 = 1010$.\\
+$P_1 \| P_2 = 0101\,1001\,1010 = 1434$. \;$C = 1434^7 \bmod 5917$: $1434^2 \equiv 3157$, $1434^4 \equiv 3157^2 \equiv 2421$, $1434^7 = 1434^4 \cdot 1434^2 \cdot 1434 \equiv 2421 \cdot 3157 \cdot 1434 \equiv 4250 \cdot 1434 \equiv \mathbf{5907}$.
+
+\textbf{Second encryption}, $r = 1101 = 13$. $G(13) = 492 \bmod 256 = 236 = 1110\,1100$; $P_1 = 0101\,1100$; $H(P_1) = 0101 \oplus 1100 = 1001$; $P_2 = 1001 \oplus 1101 = 0100$; $P_1 \| P_2 = 0101\,1100\,0100 = 1476$; $C = 1476^7 \bmod 5917 = \mathbf{2726}$.\\
+Same message, different ciphertexts. (Textbook RSA would give $11^7 \bmod 5917 = 2490$ both times.)
+
+\textbf{(b) Decryption of $C = 5907$.} $5907^{823} \bmod 5917 = 1434 = 0101\,1001\,1010$, so $P_1 = 0101\,1001$, $P_2 = 1010$.\\
+$r = H(P_1) \oplus P_2 = 1100 \oplus 1010 = 0110$; \;$G(r) = 1110\,1001$; \;$M_{\text{pad}} = 0101\,1001 \oplus 1110\,1001 = 1011\,\underline{0000}$.\\
+Padding bits are zero, so Bob accepts and outputs $\mathbf{M = 1011}$ \checkmark.
+
+\textbf{(c) Tampering.} $C' = 5907 \cdot 2^7 \bmod 5917 = 4637$. Bob gets $4637^{823} \bmod 5917 = 2868 = 2 \times 1434 = 1011\,0011\,0100$: $P_1 = 1011\,0011$, $P_2 = 0100$.\\
+$r = H(P_1) \oplus P_2 = (1011 \oplus 0011) \oplus 0100 = 1000 \oplus 0100 = 1100$; \;$G(12) = 455 \bmod 256 = 199 = 1100\,0111$;\\
+$M_{\text{pad}} = 1011\,0011 \oplus 1100\,0111 = 0111\,\underline{0100}$: the padding bits are not zero, so Bob \textbf{rejects}. With textbook RSA the same trick would have produced the valid-looking plaintext $2M = 22$.
+\end{worked}
+
+%=====================================================================
+\section{Hash Function Families: MD, SHA-1, SHA-2, SHA-3 and Others}\label{sec:hashfamily}
+
+\S\ref{sec:integrity} explained what a cryptographic hash must achieve (preimage, second-preimage and collision resistance, with generic costs $2^n$ and $2^{n/2}$), the Merkle--Damg\aa rd (MD) iteration, and the two hashes on the slides, SHA-512 and Whirlpool. The assignment asks for the remaining members of the families. They share the MD skeleton (pad, append length, split into blocks, compress with feed-forward), so the differences to learn are the block and digest sizes, the step function, and the attack history; SHA-3 is the exception, built on a different principle, the sponge.
+
+\subsection{MD4 and MD5 \new}
+\likely{``Explain MD5: padding, buffers, rounds, auxiliary functions; why is it no longer secure?'' (5 marks).}
+
+Ronald Rivest designed \textbf{MD4} (1990) for speed on 32-bit processors: 512-bit blocks, a 128-bit digest held in four 32-bit words, and a compression function of 3 rounds of 16 steps (48 steps). Collisions in MD4 were found in 1995--96 and today can be produced by hand, so MD4 is only of historical interest. \textbf{MD5} (1992, RFC 1321) is MD4 strengthened with a fourth round, a distinct additive constant in every step, and a few changes to the mixing.
+
+\textbf{MD5 processing.}
+\begin{itemize}[leftmargin=1.4em]
+  \item \textbf{Padding and length.} A 1 bit and then 0 bits are appended until the length is $448 \bmod 512$, followed by the original length as a 64-bit number, so the result is a multiple of 512 bits; the padding is between 1 and 512 bits. For ``abc'' (24 bits): $424$ padding bits $+ 64 = 488$ bits, filling one block.
+  \item \textbf{Buffer.} Four 32-bit words $A, B, C, D$ start from the fixed IV \ttx{67452301}, \ttx{EFCDAB89}, \ttx{98BADCFE}, \ttx{10325476} (the bytes 01 23 45 \dots\ in little-endian order).
+  \item \textbf{Compression: 4 rounds $\times$ 16 steps = 64 steps.} Each block is viewed as sixteen 32-bit words $X[0..15]$, each used once per round in a round-specific order. Step $i$ updates one word:
+  \[
+  A \leftarrow B + \big( (A + g(B, C, D) + X[k] + T[i]) \lll s \big),
+  \]
+  then the roles of the words rotate, $(A, B, C, D) \leftarrow (D, A, B, C)$. Here $+$ is addition modulo $2^{32}$, $\lll s$ is a left rotation by a step-specific amount, and $T[i] = \lfloor 2^{32} \, |\sin i| \rfloor$ ($i$ in radians), e.g.\ $T[1] = $ \ttx{D76AA478}; like the SHA constants, these are ``nothing up my sleeve'' numbers.
+  \item \textbf{Auxiliary functions}, one per round, each acting bitwise on three words:
+  \[
+  F(X, Y, Z) = (X \wedge Y) \vee (\neg X \wedge Z),\quad G(X, Y, Z) = (X \wedge Z) \vee (Y \wedge \neg Z),\quad H(X, Y, Z) = X \oplus Y \oplus Z,\quad I(X, Y, Z) = Y \oplus (X \vee \neg Z).
+  \]
+  $F$ is the ``if $X$ then $Y$ else $Z$'' selector (SHA's Conditional), $G$ the same with $Z$ as selector, $H$ the parity, and $I$ a further nonlinear mix.
+  \item \textbf{Feed-forward.} After step 64 the input chaining words are added back modulo $2^{32}$ (as in SHA-512's final adding), and the four words form the next chaining value or, after the last block, the 128-bit digest.
+\end{itemize}
+Test values: $\mathrm{MD5}(\text{``''}) = $ \ttx{d41d8cd9 8f00b204 e9800998 ecf8427e} and $\mathrm{MD5}(\text{``abc''}) = $ \ttx{90015098 3cd24fb0 d6963f7d 28e17f72}; changing ``abc'' to ``abd'' flips 63 of the 128 digest bits, about half, as the avalanche property requires.
+
+\textbf{Why MD5 is broken.} Its 128-bit digest already limits collision resistance to $2^{64}$ by the birthday bound (\S\ref{sec:integrity}), but the real break is structural. In August 2004 Wang, Feng, Lai and Yu published actual MD5 collisions found by differential cryptanalysis, and the method was soon fast enough to find a collision in seconds on a laptop. Chosen-prefix collisions followed (Stevens, Lenstra and de Weger, 2007): two \emph{different, chosen} documents can be extended so that their MD5 values agree. In 2008 researchers used one to create a rogue certificate-authority certificate trusted by browsers, and in 2012 the \textbf{Flame} espionage malware used an MD5 chosen-prefix collision to forge a Microsoft code-signing certificate, so that it could spread disguised as a Windows Update. MD5 remains unbroken only for preimages (best attack about $2^{123}$), but it must not be used for signatures, certificates or anything else where collisions matter.
+
+\subsection{SHA-0 and SHA-1 \new}
+\likely{``Compare MD5 and SHA-1''; ``what was the SHAttered attack?'' (3--4 marks).}
+
+The NSA-designed \textbf{SHA-0} was published by NIST in 1993 (FIPS 180) and withdrawn almost immediately for an undisclosed weakness; its replacement \textbf{SHA-1} (FIPS 180-1, 1995) differs in a single detail. Both follow MD5's pattern with a longer digest: 512-bit blocks, a 64-bit length field, a 160-bit digest in five 32-bit words $A, \dots, E$, and 80 steps arranged as four stages of 20 that use $\mathrm{Ch}$ (the selector), Parity, $\mathrm{Maj}$ (majority) and Parity again, with constants \ttx{5A827999}, \ttx{6ED9EBA1}, \ttx{8F1BBCDC}, \ttx{CA62C1D6} ($\lfloor 2^{30}\sqrt2\rfloor$, $\lfloor 2^{30}\sqrt3\rfloor$, $\lfloor 2^{30}\sqrt5\rfloor$, $\lfloor 2^{30}\sqrt{10}\rfloor$). Each step computes $T = (A \lll 5) + f_t(B, C, D) + E + K_t + W_t$ and shifts $E \leftarrow D$, $D \leftarrow C$, $C \leftarrow B \lll 30$, $B \leftarrow A$, $A \leftarrow T$. The 16 block words are expanded to 80 by
+\[
+W_t = \big(W_{t-3} \oplus W_{t-8} \oplus W_{t-14} \oplus W_{t-16}\big) \lll 1, \qquad 16 \le t \le 79 .
+\]
+The rotation by 1 is the only change from SHA-0. Without it each bit position of the expanded words depends only on the same position of the block, so differences do not spread across positions, which made SHA-0 collisions practical (found in 2004).
+
+\textbf{Attack history.} Wang, Yin and Yu (2005) showed that SHA-1 collisions cost about $2^{69}$ operations instead of the generic $2^{80}$, which made SHA-1 ``theoretically broken''. In February 2017 the \textbf{SHAttered} attack (CWI Amsterdam and Google) produced the first actual collision: two different PDF files with the same SHA-1 digest, after about $2^{63}$ SHA-1 computations (roughly 6500 CPU-years and 110 GPU-years). In 2020 a chosen-prefix collision (Leurent and Peyrin, ``SHA-1 is a Shambles'') was used to impersonate a PGP key. Browsers stopped accepting SHA-1 certificates in 2017, Git is migrating to SHA-256, and NIST has announced that SHA-1 is to be phased out completely by 2030.
+
+\subsection{The SHA-2 family \new}
+\likely{``List the SHA-2 variants with block size, word size, rounds and digest size'' (3 marks).}
+
+SHA-2 (FIPS 180-2, 2001; extended in FIPS 180-4) contains two genuinely different compression functions: \textbf{SHA-256} on 32-bit words (512-bit blocks, 64 rounds) and \textbf{SHA-512} on 64-bit words (1024-bit blocks, 80 rounds, \S\ref{sec:integrity}). The other four members are \emph{truncations} of these two, each with its own initial value: SHA-224 from SHA-256, and SHA-384, SHA-512/224 and SHA-512/256 from SHA-512. The separate IVs make the truncated digest unrelated to a prefix of the full one, so the variants act as independent functions. SHA-512/256 gives SHA-256's security level but runs faster than SHA-256 on 64-bit processors. No attack on the full SHA-2 functions better than the generic birthday and brute-force bounds is known.
+\begin{center}\small
+\begin{tabular}{@{}lccccccc@{}}
+\toprule
+Algorithm & Block & Word & Rounds & Digest & Max.\ message & Security (coll./preim.) & Length ext.\\
+\midrule
+SHA-224 & 512 & 32 & 64 & 224 & $2^{64} - 1$ & 112 / 224 & 32 bits hidden\\
+SHA-256 & 512 & 32 & 64 & 256 & $2^{64} - 1$ & 128 / 256 & vulnerable\\
+SHA-384 & 1024 & 64 & 80 & 384 & $2^{128} - 1$ & 192 / 384 & resistant\\
+SHA-512 & 1024 & 64 & 80 & 512 & $2^{128} - 1$ & 256 / 512 & vulnerable\\
+SHA-512/224 & 1024 & 64 & 80 & 224 & $2^{128} - 1$ & 112 / 224 & resistant\\
+SHA-512/256 & 1024 & 64 & 80 & 256 & $2^{128} - 1$ & 128 / 256 & resistant\\
+\bottomrule
+\end{tabular}
+\end{center}
+(Sizes in bits.) Test value: $\mathrm{SHA\text{-}256}(\text{``abc''}) = $ \ttx{ba7816bf 8f01cfea 414140de 5dae2223 b00361a3 96177a9c b410ff61 f20015ad}; for ``abd'' 122 of the 256 bits change.
+
+\textbf{The length-extension attack.} In every MD hash the digest \emph{is} the final chaining value $H_t$. Suppose someone authenticates messages with the naive MAC $T = h(K \,\|\, M)$ for a secret key $K$. Eve knows $T$ and the length of $K \| M$ (not $K$). She sets the chaining value to $T$, appends the padding block that $h$ would have added (computable from the length alone; call it \emph{pad}), and continues hashing any extra text $X$. The result equals $h(K \,\|\, M \,\|\, \text{pad} \,\|\, X)$, a valid tag for the longer message $M \| \text{pad} \| X$, obtained without $K$. A script confirms this for SHA-256 with a 10-byte key, $M = $ ``amount=100'', $X = $ ``\&to=eve'' and 44 bytes of glue padding. The truncated variants resist it because Eve does not see the whole chaining value (SHA-384 hides 128 of 512 bits; SHA-224 hides only 32, which can be guessed). HMAC defeats it for all MD hashes by hashing a second time with an outer key, so the attacker never sees the inner chaining value.
+
+\subsection{SHA-3 (Keccak) and the sponge construction \new}
+\likely{``Explain the sponge construction of SHA-3; why is SHA-3 not vulnerable to length extension?'' (5 marks).}
+
+After the attacks on MD5 and SHA-1, NIST ran an open competition (2007--2012) for a hash with a \emph{different} design, as insurance in case the MD/SHA-2 approach were broken. From 64 submissions and five finalists (BLAKE, Gr{\o}stl, JH, Keccak, Skein), \textbf{Keccak} by Bertoni, Daemen, Peeters and Van Assche was chosen, and it was standardised as SHA-3 in FIPS 202 (2015). SHA-3 complements SHA-2 rather than replacing it.
+
+\textbf{The sponge.} Instead of a compression function, Keccak has a fixed \emph{permutation} $f = $ Keccak-$f$[1600] on a 1600-bit state, viewed as a $5 \times 5$ array of 64-bit \emph{lanes}. The state is split into the \textbf{rate} $r$ (the part that touches message and output) and the \textbf{capacity} $c$ (the part that is never input or output directly), with $r + c = 1600$.
+\begin{itemize}[leftmargin=1.4em]
+  \item \textbf{Padding.} A few domain-separation bits (01 for SHA-3, 1111 for SHAKE) and the \emph{pad10*1} rule (a 1, zeros, a final 1) extend the message to a multiple of $r$ bits $P_0, P_1, \dots$
+  \item \textbf{Absorbing.} Start from the all-zero state. For each block, XOR it into the first $r$ bits and apply $f$: $S \leftarrow f\big(S \oplus (P_i \,\|\, 0^c)\big)$.
+  \item \textbf{Squeezing.} Output the first $r$ bits of the state; if more output is needed, apply $f$ again and output $r$ more bits; finally truncate to the digest length $d$.
+\end{itemize}
+
+\begin{center}
+\begin{tikzpicture}[font=\footnotesize, >=Stealth,
+  fb/.style={draw, fill=acc!12, minimum width=0.75cm, minimum height=1.9cm},
+  xo/.style={draw, circle, inner sep=0pt, minimum size=0.36cm}]
+\node[left] at (-0.1,1.3) {$r$: 0};
+\node[left] at (-0.1,0.0) {$c$: 0};
+\foreach \i/\x in {0/1.7, 1/3.5, 2/5.3} {
+  \node[xo] (x\i) at (\x-0.65,1.3) {$+$};
+  \node (p\i) at (\x-0.65,2.35) {$P_{\i}$};
+  \draw[->] (p\i) -- (x\i);
+  \node[fb] (f\i) at (\x,0.65) {$f$};
+}
+\node[fb] (f3) at (7.6,0.65) {$f$};
+\draw[->] (0,1.3) -- (x0); \draw[->] (x0) -- (f0.west|-0,1.3);
+\draw[->] (0,0) -- (f0.west|-0,0);
+\draw[->] (f0.east|-0,1.3) -- (x1); \draw[->] (x1) -- (f1.west|-0,1.3);
+\draw[->] (f0.east|-0,0) -- (f1.west|-0,0);
+\draw[->] (f1.east|-0,1.3) -- (x2); \draw[->] (x2) -- (f2.west|-0,1.3);
+\draw[->] (f1.east|-0,0) -- (f2.west|-0,0);
+\draw[->] (f2.east|-0,1.3) -- (f3.west|-0,1.3);
+\draw[->] (f2.east|-0,0) -- (f3.west|-0,0);
+\draw[->] (6.55,1.3) -- (6.55,2.35) node[above] {$Z_0$};
+\draw[->] (f3.east|-0,1.3) -- (8.6,1.3) -- (8.6,2.35) node[above] {$Z_1$};
+\draw[dashed] (f3.east|-0,0) -- (8.6,0);
+\draw[decorate,decoration={brace,mirror,amplitude=4pt}] (0.3,-0.55) -- node[below=4pt] {absorbing} (5.75,-0.55);
+\draw[decorate,decoration={brace,mirror,amplitude=4pt}] (6.2,-0.55) -- node[below=4pt] {squeezing} (8.8,-0.55);
+\node[align=left, anchor=west] at (9.2,0.65) {state $= r + c = 1600$ bits\\ $c$ bits never output\\ digest $=$ first $d$ bits of $Z_0 Z_1\cdots$};
+\end{tikzpicture}
+\end{center}
+
+\textbf{The permutation $f$: 24 rounds of five steps.} Each round applies, in order:
+\begin{itemize}[leftmargin=1.4em]
+  \item $\theta$ (theta): each bit is XORed with the parities of two neighbouring columns, so every bit soon depends on many others (diffusion).
+  \item $\rho$ (rho): each of the 25 lanes is rotated by its own fixed offset, spreading bits along the 64 positions.
+  \item $\pi$ (pi): the 25 lanes are permuted to new positions in the $5 \times 5$ array.
+  \item $\chi$ (chi): along each 5-bit row, $a_x \leftarrow a_x \oplus (\neg a_{x+1} \wedge a_{x+2})$. This is the \textbf{only nonlinear step}, and without it the whole function would be linear and easy to invert.
+  \item $\iota$ (iota): a round constant is XORed into one lane, so that the rounds differ and the symmetry of the other steps is broken.
+\end{itemize}
+
+\textbf{Parameters.} The capacity is set to twice the digest length, $c = 2d$, because generic attacks on a sponge cost about $2^{c/2}$, so $c = 2d$ keeps them at the birthday level $2^{d/2}$. The rest of the state is the rate.
+\begin{center}\small
+\begin{tabular}{@{}lccccc@{}}
+\toprule
+Function & Digest $d$ & Rate $r$ & Capacity $c$ & Collision security & Preimage security\\
+\midrule
+SHA3-224 & 224 & 1152 & 448 & 112 & 224\\
+SHA3-256 & 256 & 1088 & 512 & 128 & 256\\
+SHA3-384 & 384 & 832 & 768 & 192 & 384\\
+SHA3-512 & 512 & 576 & 1024 & 256 & 512\\
+SHAKE128 & any & 1344 & 256 & $\min(d/2, 128)$ & $\min(d, 128)$\\
+SHAKE256 & any & 1088 & 512 & $\min(d/2, 256)$ & $\min(d, 256)$\\
+\bottomrule
+\end{tabular}
+\end{center}
+SHAKE128 and SHAKE256 are \textbf{extendable-output functions} (XOFs): the squeezing phase simply continues for as many bits as requested, which is useful for key derivation and mask generation. Test value: $\mathrm{SHA3\text{-}256}(\text{``abc''}) = $ \ttx{3a985da7 4fe225b2 045c172d 6bd390bd 855f086e 3e9d525b 46bfe245 11431532}.
+
+\textbf{Why SHA-3 is immune to length extension.} The attack on MD hashes worked because the digest \emph{is} the complete internal state, so Eve could resume the computation from it. A sponge outputs only the first $d$ bits of the 1600-bit state, and the $c$ capacity bits are never output. To absorb another block after $h(K \| M)$, Eve would need the full state after the last application of $f$; she knows at most $d$ of its bits and would have to guess the remaining $c \ge 2d$ bits (512 for SHA3-256), which is hopeless. For this reason the simple keyed construction $h(K \,\|\, M)$ is safe with SHA-3, and NIST's KMAC is built exactly this way, whereas MD hashes need the two-pass HMAC.
+
+\subsection{RIPEMD-160, Whirlpool and BLAKE2}
+\textbf{RIPEMD-160} (Dobbertin, Bosselaers and Preneel, 1996) was designed in Europe as a strengthened successor of RIPEMD. It is an MD hash with 512-bit blocks and a 160-bit digest, but its compression function runs \emph{two parallel lines} of 5 rounds $\times$ 16 steps with different functions and constants and combines them at the end, so an attacker must control two different computations at once. No practical collision is known; it survives mainly in Bitcoin, where an address is derived from $\mathrm{RIPEMD\text{-}160}(\mathrm{SHA\text{-}256}(\text{public key}))$.
+
+\textbf{Whirlpool} is described in \S\ref{sec:integrity}: a Miyaguchi--Preneel hash whose compression function is a 512-bit AES-like block cipher (10 rounds), with a 512-bit digest. It has no known practical weakness but is little used.
+
+\textbf{BLAKE2} (Aumasson, Neves, Wilcox-O'Hearn and Winnerlein, 2012) is a refinement of the SHA-3 finalist BLAKE, whose core is the add--rotate--XOR quarter-round of the ChaCha stream cipher. BLAKE2b uses 64-bit words, 1024-bit blocks and 12 rounds and outputs 1 to 64 bytes; BLAKE2s uses 32-bit words, 512-bit blocks and 10 rounds and outputs up to 32 bytes. Its iteration (HAIFA-style) feeds a byte counter and a ``last block'' flag into every compression, which blocks length extension, and it has a built-in keyed mode that serves as a MAC. It is faster than MD5 in software while offering SHA-3-level security, and is used in Argon2 (password hashing), WireGuard and libsodium.
+
+\subsection{Comparison of the hash families \hot\new}
+\likely{``Compare MD5, SHA-1, SHA-2 and SHA-3'' (5 marks): reproduce this table and add one line on each attack.}
+
+\begin{center}\small
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{@{}lclcccll@{}}
+\toprule
+Hash & Year & Construction & Block & Word & Steps & Digest & Status\\
+\midrule
+MD4 & 1990 & MD & 512 & 32 & 48 & 128 & broken (collisions by hand)\\
+MD5 & 1992 & MD & 512 & 32 & 64 & 128 & broken (2004; Flame 2012)\\
+SHA-0 & 1993 & MD & 512 & 32 & 80 & 160 & broken; withdrawn\\
+SHA-1 & 1995 & MD & 512 & 32 & 80 & 160 & broken (SHAttered 2017)\\
+RIPEMD-160 & 1996 & MD, two lines & 512 & 32 & $2 \times 80$ & 160 & no practical attack; legacy\\
+SHA-256 & 2001 & MD & 512 & 32 & 64 & 256 & secure\\
+SHA-512 & 2001 & MD & 1024 & 64 & 80 & 512 & secure\\
+Whirlpool & 2000 & MP, AES-like & 512 & 8 & 10 rounds & 512 & secure, rarely used\\
+BLAKE2b & 2012 & HAIFA & 1024 & 64 & 12 rounds & $\le 512$ & secure, fast\\
+SHA3-256 & 2015 & sponge & $r = 1088$ & 64 & 24 rounds & 256 & secure\\
+\bottomrule
+\end{tabular}
+\end{center}
+(MD = Merkle--Damg\aa rd, MP = Miyaguchi--Preneel; sizes in bits.) For orientation, the first 16 hex digits of each hash of ``abc'' (script-checked): MD5 \ttx{900150983cd24fb0}, SHA-1 \ttx{a9993e364706816a}, SHA-256 \ttx{ba7816bf8f01cfea}, SHA-512 \ttx{ddaf35a193617aba}, SHA3-256 \ttx{3a985da74fe225b2}, RIPEMD-160 \ttx{8eb208f7e05d987a}, BLAKE2b-512 \ttx{ba80a53f981c4d0d}.
+
+\begin{mustknow}[: hash families]
+MD5: 512-bit blocks, 128-bit digest, $4 \times 16 = 64$ steps, functions $F, G, H, I$; collisions since 2004. SHA-1: 160-bit digest, 80 steps, the $\lll 1$ in the word expansion is its only difference from SHA-0; first collision SHAttered 2017. SHA-2: SHA-256 (32-bit words, 64 rounds) and SHA-512 (64-bit words, 80 rounds) plus truncations; secure. SHA-3: sponge, 1600-bit state, $r + c = 1600$, $c = 2d$, 24 rounds of $\theta\rho\pi\chi\iota$; immune to length extension because the capacity is never output.
+\end{mustknow}
+
+\textbf{Attacks on digital signature schemes.} The assignment also covers attacks on signature schemes (key-only, known-message and chosen-message attacks; existential versus selective forgery; the RSA multiplicative and ``choose the signature first'' forgeries; the danger of reusing the random number in ElGamal or DSS). These are treated with the signature schemes themselves in \S\ref{sec:dsig}. The link with this chapter is that a signature is computed on a \emph{hash} of the message, so a collision in the hash is a signature forgery: Eve gets the harmless document of a colliding pair signed and transfers the signature to the harmful one, which is exactly what the MD5 rogue-certificate and Flame attacks did.
+
