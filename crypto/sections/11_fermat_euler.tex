@@ -304,17 +304,3 @@ The number of primitive roots is $\phi(16) = \mathbf{8}$. They are $3^k$ for odd
   \item The general definition of a primitive root (any $n$) was stated in the video but not explained: only $n = 2, 4, p^k, 2p^k$ have primitive roots, and then there are $\phi(\phi(n))$ of them.
 \end{itemize}
 \end{fixbox}
-
-\subsection*{Check your understanding}
-\begin{enumerate}[leftmargin=1.5em]
-  \item \textbf{State both versions of Fermat's little theorem and the difference between them.} If $p$ is prime and $p \nmid a$, then $a^{p-1} \equiv 1 \pmod p$; for every $a$, $a^p \equiv a \pmod p$. The second version drops the condition $p \nmid a$, since for $p \mid a$ both sides are 0.
-  \item \textbf{Why is the exponent reduced modulo $p - 1$ and not modulo $p$?} Because the powers of $a$ repeat when the exponent grows by $p - 1$ ($a^{p-1} \equiv 1$), not by $p$. For example $2^{2026} \bmod 11$: $2026 \bmod 10 = 6$ and $2^6 = 64 \equiv \mathbf{9}$.
-  \item \textbf{Differentiate Fermat's and Euler's theorems.} Fermat needs a prime modulus and gives period $p - 1$; Euler allows any modulus $n$ with $\gcd(a, n) = 1$ and gives period $\phi(n)$. Fermat is the special case $n = p$ of Euler.
-  \item \textbf{Find $3^{-1} \bmod 20$ by Euler's theorem.} $\gcd(3, 20) = 1$, $\phi(20) = 8$, so $3^{-1} \equiv 3^7 = 2187 \equiv \mathbf{7}$; check $3 \cdot 7 = 21 \equiv 1$.
-  \item \textbf{Why does $15^{-1} \bmod 99$ not exist, and what goes wrong if Euler's formula is used anyway?} $\gcd(15, 99) = 3$, so $15x - 99k$ is always a multiple of 3. The formula gives $15^{59} \bmod 99 = 36$, but $15 \cdot 36 \equiv 45 \ne 1$.
-  \item \textbf{Why does RSA decryption recover the message?} $ed = k\phi(n) + 1$, so $(M^e)^d = M^{k\phi(n)+1} \equiv M \pmod n$ by the second version of Euler's theorem, which holds for $n = pq$ even if $\gcd(M, n) \ne 1$.
-  \item \textbf{What is the order of 2 modulo 13, and is 2 a primitive root?} The order divides 12; $2^4 \equiv 3$ and $2^6 = 64 \equiv 12$, so neither $12/3 = 4$ nor $12/2 = 6$ gives 1. Hence $\operatorname{ord}(2) = 12$ and 2 is a primitive root of 13. The others are $2^5 \equiv 6$, $2^7 \equiv 11$, $2^{11} \equiv 7$, so the primitive roots of 13 are 2, 6, 7, 11.
-  \item \textbf{How many primitive roots does 23 have, and is 5 one of them?} $\phi(22) = 10$. Since $22 = 2 \cdot 11$, check $5^{11} \equiv 22 \ne 1$ and $5^2 = 25 \equiv 2 \ne 1$, so 5 is a primitive root.
-  \item \textbf{Why does $\mathbb{Z}_8^*$ have no primitive root?} $\phi(8) = 4$, but $3^2$, $5^2$ and $7^2$ are all $\equiv 1 \pmod 8$, so no element has order 4.
-  \item \textbf{Why must the Diffie--Hellman base be a primitive root?} If $g$ had order $d < p - 1$, then $g^x$ would take only $d$ values and the secret exponent could be found among $d$ candidates; a primitive root makes $g^x$ range over all $p - 1$ residues.
-\end{enumerate}

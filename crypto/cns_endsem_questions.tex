@@ -1,0 +1,57 @@
+\documentclass[10pt,a4paper]{article}
+\input{preamble}
+% section numbers of the NOTES (sec:... labels) are read from cns_endsem_notes.aux, so "Section 17" means section 17 of the Notes PDF
+\usepackage{xr}
+\externaldocument{cns_endsem_notes}
+\renewcommand{\thesection}{Q\arabic{section}}
+\hypersetup{bookmarksdepth=2}
+
+\begin{document}
+
+\begin{center}
+{\LARGE\bfseries Cryptography \& Network Security}\\[3pt]
+{\large End-Sem Question Bank: chapter questions, past papers, practice sets and a mock paper}\\[2pt]
+{\small CSN15403, MNNIT Allahabad \quad$\cdot$\quad companion to the \textbf{End-Sem Notes} PDF}
+\end{center}
+
+\begin{keybox}[title=How to use this book]
+Chapters here are numbered Q1, Q2, \dots; a plain ``Section 17'' or ``\S17'' always means section 17 of the \textbf{Notes} PDF, where the topic is taught.
+Attempt each question before reading its answer, and write numerical answers in the full exam layout (tables, every intermediate value, a final check), because the paper rewards ``precise answer with proper justification''.
+Part~I goes chapter by chapter in syllabus order; Part~II has both past mid-sem papers fully solved and the exam-pattern drill bank; Part~III is the long practice set with its answer key; Part~IV is a timed mock end-sem paper with solutions.
+\end{keybox}
+{\small\tableofcontents}
+
+\part{Chapter-wise Questions}
+\input{questions/q_01_intro_classical}
+\input{questions/q_03_substitution}
+\input{questions/q_05_otp_transposition}
+\input{questions/q_06_solved_mcq}
+\input{questions/q_07_modular_euclid}
+\input{questions/q_10_totient}
+\input{questions/q_11_fermat_euler}
+\input{questions/q_12_primes_crt}
+\input{questions/q_13_algebra}
+\input{questions/q_14_modern_block}
+\input{questions/q_15_des}
+\input{questions/q_16_aes}
+\input{questions/q_17_rsa}
+\input{questions/q_18_elgamal_ecc}
+\input{questions/q_19_integrity}
+\input{questions/q_20_mac_signatures}
+\input{questions/q_21_key_mgmt}
+\input{questions/q_22_entity_auth}
+\input{questions/q_23_other_techniques}
+\input{questions/q_24_network_security}
+\input{questions/q_25_assignment_topics}
+
+\part{Past Papers and Drill Bank}
+\input{questions/98_exams}
+\input{questions/98b_drill}
+
+\part{Practice Set with Answer Key}
+\input{questions/99_practice}
+
+\part{Mock End-Sem Paper}
+\input{questions/mock_endsem}
+
+\end{document}

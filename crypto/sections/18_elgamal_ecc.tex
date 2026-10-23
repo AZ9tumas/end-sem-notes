@@ -281,19 +281,6 @@ To decrypt, Eve needs $r$ (then $P = C_2 - r \times e_2$) or $d$ (then $P = C_2 
 
 \textbf{Why ECC keys are smaller.} For factoring and for the discrete log in $\mathbb{Z}_p^*$ there are \textbf{sub-exponential} algorithms (the number field sieve, index calculus) that exploit the arithmetic structure of integers, so RSA and ElGamal need 1024-bit and larger moduli to stay ahead. On a well-chosen elliptic curve no such structure is known, and only generic attacks costing about $\sqrt{\#E}$ work, i.e.\ $2^{k/2}$ for a $k$-bit curve. A 160-bit curve therefore costs about $2^{80}$ steps, the same effort as factoring a 1024-bit RSA modulus: \imp{ECC over GF$(2^n)$ or GF$(p)$ with a 160-bit modulus gives the same security as RSA with a 1024-bit modulus} (and 256-bit ECC $\approx$ 3072-bit RSA). Smaller keys mean less computation, bandwidth and storage, which suits smart cards and mobile devices.
 
-\subsection*{Check your understanding}
-\begin{enumerate}[leftmargin=1.6em]
-  \item \textbf{Differentiate RSA and ElGamal.} RSA rests on factoring $n = pq$, is deterministic, and its ciphertext is one number the size of $n$. ElGamal rests on the discrete logarithm modulo a prime, is probabilistic because of the fresh $r$, and its ciphertext is a pair $(C_1, C_2)$, twice the plaintext size.
-  \item \textbf{Why must $r$ be fresh for every ElGamal message?} The mask $e_2^r$ depends only on $r$; if two messages share $r$, one known plaintext $P$ gives $e_2^r = C_2 P^{-1}$, and then every other message encrypted with that $r$ is $P' = C_2' (e_2^r)^{-1}$.
-  \item \textbf{Why is $(C_1^d)^{-1} = C_1^{p-1-d}$?} $C_1^d \cdot C_1^{p-1-d} = C_1^{p-1} \equiv 1 \pmod p$ by Fermat's little theorem.
-  \item \textbf{ElGamal: $p = 11$, $e_1 = 2$, $d = 3$, $r = 4$, $P = 7$.} $(C_1, C_2) = (5, 6)$; decryption $6 \cdot (5^3)^{-1} = 6 \cdot 3 \equiv 7$.
-  \item \textbf{Why must $4a^3 + 27b^2 \not\equiv 0$?} Otherwise the cubic has a repeated root, the curve is singular (a cusp or crossing), the tangent there is undefined, and the points do not form a group.
-  \item \textbf{What is $-(5, 1)$ on $E_{13}(1, 1)$ and what is $(7, 0) + (7, 0)$?} $-(5, 1) = (5, 12)$ (only $y$ flips); $(7, 0) + (7, 0) = O$ because the tangent at a point with $y = 0$ is vertical.
-  \item \textbf{Why does the doubling slope contain $a$ but not $b$?} It is the derivative $dy/dx$ from $2y\,y' = 3x^2 + a$, and the constant $b$ differentiates to 0.
-  \item \textbf{Is $(3, 5)$ on $E_{11}(1, 6)$? Find $2 \cdot (2, 7)$.} Yes: $27 + 3 + 6 = 36 \equiv 3 \equiv 5^2$. For $2(2, 7)$: $s = 13 \cdot 14^{-1} \equiv 2 \cdot 3^{-1} = 2 \cdot 4 = 8$, $x_3 = 64 - 4 = 60 \equiv 5$, $y_3 = 8(2 - 5) - 7 = -31 \equiv 2$, so $(5, 2)$.
-  \item \textbf{Why does 160-bit ECC match 1024-bit RSA?} Factoring has sub-exponential algorithms, while the ECDLP on a good curve only has generic $\sqrt{n}$-time attacks, so a 160-bit curve already needs about $2^{80}$ work.
-  \item \textbf{Why does the ElGamal ciphertext double in size?} Two values $C_1$ and $C_2$, each in $\mathbb{Z}_p$, are sent for one plaintext block in $\mathbb{Z}_p$.
-\end{enumerate}
 
 \begin{fixbox}
 \begin{itemize}[leftmargin=1.2em,itemsep=0pt]

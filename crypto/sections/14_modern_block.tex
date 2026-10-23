@@ -300,17 +300,3 @@ At step 15 the state is the seed again, so the key stream repeats with period $\
   \item Nonlinear S-box (L7 slide 18): over GF(2), $x^3 = x$ and $x^2 = x$, so the slide's $y_1 = x_1^3 + x_2 = x_1 + x_2$ is actually linear; the box is nonlinear because of the product term $x_1 x_2$ in $y_2 = x_1^2 + x_1x_2 + x_3$.
 \end{itemize}
 \end{fixbox}
-
-\subsection*{Check your understanding}
-\begin{enumerate}[leftmargin=1.5em,itemsep=2pt]
-  \item \textbf{Why must a modern block cipher be a substitution and not a transposition cipher?} A transposition preserves the number of 1s in the block, so from a ciphertext with $w$ ones Eve only has to try the $\binom{n}{w}$ blocks of weight $w$; a substitution has no such invariant and leaves all $2^n$ candidates.
-  \item \textbf{How many padding bits for 1000 bits of message with 64-bit blocks?} $(-1000) \bmod 64 = 1024 - 1000 = 24$ bits, giving 16 blocks.
-  \item \textbf{Why is a full-size key substitution cipher impractical for $n = 64$?} It needs $(2^{64})!$ keys, i.e.\ a key of about $2^{70}$ bits; real ciphers use partial-size keys (DES: 56 bits) and build a random-looking mapping from small components.
-  \item \textbf{Differentiate the three P-boxes and say which are invertible.} Straight $n \to n$ is a permutation and is invertible; expansion $n \to m$ ($m > n$) repeats inputs and compression $n \to m$ ($m < n$) blocks inputs, and neither is invertible, because a blocked bit is lost and a repeated bit has no unique source.
-  \item \textbf{Which component gives confusion and which gives diffusion, and why?} S-boxes give confusion, because they are the only nonlinear part and make the ciphertext a nonlinear function of the key; P-boxes give diffusion, because they carry the changed output bits of one S-box to several S-boxes of the next round so that a change spreads over the block.
-  \item \textbf{Why can a Feistel cipher use a noninvertible round function?} Because $f$'s output is only XORed onto the other half and $f$'s input $R_{i-1}$ is passed on unchanged as $L_i$; the receiver recomputes $f(L_i, K_i)$ forwards and XORs it away, so $f^{-1}$ is never needed.
-  \item \textbf{What happens if a Feistel cipher has no swapper?} The right half is never modified, so half of the plaintext appears unchanged in the ciphertext.
-  \item \textbf{Can an S-box with 6 inputs and 4 outputs be invertible?} No: 64 inputs map onto 16 outputs, so each output has 4 preimages; only $n \times n$ S-boxes can be invertible.
-  \item \textbf{Differentiate synchronous and nonsynchronous stream ciphers.} In a synchronous cipher the key stream depends only on the key (OTP, LFSR), so an inserted or lost bit desynchronises the receiver; in a nonsynchronous cipher it also depends on earlier plaintext or ciphertext, and the self-synchronising form recovers automatically after an error.
-  \item \textbf{What is the maximum period of a 5-cell LFSR?} $2^5 - 1 = 31$, since the all-zero state is excluded (it would stay zero forever).
-\end{enumerate}

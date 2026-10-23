@@ -1,4 +1,4 @@
-#!/bin/zsh
+#!/usr/bin/env bash
 # usage: ./build_one.sh 17_rsa   -> compiles ONLY that section (xelatex, twice) into build/<name>/test.pdf; prints errors/overfull boxes
 cd "$(dirname "$0")"
 n=$1; d=build/$n; mkdir -p $d

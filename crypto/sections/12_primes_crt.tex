@@ -280,6 +280,33 @@ So $143^{-1} \equiv 3^{-1} \equiv -2 \equiv \mathbf{5} \pmod 7$ (check $3 \cdot 
 $M_i^{-1}$ is the inverse modulo $m_i$ (the small modulus), not modulo $M$. Reduce $M_i$ modulo $m_i$ before running extended Euclid, but multiply the \emph{unreduced} $M_i$ in step 4; using $M_i \bmod m_i$ in the final sum breaks the zeros modulo the other moduli.
 \end{trap}
 
+\textbf{Congruences with a coefficient, $c\,x \equiv b \pmod m$.} The CRT formula needs every congruence in the form $x \equiv a_i \pmod{m_i}$, so each one is first solved for $x$. If $\gcd(c, m) = 1$, multiply both sides by $c^{-1} \bmod m$; the modulus does not change. If $d = \gcd(c, m) > 1$, the congruence has a solution only when $d \mid b$, and then dividing \emph{everything} by $d$ gives $\frac{c}{d}x \equiv \frac{b}{d} \pmod{\frac{m}{d}}$: the modulus shrinks to $m/d$, because $m \mid c(x - x')$ only forces $\frac{m}{d} \mid (x - x')$. Dividing $c$ and $b$ by $d$ but keeping the old modulus $m$ silently throws away $d - 1$ of the $d$ solutions modulo $m$.
+
+\begin{worked}[: CRT after reducing the coefficients (video example 2, corrected)]
+\textbf{Q.} Solve $4x \equiv 5 \pmod 9$ and $2x \equiv 6 \pmod{20}$.
+
+\textbf{First congruence.} $\gcd(4, 9) = 1$ and $4^{-1} \bmod 9 = 7$ (since $4 \cdot 7 = 28 = 3 \cdot 9 + 1$). Multiplying by 7: $x \equiv 35 \equiv 8 \pmod 9$.
+
+\textbf{Second congruence.} $\gcd(2, 20) = 2$ and $2 \mid 6$, so it is solvable; dividing by 2 gives $x \equiv 3 \pmod{10}$, which modulo 20 means $x \equiv 3$ \emph{or} $13 \pmod{20}$.
+
+\textbf{CRT on $x \equiv 8 \pmod 9$, $x \equiv 3 \pmod{10}$.} $\gcd(9, 10) = 1$, $M = 90$.
+\begin{center}\small
+\begin{tabular}{@{}ccccccc@{}}
+\toprule
+$i$ & $a_i$ & $m_i$ & $M_i$ & $M_i \bmod m_i$ & $M_i^{-1} \bmod m_i$ & $a_i M_i M_i^{-1}$\\
+\midrule
+1 & 8 & 9 & 10 & 1 & 1 & $8 \cdot 10 \cdot 1 = 80$\\
+2 & 3 & 10 & 9 & 9 & 9 & $3 \cdot 9 \cdot 9 = 243$\\
+\bottomrule
+\end{tabular}
+\end{center}
+$x = (80 + 243) \bmod 90 = 323 \bmod 90 = \mathbf{53}$, so the complete solution is $\mathbf{x \equiv 53 \pmod{90}}$, i.e.\ $x \in \{53, 143\}$ modulo 180.
+
+\textbf{Check.} $4 \cdot 53 = 212 = 23 \cdot 9 + 5$ and $2 \cdot 53 = 106 = 5 \cdot 20 + 6$ \checkmark; $4 \cdot 143 = 572 = 63 \cdot 9 + 5$ and $2 \cdot 143 = 286 = 14 \cdot 20 + 6$ \checkmark.
+
+\emph{The video} kept modulus 20 after dividing ($x \equiv 3 \pmod{20}$) and used $M = 180$, $M_1^{-1} = 20^{-1} \bmod 9 = 5$, $M_2^{-1} = 9^{-1} \bmod 20 = 9$, getting $x = 1043 \bmod 180 = 143$. That value is correct but it is only one of the two solutions modulo 180; the branch $x \equiv 13 \pmod{20}$ gives the other, 53.
+\end{worked}
+
 \textbf{More slide examples} (all checked):
 \begin{center}\small
 \begin{tabular}{@{}lllll@{}}
@@ -438,17 +465,3 @@ $L_3\, y$ & 16&14&1&12&5&15&11&10&2&3&7&13&4&9&6&8\\
   \item Euler's second version $a^{k\phi(n)+1} \equiv a \pmod n$ holds for squarefree $n$ (such as $n = pq$ in RSA), not for every $n$; it fails for $n = 4$, $a = 2$. (See \S\ref{sec:fermat}.)
 \end{itemize}
 \end{fixbox}
-
-\subsection*{Check your understanding}
-\begin{enumerate}[leftmargin=1.5em]
-  \item \textbf{Why is it enough to test divisors up to $\sqrt n$, and why is this still too slow for RSA?} If $n = ab$ with $a \le b$, then $a \le \sqrt n$, so a composite always has a factor at most $\sqrt n$. But $\sqrt n = 2^{n_b/2}$ for an $n_b$-bit number, which is exponential in the input size ($2^{512}$ trials for a 1024-bit number).
-  \item \textbf{Differentiate deterministic and probabilistic primality tests.} A deterministic test (divisibility, AKS) always answers correctly; a probabilistic test (Fermat, Miller--Rabin) is fast and its ``composite'' answer is always correct, but its ``prime'' answer may be wrong with a small probability that shrinks with every extra base tried ($\le 4^{-t}$ for Miller--Rabin).
-  \item \textbf{What is a Carmichael number, and why does 561 pass the Fermat test for every coprime base?} A composite $n$ with $a^{n-1} \equiv 1$ for all $a$ coprime to $n$. For $561 = 3 \cdot 11 \cdot 17$, each $p - 1 \in \{2, 10, 16\}$ divides 560, so $a^{560} \equiv 1$ modulo 3, 11 and 17, hence modulo 561 by the CRT.
-  \item \textbf{Apply Miller--Rabin with base 2 to 221.} $220 = 55 \cdot 2^2$; $T = 2^{55} \bmod 221 = 128$ (not $\pm1$); one squaring: $128^2 \bmod 221 = 30$ (not $\pm1$). The loop ends without a decision, so 221 is composite ($= 13 \times 17$).
-  \item \textbf{Why must the CRT moduli be pairwise coprime?} Step 3 needs $M_i^{-1} \bmod m_i$, which exists only if $\gcd(M_i, m_i) = 1$, and uniqueness needs $\operatorname{lcm}$ of the moduli to equal their product. Without it the system can be unsolvable: $x \equiv 1 \pmod 4$, $x \equiv 2 \pmod 6$ has no solution.
-  \item \textbf{Solve $x \equiv 1 \pmod 5$, $x \equiv 2 \pmod 7$, $x \equiv 3 \pmod 9$, $x \equiv 4 \pmod{11}$.} $M = 3465$; $M_i = 693, 495, 385, 315$; reduced $3, 5, 7, 7$; inverses $2, 3, 4, 8$; $x = (1386 + 2970 + 4620 + 10080) \bmod 3465 = 19056 \bmod 3465 = 1731$.
-  \item \textbf{How many modular multiplications does $a^{65537} \bmod n$ need, and why?} $65537 = 2^{16} + 1$ has 17 bits with two 1s, so 16 squarings and one non-trivial multiplication (17 in total) instead of 65536.
-  \item \textbf{Why does Fermat factorization break $8051$ at once, and what does that teach about RSA?} $\lceil\sqrt{8051}\rceil = 90$ and $90^2 - 8051 = 49 = 7^2$, so $8051 = 97 \times 83$. The method ends after about $(p + q)/2 - \sqrt n$ steps, so $p$ and $q$ must not be close together.
-  \item \textbf{Solve $2^x \equiv 9 \pmod{11}$.} 2 is a primitive root of 11 (powers $2, 4, 8, 5, 10, 9, \dots$), and $2^6 = 64 \equiv 9$, so $x = 6$ (unique modulo 10).
-  \item \textbf{Why is the discrete logarithm a good basis for public-key cryptography?} Computing $g^x \bmod p$ takes $O(\log p)$ multiplications by square-and-multiply, but recovering $x$ needs exhaustive search over up to $p - 1$ exponents (or still-infeasible sub-exponential algorithms for 2048-bit $p$). This one-way property protects the Diffie--Hellman shared key and the ElGamal private key.
-\end{enumerate}

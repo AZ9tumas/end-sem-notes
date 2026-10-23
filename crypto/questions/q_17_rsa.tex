@@ -1,0 +1,17 @@
+% Moved from sections/17_rsa.tex (end-sem split: questions live in the Question Bank PDF).
+\section{Asymmetric-Key Cryptography and RSA \new}\label{q:17_rsa}
+\noindent{\small Notes: \S\ref{sec:rsa}.}
+
+\subsection*{Check your understanding}
+\begin{enumerate}[leftmargin=1.6em]
+  \item \textbf{Differentiate symmetric and asymmetric key cryptography.} Symmetric uses one shared secret key for both directions, needs $N(N-1)/2$ keys and a secure key exchange, and is fast. Asymmetric uses a public/private pair per user, needs only $N$ pairs and no prior secret, rests on number-theoretic problems, and is slow, so it is used for key exchange and signatures.
+  \item \textbf{Why is $e = 2$ invalid?} $\phi(n) = (p-1)(q-1)$ is even, so $\gcd(2, \phi(n)) \ne 1$ and $2$ has no inverse modulo $\phi(n)$; squaring maps $x$ and $n - x$ to the same value, so it cannot be inverted uniquely.
+  \item \textbf{Why is $d$ computed modulo $\phi(n)$ and not $n$?} Exponents of an element of $\mathbb{Z}_n^*$ repeat with period dividing $\phi(n)$ (Euler), so $P^{ed} = P$ needs $ed \equiv 1 \pmod{\phi(n)}$; a congruence modulo $n$ says nothing about exponents.
+  \item \textbf{Why must $P < n$?} Results are only defined modulo $n$, so $P$ and $P + n$ encrypt to the same $C$ and decryption returns $P \bmod n$.
+  \item \textbf{Given $n = 187$ and $e = 17$, find $d$.} $187 = 11 \cdot 17$, $\phi = 160$, $17^{-1} \bmod 160 = 113$ ($17 \cdot 113 = 1921 = 12 \cdot 160 + 1$).
+  \item \textbf{Given $n = 3937$ and $e = 17$, find $d$.} $3937 = 31 \cdot 127$, $\phi = 30 \cdot 126 = 3780$, $d = 3113$ ($17 \cdot 3113 = 52921 = 14 \cdot 3780 + 1$).
+  \item \textbf{Why does knowing $\phi(n)$ break RSA?} It gives $d$ directly, and also $p + q = n - \phi(n) + 1$, so $p, q$ are roots of $x^2 - (p+q)x + n$.
+  \item \textbf{Why is RSA not used to encrypt bulk data?} It is about a thousand times slower than AES and textbook RSA is deterministic; it encrypts a session key instead (hybrid encryption).
+  \item \textbf{What does OAEP add?} Randomness and structure: the same message encrypts differently each time and malleability is destroyed, which stops short-message, broadcast and chosen-ciphertext attacks.
+  \item \textbf{Why is CRT decryption only for Bob?} It needs $p$ and $q$, which only the key owner knows; the gain is about a factor of 4.
+\end{enumerate}

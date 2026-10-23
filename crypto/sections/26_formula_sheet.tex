@@ -1,0 +1,100 @@
+% One-place revision sheet: every formula, parameter and protocol skeleton of the course. Conventions follow Forouzan (as the slides do).
+\clearpage
+\section{Formula and Algorithm Sheet}\label{sec:formulas}
+Everything below is derived and explained in the chapter named in the right-hand column; this sheet is for the last revision, not for learning. Notation follows Forouzan, as the slides do: $e_1, e_2$ are public values, $d$ a private key, $r$ a fresh random secret, $h$ a hash function, $\|$ concatenation.
+
+\providecommand{\fsrow}[3]{#1 & #2 & \footnotesize #3\\}
+
+\subsection*{Classical ciphers}
+{\small\renewcommand{\arraystretch}{1.18}\noindent
+\begin{tabularx}{\textwidth}{@{}p{0.25\textwidth} X l@{}}
+\toprule
+\fsrow{Shift (Caesar)}{$C = (P + k) \bmod 26$, $P = (C - k) \bmod 26$; 26 keys (25 useful)}{\S\ref{sec:schemes}}
+\fsrow{Multiplicative / affine}{$C = (P \cdot k_1 + k_2) \bmod 26$, $P = ((C - k_2) \cdot k_1^{-1}) \bmod 26$; $k_1 \in \mathbb{Z}_{26}^*$ (12 values); affine key space $12 \times 26 = 312$}{\S\ref{sec:classextra}}
+\fsrow{Monoalphabetic}{key = a permutation of the alphabet, $26! \approx 4 \times 10^{26}$ keys; broken by letter frequencies}{\S\ref{sec:schemes}}
+\fsrow{Playfair}{digrams (split doubles with \ttx{x}, pad odd length); same row $\to$ right, same column $\to$ below, rectangle $\to$ same row, other corner}{\S\ref{sec:playfair}}
+\fsrow{Vigen\`ere / autokey}{$C_i = (P_i + K_{i \bmod m}) \bmod 26$; autokey: $k_1$ given, then $k_i = P_{i-1}$}{\S\ref{sec:poly}}
+\fsrow{Hill}{$C = P K \bmod 26$, $P = C K^{-1} \bmod 26$; $K$ invertible iff $\gcd(\det K, 26) = 1$}{\S\ref{sec:poly}}
+\fsrow{One-time pad}{$C_i = P_i \oplus K_i$ (or $+ \bmod 26$); key random, as long as the message, used once $\Rightarrow$ perfect secrecy}{\S\ref{sec:otp}}
+\bottomrule
+\end{tabularx}\par}
+
+\subsection*{Number theory}
+{\small\renewcommand{\arraystretch}{1.18}\noindent
+\begin{tabularx}{\textwidth}{@{}p{0.25\textwidth} X l@{}}
+\toprule
+\fsrow{Euclid}{$\gcd(a, b) = \gcd(b, a \bmod b)$, $\gcd(a, 0) = a$}{\S\ref{sec:exteuclid}}
+\fsrow{Extended Euclid table}{$q = \lfloor r_1/r_2 \rfloor$, $r = r_1 - q r_2$, $t = t_1 - q t_2$; start $(r_1, r_2, t_1, t_2) = (n, b, 0, 1)$; if final $r_1 = 1$ then $b^{-1} = t_1 \bmod n$}{\S\ref{sec:exteuclid}}
+\fsrow{Linear congruence}{$ax \equiv b \pmod n$, $d = \gcd(a, n)$: solvable iff $d \mid b$; then $d$ solutions $x_0 + k\frac{n}{d}$, $x_0 = (\frac{b}{d})(\frac{a}{d})^{-1} \bmod \frac{n}{d}$}{\S\ref{sec:modular}}
+\fsrow{Diophantine $ax + by = c$}{solvable iff $d = \gcd(a, b) \mid c$; $x = x_0 + \frac{b}{d}k$, $y = y_0 - \frac{a}{d}k$}{\S\ref{sec:exteuclid}}
+\fsrow{Totient}{$\phi(p) = p - 1$; $\phi(p^e) = p^e - p^{e-1}$; $\phi(mn) = \phi(m)\phi(n)$ if coprime; $\phi(n) = n\prod_{p \mid n}(1 - \frac1p)$}{\S\ref{sec:totient}}
+\fsrow{Fermat}{$p$ prime, $p \nmid a$: $a^{p-1} \equiv 1$, $a^{-1} \equiv a^{p-2} \pmod p$; any $a$: $a^p \equiv a$}{\S\ref{sec:fermat}}
+\fsrow{Euler}{$\gcd(a, n) = 1$: $a^{\phi(n)} \equiv 1$, $a^{-1} \equiv a^{\phi(n) - 1} \pmod n$; reduce exponents mod $\phi(n)$}{\S\ref{sec:fermat}}
+\fsrow{Order, primitive root}{$\operatorname{ord}_n(a) \mid \phi(n)$; $g$ is a primitive root iff $\operatorname{ord}(g) = \phi(n)$, i.e.\ $g^{\phi(n)/q} \ne 1$ for every prime $q \mid \phi(n)$; there are $\phi(\phi(n))$ of them; they exist only for $n = 2, 4, p^k, 2p^k$}{\S\ref{sec:fermat}}
+\fsrow{CRT}{$M = \prod m_i$, $M_i = M/m_i$, $M_i^{-1} \bmod m_i$; $x = \sum a_i M_i M_i^{-1} \bmod M$ (moduli pairwise coprime)}{\S\ref{sec:primes}}
+\fsrow{Square-and-multiply}{scan exponent bits left to right: always square, multiply by the base when the bit is 1; cost $\le 2\log_2 e$ multiplications}{\S\ref{sec:modexp}}
+\fsrow{Miller--Rabin}{$n - 1 = m 2^k$, $m$ odd; $T = a^m$; if $T = \pm 1$ prime; square up to $k - 1$ times: $+1$ composite, $-1$ prime; else composite; error $\le 4^{-t}$}{\S\ref{sec:primes}}
+\fsrow{GF$(2^n)$}{add = XOR; multiply polynomials mod an irreducible $m(x)$; AES: $m(x) = x^8 + x^4 + x^3 + x + 1$ (\ttx{11B}); inverse by extended Euclid on polynomials}{\S\ref{sec:algebra}}
+\bottomrule
+\end{tabularx}\par}
+
+\subsection*{Symmetric ciphers}
+{\small\renewcommand{\arraystretch}{1.18}\noindent
+\begin{tabularx}{\textwidth}{@{}p{0.25\textwidth} X l@{}}
+\toprule
+\fsrow{Padding}{$|M| + |\text{Pad}| \equiv 0 \pmod n$}{\S\ref{sec:modern}}
+\fsrow{Feistel round}{$L_i = R_{i-1}$, $R_i = L_{i-1} \oplus f(R_{i-1}, K_i)$; decryption = same structure, keys reversed}{\S\ref{sec:modern}}
+\fsrow{DES}{64-bit block, 56-bit key (64 with parity), 16 rounds, 48-bit round keys; $f$: expansion $32 \to 48$, $\oplus K_i$, 8 S-boxes $6 \to 4$ (row $= b_1 b_6$, column $= b_2 b_3 b_4 b_5$), straight P-box $32 \to 32$; key: PC-1 $64 \to 56$, halves shifted left 1 bit in rounds 1, 2, 9, 16, else 2 (28 in all), PC-2 $56 \to 48$}{\S\ref{sec:des}}
+\fsrow{Multiple DES}{2DES: meet-in-the-middle $\approx 2^{57}$ work; 3DES-EDE: $C = E_{K_3}(D_{K_2}(E_{K_1}(P)))$, 2-key version $K_3 = K_1$}{\S\ref{sec:des}}
+\fsrow{AES}{128-bit block; key 128/192/256 $\to$ 10/12/14 rounds; round = SubBytes, ShiftRows (row $r$ rotated left by $r$), MixColumns (matrix rows \ttx{02 03 01 01} rotated), AddRoundKey; last round has no MixColumns; key expansion $w_i = w_{i-1} \oplus w_{i-4}$, and for $i \bmod 4 = 0$: $w_i = t \oplus w_{i-4}$, $t = \text{SubWord}(\text{RotWord}(w_{i-1})) \oplus \text{RCon}_{i/4}$}{\S\ref{sec:aes}}
+\fsrow{Modes}{ECB $C_i = E(P_i)$; CBC $C_i = E(P_i \oplus C_{i-1})$, $P_i = D(C_i) \oplus C_{i-1}$, $C_0 = IV$; CFB $C_i = P_i \oplus \text{MSB}_s(E(S_{i-1}))$; OFB $O_i = E(O_{i-1})$, $C_i = P_i \oplus O_i$; CTR $C_i = P_i \oplus E(\text{ctr}_i)$}{\S\ref{sec:modes}}
+\bottomrule
+\end{tabularx}\par}
+
+\subsection*{Public-key encryption}
+{\small\renewcommand{\arraystretch}{1.18}\noindent
+\begin{tabularx}{\textwidth}{@{}p{0.25\textwidth} X l@{}}
+\toprule
+\fsrow{RSA}{$n = pq$, $\phi = (p-1)(q-1)$, $\gcd(e, \phi) = 1$, $d = e^{-1} \bmod \phi$; $C = P^e \bmod n$, $P = C^d \bmod n$; CRT: $P_p = C^{d \bmod (p-1)} \bmod p$, $P_q$ likewise, combine}{\S\ref{sec:rsa}}
+\fsrow{ElGamal}{$e_2 = e_1^d \bmod p$; $C_1 = e_1^r$, $C_2 = P e_2^r \bmod p$; $P = C_2 (C_1^d)^{-1} \bmod p$}{\S\ref{sec:elgamal}}
+\fsrow{Elliptic curve over GF$(p)$}{$y^2 = x^3 + ax + b$, $4a^3 + 27b^2 \not\equiv 0$; $\lambda = \frac{y_2 - y_1}{x_2 - x_1}$ (add) or $\frac{3x_1^2 + a}{2y_1}$ (double); $x_3 = \lambda^2 - x_1 - x_2$, $y_3 = \lambda(x_1 - x_3) - y_1$; $-(x, y) = (x, -y)$}{\S\ref{sec:elgamal}}
+\fsrow{EC ElGamal}{$e_2 = d \times e_1$; $C_1 = r \times e_1$, $C_2 = P + r \times e_2$; $P = C_2 - d \times C_1$}{\S\ref{sec:elgamal}}
+\bottomrule
+\end{tabularx}\par}
+
+\subsection*{Hashing and message authentication}
+{\small\renewcommand{\arraystretch}{1.18}\noindent
+\begin{tabularx}{\textwidth}{@{}p{0.25\textwidth} X l@{}}
+\toprule
+\fsrow{Ideal $n$-bit hash}{preimage, second preimage $\approx 2^n$; collision $\approx 2^{n/2}$; birthday: $k \approx 1.18\sqrt N$ (any two equal), $0.69N$ (equal to a given value)}{\S\ref{sec:integrity}}
+\fsrow{SHA-512}{1024-bit blocks, 64-bit words, 80 rounds, 512-bit digest; $|M| + |P| + 128 \equiv 0 \pmod{1024}$}{\S\ref{sec:integrity}}
+\fsrow{HMAC}{$h[(K^+ \oplus \text{opad}) \,\|\, h[(K^+ \oplus \text{ipad}) \,\|\, M]]$, ipad $= \texttt{36}$, opad $= \texttt{5C}$ repeated}{\S\ref{sec:mac}}
+\fsrow{CMAC}{CBC-MAC with $IV = 0$; last block $\oplus k_1$ (full) or padded $\oplus k_2$; $k_1 = 2 \cdot E_K(0)$, $k_2 = 2 \cdot k_1$ in GF$(2^n)$; keep $n$ leftmost bits}{\S\ref{sec:mac}}
+\bottomrule
+\end{tabularx}\par}
+
+\subsection*{Digital signatures}
+{\small\renewcommand{\arraystretch}{1.18}\noindent
+\begin{tabularx}{\textwidth}{@{}p{0.25\textwidth} X l@{}}
+\toprule
+\fsrow{RSA}{$S = M^d \bmod n$; accept iff $S^e \bmod n = M$ (sign $h(M)$ in practice)}{\S\ref{sec:dsig}}
+\fsrow{ElGamal}{$S_1 = e_1^r \bmod p$, $S_2 = (M - d S_1) r^{-1} \bmod (p - 1)$; accept iff $e_1^M \equiv e_2^{S_1} S_1^{S_2} \pmod p$}{\S\ref{sec:dsig}}
+\fsrow{Schnorr}{$q \mid p - 1$, $e_1$ of order $q$, $e_2 = e_1^d$; $S_1 = h(M \| e_1^r \bmod p)$, $S_2 = r + d S_1 \bmod q$; accept iff $h(M \| e_1^{S_2} e_2^{-S_1} \bmod p) = S_1$}{\S\ref{sec:dsig}}
+\fsrow{DSS (DSA)}{$S_1 = (e_1^r \bmod p) \bmod q$, $S_2 = (h(M) + d S_1) r^{-1} \bmod q$; $w = S_2^{-1}$, accept iff $(e_1^{h(M) w} e_2^{S_1 w} \bmod p) \bmod q = S_1$}{\S\ref{sec:dsig}}
+\fsrow{ECDSA}{$e_2 = d \times e_1$, $e_1$ of order $q$; $P = r \times e_1$, $S_1 = x_P \bmod q$, $S_2 = (h(M) + d S_1) r^{-1} \bmod q$; $T = (h(M) S_2^{-1}) \times e_1 + (S_1 S_2^{-1}) \times e_2$, accept iff $x_T \bmod q = S_1$}{\S\ref{sec:dsig}}
+\bottomrule
+\end{tabularx}\par}
+
+\subsection*{Key management and entity authentication}
+{\small\renewcommand{\arraystretch}{1.18}\noindent
+\begin{tabularx}{\textwidth}{@{}p{0.25\textwidth} X l@{}}
+\toprule
+\fsrow{Key counts}{$N$ users: $N(N-1)/2$ pairwise secret keys; with a KDC, $N$ master keys}{\S\ref{sec:keymgmt}}
+\fsrow{Diffie--Hellman}{$R_1 = g^x$, $R_2 = g^y \bmod p$; $K = R_2^x = R_1^y = g^{xy} \bmod p$; MITM: Eve's $z$ gives $g^{xz}$ (Alice--Eve) and $g^{yz}$ (Eve--Bob)}{\S\ref{sec:keymgmt}}
+\fsrow{Lamport one-time password}{server stores $(n, h^n(P))$; user sends $h^{n-1}(P)$; accept iff $h(\text{received}) = $ stored; then store $(n - 1, h^{n-1}(P))$}{\S\ref{sec:entityauth}}
+\fsrow{Fiat--Shamir}{$n = pq$, $v = s^2 \bmod n$; $x = r^2$, $c \in \{0, 1\}$, $y = r s^c$; accept iff $y^2 \equiv x v^c$; cheating $2^{-k}$ in $k$ rounds}{\S\ref{sec:entityauth}}
+\fsrow{Guillou--Quisquater}{$s^e v \equiv 1 \pmod n$; $x = r^e$, $c \in [1, e]$, $y = r s^c$; accept iff $y^e v^c \equiv x$}{\S\ref{sec:entityauth}}
+\fsrow{BB84}{keep positions where bases agree ($\approx \frac12$); intercept--resend Eve causes $25\%$ errors in the sifted key}{\S\ref{sec:othertech}}
+\bottomrule
+\end{tabularx}\par}
+

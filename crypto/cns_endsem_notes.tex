@@ -1,0 +1,66 @@
+\documentclass[10pt,a4paper]{article}
+\input{preamble}
+\hypersetup{bookmarksdepth=2}
+
+\begin{document}
+
+\begin{center}
+{\LARGE\bfseries Cryptography \& Network Security}\\[3pt]
+{\large End-Sem Notes: Lectures 1--18 and the rest of the official syllabus}\\[2pt]
+{\small CSN15403, MNNIT Allahabad \quad$\cdot$\quad All questions, past papers and practice sets are in the separate \textbf{Question Bank} PDF}
+\end{center}
+\begin{center}\small
+\begin{tabular}{@{}lll@{}}
+\hothot\ = asked in \emph{both} past mid-sem papers & \hot\ = asked once / high priority & \textcolor{acc}{$\blacktriangleright$} = not examined yet, likely in the end-sem\\[3pt]
+\fcolorbox{gold}{yellow!10}{\strut\textbf{$\bigstar$ MUST KNOW}} & \fcolorbox{warn}{warn!6}{\strut\textbf{TRAP}} & \imp{highlight = write this sentence in the exam}
+\end{tabular}
+\end{center}
+{\small\tableofcontents}
+
+\input{sections/00_roadmap_endsem}
+
+\part{Foundations and Classical Cryptography}
+\input{sections/01_intro}
+\input{sections/01b_attacks}
+\input{sections/02_classical_caesar}
+\input{sections/03_mono_playfair}
+\input{sections/04_hill_polyalphabetic}
+\input{sections/05_otp_transposition}
+\input{sections/05b_classical_extra}
+\input{sections/06_stego_math}
+
+\part{Mathematics of Cryptography}
+\input{sections/07_modular}
+\input{sections/08_modexp}
+\input{sections/09_gcd}
+\input{sections/09b_ext_euclid}
+\input{sections/10_totient}
+\input{sections/11_fermat_euler}
+\input{sections/12_primes_crt}
+\input{sections/13_algebra}
+
+\part{Symmetric-Key Ciphers}
+\input{sections/14_modern_block}
+\input{sections/15_des}
+\input{sections/16_aes}
+\input{sections/16b_modes}
+
+\part{Asymmetric-Key Cryptography}
+\input{sections/17_rsa}
+\input{sections/18_elgamal_ecc}
+
+\part{Integrity, Authentication and Key Management}
+\input{sections/19_integrity}
+\input{sections/20_mac_signatures}
+\input{sections/21_key_mgmt}
+\input{sections/22_entity_auth}
+
+\part{Beyond the Core}
+\input{sections/23_other_techniques}
+\input{sections/24_network_security}
+\input{sections/25_assignment_topics}
+
+\part{Revision}
+\input{sections/26_formula_sheet}
+
+\end{document}

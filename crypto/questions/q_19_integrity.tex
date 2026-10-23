@@ -1,0 +1,17 @@
+% Moved from sections/19_integrity.tex (end-sem split: questions live in the Question Bank PDF).
+\section{Message Integrity and Hash Functions}\label{q:19_integrity}
+\noindent{\small Notes: \S\ref{sec:integrity}.}
+
+\subsection*{Check your understanding}
+\begin{enumerate}[leftmargin=*]
+  \item \textbf{Differentiate preimage, second preimage and collision resistance.} Preimage resistance: given only a digest $y$, Eve cannot find any message hashing to $y$. Second preimage resistance: given a message $M$ and its digest, she cannot find a different message with the same digest. Collision resistance: she cannot find any two different messages with the same digest, choosing both herself. For an $n$-bit ideal hash the first two cost about $2^n$ and the third about $2^{n/2}$.
+  \item \textbf{Why does collision resistance imply second preimage resistance?} If Eve could find a second preimage for a given $M$, she could choose any $M$, find $M'$, and output $(M, M')$ as a collision. So breaking second preimage resistance breaks collision resistance, and a collision-resistant function must be second-preimage resistant.
+  \item \textbf{Why can a checksum not serve as a cryptographic hash?} A checksum is linear and easy to invert, so given a target value Eve can adjust any message to reach it; it is therefore not preimage resistant. It only detects accidental errors.
+  \item \textbf{Why can the random oracle not use the formula $h(M) = M \bmod n$?} Because then $h(M_1 + M_2) = [h(M_1) + h(M_2)] \bmod n$ can be predicted from earlier digests, violating the rule that each new digest is chosen independently at random.
+  \item \textbf{Derive the probability that among $k$ random $n$-bit digests two are equal.} All $k$ differ with probability $\prod_{i=1}^{k-1}(1 - i/N) \approx e^{-k(k-1)/2N}$, $N = 2^n$, so $P \approx 1 - e^{-k(k-1)/2N}$; setting $P = 1/2$ gives $k \approx 1.18\sqrt N = 1.18 \times 2^{n/2}$.
+  \item \textbf{How many digests must Eve create to find a collision in a 64-bit hash with $P > 0.5$?} $k = 1.18 \times 2^{32} \approx 5.07 \times 10^9$; at $2^{20}$ per second this takes $1.18 \times 2^{12} \approx 4833$ s, about 1.3 hours, so 64 bits is insecure against collisions (a preimage would take about 376 years at $2^{30}$ per second).
+  \item \textbf{What digest length gives $2^{128}$ security against collisions?} The collision attack costs about $2^{n/2}$, so $n/2 = 128$ and $n = 256$ bits (SHA-256).
+  \item \textbf{Compute the SHA-512 padding for $|M| = 3000$ bits.} $|P| = (-3000 - 128) \bmod 1024 = -3128 + 4 \times 1024 = 968$ bits; total $3000 + 968 + 128 = 4096 = 4$ blocks.
+  \item \textbf{Why is the Rabin scheme weak, and how does Davies--Meyer fix it?} In Rabin, $H_i = E_{M_i}(H_{i-1})$ and Eve knows every key, so she can decrypt backwards from a target digest and meet a forward computation in the middle with about $2^{m/2}$ work each way. Davies--Meyer XORs $H_{i-1}$ onto the output, so $H_{i-1}$ can no longer be recovered from $H_i$ and $M_i$, which blocks the backward half.
+  \item \textbf{Why is the length field appended in Merkle--Damg\aa rd?} It makes the last block depend on the message length, which lets a collision of the whole hash be traced back to a collision of the compression function; without it, messages of different lengths could share a suffix of chaining values.
+\end{enumerate}

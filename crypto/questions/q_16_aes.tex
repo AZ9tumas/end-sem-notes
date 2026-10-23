@@ -1,0 +1,17 @@
+% Moved from sections/16_aes.tex (end-sem split: questions live in the Question Bank PDF).
+\section{Advanced Encryption Standard (AES)}\label{q:16_aes}
+\noindent{\small Notes: \S\ref{sec:aes}.}
+
+\subsection*{Check your understanding}
+\begin{enumerate}[leftmargin=1.5em,itemsep=2pt]
+  \item \textbf{Why does AES do its arithmetic in GF$(2^8)$ rather than in $\mathbb{Z}_{256}$?} The S-box needs the inverse of every non-zero byte and MixColumns needs an invertible matrix. In $\mathbb{Z}_{256}$ the 128 even bytes have no inverse, while GF$(2^8)$ is a field, so every non-zero byte has one, and addition is plain XOR.
+  \item \textbf{How many rounds, round keys and key words does AES-192 use?} 12 rounds, $12 + 1 = 13$ round keys of 128 bits each, so $13 \times 4 = 52$ words.
+  \item \textbf{What would happen if ShiftRows were removed?} Every other step works within one column, so the four columns would never mix. AES would become four independent 32-bit ciphers, each of which could be attacked separately with a $2^{32}$-sized codebook.
+  \item \textbf{Why is AddRoundKey its own inverse, and why is it the only keyed step?} XOR with $k$ twice gives back the input. The other steps are fixed public maps, so all secrecy must enter through AddRoundKey, which is why it also comes before round 1.
+  \item \textbf{Compute $02 \cdot \ttx{87}$ and $03 \cdot \ttx{87}$.} $\ttx{87} = 1000\,0111$; shifting gives $0000\,1110 = \ttx{0E}$, and the top bit was 1, so $02 \cdot \ttx{87} = \ttx{0E} \oplus \ttx{1B} = \ttx{15}$. Then $03 \cdot \ttx{87} = \ttx{15} \oplus \ttx{87} = \ttx{92}$.
+  \item \textbf{What is SubBytes(\ttx{00}), and why is it not \ttx{00}?} \ttx{00} has no inverse and is mapped to \ttx{00}, but the affine step then XORs in the constant \ttx{63}, so $S(\ttx{00}) = \ttx{63}$. The constant is there precisely so that the S-box has no fixed points.
+  \item \textbf{Why is MixColumns omitted in the last round?} It is linear and keyless, so a final MixColumns could be undone by anyone applying InvMixColumns to the ciphertext (moving it past AddRoundKey only changes the key). It adds no security, and omitting it lets decryption have the same structure as encryption.
+  \item \textbf{Given $w_7 = \ttx{2A6C7605}$ and $w_4 = \ttx{A0FAFE17}$, find $w_8$.} $8 \bmod 4 = 0$: RotWord gives \ttx{6C76052A}, SubWord gives \ttx{50386BE5}, XOR RCon[2] $=$ \ttx{02000000} gives $t_8 = \ttx{52386BE5}$, and $w_8 = w_4 \oplus t_8 = \ttx{F2C295F2}$.
+  \item \textbf{Is AES a Feistel cipher? Differentiate.} No. In a Feistel cipher (DES) half the block passes through a round function that need not be invertible and the halves are swapped, so decryption is the same algorithm. AES transforms the whole state each round with invertible steps, so decryption needs the inverse steps.
+  \item \textbf{After how many rounds does every output byte depend on every input byte?} Two: MixColumns in round 1 spreads one byte over its column, and ShiftRows plus MixColumns in round 2 spread those four bytes over all four columns.
+\end{enumerate}

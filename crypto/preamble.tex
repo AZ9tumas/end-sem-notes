@@ -43,7 +43,8 @@
 % text: Fira Sans (pairs with Fira Math); code: AnnotationM
 \setmainfont{FiraSans}[Extension=.otf,UprightFont=*-Regular,BoldFont=*-SemiBold,ItalicFont=*-Italic,BoldItalicFont=*-SemiBoldItalic]
 \setsansfont{FiraSans}[Extension=.otf,UprightFont=*-Regular,BoldFont=*-SemiBold,ItalicFont=*-Italic,BoldItalicFont=*-SemiBoldItalic]
-\setmonofont{AnnotationM Nerd Font Mono}[Scale=MatchLowercase]
+\IfFontExistsTF{AnnotationM Nerd Font Mono}{\setmonofont{AnnotationM Nerd Font Mono}[Scale=MatchLowercase]}%
+  {\setmonofont{FiraMono}[Extension=.otf,UprightFont=*-Regular,BoldFont=*-Bold,Scale=MatchLowercase]}% fallback (cloud build)
 \usepackage{unicode-math}
 \setmathfont{FiraMath-Regular.otf}[Scale=0.95]
 % glyphs missing from AnnotationM and Fira Math: take them from STIX Two

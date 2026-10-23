@@ -1,0 +1,35 @@
+% Moved from sections/11_fermat_euler.tex (end-sem split: questions live in the Question Bank PDF).
+\section{Fermat's and Euler's Theorems, Inverses and Primitive Roots}\label{q:11_fermat_euler}
+\noindent{\small Notes: \S\ref{sec:fermat}.}
+
+\subsection*{Check your understanding}
+\begin{enumerate}[leftmargin=1.5em]
+  \item \textbf{State both versions of Fermat's little theorem and the difference between them.} If $p$ is prime and $p \nmid a$, then $a^{p-1} \equiv 1 \pmod p$; for every $a$, $a^p \equiv a \pmod p$. The second version drops the condition $p \nmid a$, since for $p \mid a$ both sides are 0.
+  \item \textbf{Why is the exponent reduced modulo $p - 1$ and not modulo $p$?} Because the powers of $a$ repeat when the exponent grows by $p - 1$ ($a^{p-1} \equiv 1$), not by $p$. For example $2^{2026} \bmod 11$: $2026 \bmod 10 = 6$ and $2^6 = 64 \equiv \mathbf{9}$.
+  \item \textbf{Differentiate Fermat's and Euler's theorems.} Fermat needs a prime modulus and gives period $p - 1$; Euler allows any modulus $n$ with $\gcd(a, n) = 1$ and gives period $\phi(n)$. Fermat is the special case $n = p$ of Euler.
+  \item \textbf{Find $3^{-1} \bmod 20$ by Euler's theorem.} $\gcd(3, 20) = 1$, $\phi(20) = 8$, so $3^{-1} \equiv 3^7 = 2187 \equiv \mathbf{7}$; check $3 \cdot 7 = 21 \equiv 1$.
+  \item \textbf{Why does $15^{-1} \bmod 99$ not exist, and what goes wrong if Euler's formula is used anyway?} $\gcd(15, 99) = 3$, so $15x - 99k$ is always a multiple of 3. The formula gives $15^{59} \bmod 99 = 36$, but $15 \cdot 36 \equiv 45 \ne 1$.
+  \item \textbf{Why does RSA decryption recover the message?} $ed = k\phi(n) + 1$, so $(M^e)^d = M^{k\phi(n)+1} \equiv M \pmod n$ by the second version of Euler's theorem, which holds for $n = pq$ even if $\gcd(M, n) \ne 1$.
+  \item \textbf{What is the order of 2 modulo 13, and is 2 a primitive root?} The order divides 12; $2^4 \equiv 3$ and $2^6 = 64 \equiv 12$, so neither $12/3 = 4$ nor $12/2 = 6$ gives 1. Hence $\operatorname{ord}(2) = 12$ and 2 is a primitive root of 13. The others are $2^5 \equiv 6$, $2^7 \equiv 11$, $2^{11} \equiv 7$, so the primitive roots of 13 are 2, 6, 7, 11.
+  \item \textbf{How many primitive roots does 23 have, and is 5 one of them?} $\phi(22) = 10$. Since $22 = 2 \cdot 11$, check $5^{11} \equiv 22 \ne 1$ and $5^2 = 25 \equiv 2 \ne 1$, so 5 is a primitive root.
+  \item \textbf{Why does $\mathbb{Z}_8^*$ have no primitive root?} $\phi(8) = 4$, but $3^2$, $5^2$ and $7^2$ are all $\equiv 1 \pmod 8$, so no element has order 4.
+  \item \textbf{Why must the Diffie--Hellman base be a primitive root?} If $g$ had order $d < p - 1$, then $g^x$ would take only $d$ values and the secret exponent could be found among $d$ candidates; a primitive root makes $g^x$ range over all $p - 1$ residues.
+\end{enumerate}
+
+\subsection*{Practice problems (video homework, solved)}
+\begin{enumerate}[leftmargin=1.6em,itemsep=4pt]
+  \item \textbf{Does Fermat's little theorem hold for the prime 11 with the integer 5?}\\
+  \textbf{Solution.} 11 is prime and $11 \nmid 5$, so the theorem applies and predicts $5^{10} \equiv 1 \pmod{11}$. Check by repeated squaring: $5^2 = 25 \equiv 3$, $5^4 \equiv 3^2 = 9$, $5^8 \equiv 9^2 = 81 \equiv 4$, so $5^{10} = 5^8 \cdot 5^2 \equiv 4 \cdot 3 = 12 \equiv \mathbf{1} \pmod{11}$. \textbf{Yes}, it holds.
+  \item \textbf{Show that Euler's theorem does not hold for $a = 11$, $n = 33$.}\\
+  \textbf{Solution.} The precondition fails: $\gcd(11, 33) = 11 \ne 1$. Numerically, $\phi(33) = \phi(3)\phi(11) = 2 \cdot 10 = 20$, and every power $11^k$ is a multiple of 11, so it can only be $\equiv 0, 11$ or $22 \pmod{33}$, never 1. Indeed $11^2 = 121 = 3 \cdot 33 + 22$, $11^3 \equiv 22 \cdot 11 = 242 \equiv 11$, so the powers alternate $11, 22, 11, 22, \dots$ and $11^{20} \equiv \mathbf{22} \not\equiv 1 \pmod{33}$.
+  \item \textbf{Is 2 a primitive root of 11?}\\
+  \textbf{Solution.} The powers $2^k \bmod 11$ for $k = 1, \dots, 10$ are $2, 4, 8, 5, 10, 9, 7, 3, 6, 1$: all ten nonzero residues appear exactly once and 1 first appears at $k = 10 = p - 1$. Hence $\operatorname{ord}_{11}(2) = 10$ and \textbf{2 is a primitive root of 11}. (Shortcut: it suffices that $2^{10/2} = 2^5 \equiv 10 \ne 1$ and $2^{10/5} = 2^2 = 4 \ne 1$.)
+  \item \textbf{Find all primitive roots of 5.}\\
+  \textbf{Solution.} Test $a = 2, 3, 4$ (1 is never a primitive root since $1^k = 1$):
+  $2 \to 2, 4, 3, 1$ (all distinct) \checkmark; $\;3 \to 3, 4, 2, 1$ \checkmark; $\;4 \to 4, 1, 4, 1$ (repeats, order 2) \texttimes.
+  So the primitive roots of 5 are \textbf{2 and 3}, which agrees with the count $\phi(\phi(5)) = \phi(4) = 2$.
+  \item \textbf{Is 3 a primitive root of 7? Is 2?}\\
+  \textbf{Solution.} Chained multiplication modulo 7: $3^k$: $3, 2, 6, 4, 5, 1$ — all six residues, so \textbf{3 is a primitive root}. $2^k$: $2, 4, 1, 2, 4, 1$ — the cycle closes at $k = 3$, so $\operatorname{ord}_7(2) = 3$ and \textbf{2 is not}. As soon as a value repeats (equivalently, 1 appears before $k = p - 1$) you may stop and declare ``not a primitive root''.
+  \item \textbf{Find the multiplicative inverses of $3 \bmod 5$, $2 \bmod 11$, $4 \bmod 5$, $2 \bmod 7$, and decide whether $5 \bmod 10$ has one.}\\
+  \textbf{Solution.} $3 \cdot 2 = 6 \equiv 1 \pmod 5 \Rightarrow 3^{-1} = \mathbf 2$; $\;2 \cdot 6 = 12 \equiv 1 \pmod{11} \Rightarrow 2^{-1} = \mathbf 6$; $\;4 \cdot 4 = 16 \equiv 1 \pmod 5 \Rightarrow 4^{-1} = \mathbf 4$ (4 is its own inverse); $\;2 \cdot 4 = 8 \equiv 1 \pmod 7 \Rightarrow 2^{-1} = \mathbf 4$ (compare $2^{-1} \bmod 5 = 3$: the inverse depends on the modulus). For $5 \bmod 10$, $\gcd(5, 10) = 5 \ne 1$, so \textbf{no inverse exists}: $5x \bmod 10$ is always 0 or 5, never 1.
+\end{enumerate}

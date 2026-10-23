@@ -1,0 +1,42 @@
+% Moved from sections/06_stego_math.tex.
+\section{Solved Objective Questions (Lectures 1--5)}\label{q:06_solved}
+
+\textbf{Q1.} Sender and receiver use the \textbf{same key}: \textbf{(b) private key} and \textbf{(c) symmetric} cryptography are both correct (two names for the same thing).
+
+\textbf{Q2.} $19 \bmod 3$: $19 = 6 \cdot 3 + \mathbf{1}$, so the answer is \textbf{(d) 1}. (mod gives the remainder.)
+
+\textbf{Q3 (UGC NET 2016).} An attacker captures information and \textbf{retransmits it later without altering it}. Options: DoS / masquerade / simple / complex. Official answer: \textbf{(a) denial of service}. Reason given: repeated retransmissions flood the receiver so it can't serve real users.
+\begin{keybox}[title=Exam note]
+The textbook name for ``capture and retransmit later'' is a \textbf{replay attack}. If \emph{replay} is one of the options, choose it. Here it isn't, so DoS is the best available answer.
+\end{keybox}
+
+\textbf{Q4 (ISRO 2020).} Columnar transposition, plaintext ``the tomato is a plant in the night shade family'', keyword \textbf{TOMATO}.
+38 letters, 6 columns $\Rightarrow$ 7 rows (42 cells), 4 fillers \ttx{x}. Number the keyword letters alphabetically; \textbf{for repeated letters, go left to right}:
+\begin{center}\small
+\begin{minipage}[c]{0.4\textwidth}\centering
+\begin{tabular}{|*{6}{c|}}
+\multicolumn{1}{c}{T}&\multicolumn{1}{c}{O}&\multicolumn{1}{c}{M}&\multicolumn{1}{c}{A}&\multicolumn{1}{c}{T}&\multicolumn{1}{c}{O}\\
+\multicolumn{1}{c}{5}&\multicolumn{1}{c}{3}&\multicolumn{1}{c}{2}&\multicolumn{1}{c}{\textbf{1}}&\multicolumn{1}{c}{6}&\multicolumn{1}{c}{4}\\
+\hline
+t&h&e&\cellcolor{warn!18}t&o&m\\\hline
+a&t&o&\cellcolor{warn!18}i&s&a\\\hline
+p&l&a&\cellcolor{warn!18}n&t&i\\\hline
+n&t&h&\cellcolor{warn!18}e&n&i\\\hline
+g&h&t&\cellcolor{warn!18}s&h&a\\\hline
+d&e&f&\cellcolor{warn!18}a&m&i\\\hline
+l&y&\textit{x}&\cellcolor{warn!18}\textit{x}&\textit{x}&\textit{x}\\\hline
+\end{tabular}
+\end{minipage}
+\begin{minipage}[c]{0.5\textwidth}
+Read order A, M, O, O, T, T $=$ columns 4, 3, 2, 6, 1, 5:\\[3pt]
+\ttx{TINESAX EOAHTFX HTLTHEY MAIIAIX TAPNGDL OSTNHMX}\\[3pt]
+Answer: \textbf{(a)}.\\[2pt]
+{\footnotesize (The slide gave both O's the number 3 and both T's the number 4, then read left to right. That is the same order.)}
+\end{minipage}
+\end{center}
+
+\textbf{Q5 (GATE 2015).} $N$ people, every pair needs its own \textbf{symmetric} key that nobody else knows. One key per pair:
+\[
+\binom{N}{2} = \frac{N(N-1)}{2} \qquad (N=2: 1,\; N=3: 3,\; N=4: 6,\; N=5: 10) \qquad\text{Answer: \textbf{(c)}}
+\]
+{\small\emph{Common follow-up (not in the video):} with \textbf{public-key} cryptography, each person needs just one key pair: $N$ pairs, $2N$ keys in total. This is one big reason public-key cryptography exists.}

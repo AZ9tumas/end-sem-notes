@@ -1,0 +1,15 @@
+% Moved from sections/10_totient.tex (end-sem split: questions live in the Question Bank PDF).
+\section{Relatively Prime Numbers, Euler's Totient and $\mathbb{Z}_n^*$}\label{q:10_totient}
+\noindent{\small Notes: \S\ref{sec:totient}.}
+
+\subsection*{Check your understanding}
+\begin{enumerate}[leftmargin=1.5em]
+  \item \textbf{Define $\phi(n)$ and explain why $\phi(p) = p - 1$ for a prime $p$.} $\phi(n)$ is the number of integers in $1, \dots, n-1$ co-prime to $n$. A prime has no divisors other than 1 and itself, so all $p - 1$ numbers below it are co-prime to it.
+  \item \textbf{Why is $\phi(49) \ne \phi(7) \cdot \phi(7)$?} Multiplicativity needs co-prime factors, and $\gcd(7, 7) = 7$. Rule 3 gives $\phi(49) = 49 - 7 = 42$, not 36.
+  \item \textbf{Find $\phi(36)$ and $\phi(60)$.} $36 = 2^2 \cdot 3^2$, so $\phi = 2 \cdot 6 = 12$. $60 = 2^2 \cdot 3 \cdot 5$, so $\phi = 2 \cdot 2 \cdot 4 = 16$.
+  \item \textbf{Derive $\phi(pq) = (p-1)(q-1)$.} Of $1, \dots, pq$, the $q$ multiples of $p$ and the $p$ multiples of $q$ are not co-prime to $pq$, and $pq$ is counted in both lists, so $\phi(pq) = pq - p - q + 1 = (p-1)(q-1)$.
+  \item \textbf{List $\mathbb{Z}_{15}^*$ and state its size.} $\{1, 2, 4, 7, 8, 11, 13, 14\}$, which has $\phi(15) = 2 \cdot 4 = 8$ elements.
+  \item \textbf{Why is $\phi(n)$ even for $n > 2$?} The co-prime residues pair up as $k \leftrightarrow n - k$, and the two members of a pair are never equal when $n > 2$.
+  \item \textbf{An RSA modulus is $n = 143$ and someone learns $\phi(n) = 120$. What can they do?} They get $p + q = n - \phi(n) + 1 = 24$ and $pq = 143$, so $p = 11$, $q = 13$; the modulus is broken. Hence $\phi(n)$ must stay secret.
+  \item \textbf{What is the difference between $\mathbb{Z}_n$ and $\mathbb{Z}_n^*$?} $\mathbb{Z}_n$ contains all residues $0, \dots, n-1$ and is used where addition and additive inverses are needed. $\mathbb{Z}_n^*$ contains only the $\phi(n)$ residues co-prime to $n$, which are exactly those with multiplicative inverses.
+\end{enumerate}

@@ -1,0 +1,120 @@
+% Mock end-sem paper in the style of the CSN15403 mid-sem papers (textbook-phrased, numericals with full justification).
+% Every number recomputed by script (scratchpad/mock/mock3.py).
+\clearpage
+\section{Mock End-Sem Paper}\label{q:mock}
+
+\begin{keybox}[title=Instructions (format assumed for practice)]
+Time: 3 hours. Maximum marks: 50. Attempt all questions. Precise answers with proper justification will be considered for complete marks; show every intermediate value in numericals and draw a labelled diagram for every protocol. Sit it in one go with a timer, then mark yourself against the model answers that follow.
+\end{keybox}
+
+\begin{enumerate}[leftmargin=2em,itemsep=6pt,label=\textbf{Q\arabic*.}]
+\item (a) Differentiate a modification detection code (MDC), a message authentication code (MAC) and a digital signature with respect to the security services provided and the keys used. \hfill [3]\\
+(b) Draw the structure of HMAC and explain why it uses two nested hash computations instead of $h(K \,|\, M)$. \hfill [4]
+
+\item Alice uses RSA digital signatures with $p = 11$, $q = 17$ and public exponent $e = 7$.\\
+(a) Find her private exponent $d$ using the extended Euclidean algorithm. \hfill [2]\\
+(b) Sign the message $M = 65$ and show how Bob verifies the signature. \hfill [3]\\
+(c) Show how Eve can produce an existential forgery under a key-only attack, and explain how signing the digest prevents it. \hfill [2]
+
+\item In the ElGamal digital signature scheme Alice chooses $p = 23$, $e_1 = 5$ and the private key $d = 6$.\\
+(a) Compute her public key $e_2$. Sign $M = 10$ with the random number $r = 7$ and verify the signature. \hfill [4]\\
+(b) Alice carelessly signs a second message $M' = 9$ with the same $r$. Show how Eve recovers $r$ and then $d$ from the two signatures. \hfill [3]
+
+\item In the Digital Signature Standard take $p = 23$, $q = 11$, $e_0 = 5$, the private key $d = 4$, the random secret $r = 3$ and the digest $h(M) = 7$. Compute $e_1$, $e_2$, the signature $(S_1, S_2)$ and verify it. \hfill [5]
+
+\item (a) Alice and Bob run Diffie--Hellman with $p = 353$ and $g = 3$; Alice picks $x = 97$ and Bob picks $y = 233$. Compute $R_1$, $R_2$ and the shared key. \hfill [3]\\
+(b) Eve mounts a man-in-the-middle attack with her secret $z = 50$. Compute the key Alice shares with Eve and the key Eve shares with Bob, and explain how the station-to-station protocol prevents this. \hfill [4]
+
+\item Draw the Kerberos (version 4) protocol and explain each message. Why is the ticket-granting server separate from the authentication server? List three differences between Kerberos v4 and v5. \hfill [6]
+
+\item In the Fiat--Shamir protocol a trusted centre publishes $n = 77$. Alice's secret is $s = 9$.\\
+(a) Compute Alice's public value $v$. In one round Alice chooses $r = 15$. Show the commitment, the response and Bob's check for both possible challenges $c = 0$ and $c = 1$. \hfill [3]\\
+(b) How does an impostor who does not know $s$ succeed with probability $1/2$ in a round, and how many rounds make her success probability less than one in a million? \hfill [2]
+
+\item (a) Compare CBC and CTR modes with respect to parallelism, error propagation and the requirement on the IV/counter. \hfill [3]\\
+(b) In BB84 quantum key distribution, explain why an eavesdropper who measures and resends every photon is detected, and derive the error rate she introduces. \hfill [3]
+
+\item Write short notes on any two: (a) X.509 certificate format, (b) salting of passwords, (c) the dual signature in SET, (d) types of firewalls. \hfill [4]
+
+\item On the elliptic curve $E_{11}(1, 6)$: $y^2 = x^3 + x + 6 \pmod{11}$, with $G = (2, 7)$, compute $2G$ and $3G$. \hfill [4]
+\end{enumerate}
+
+\subsection*{Model answers}
+
+\textbf{Q1 (a).} An \emph{MDC} is a plain hash $h(M)$: it uses no key and gives only \emph{integrity}, and only if the digest itself reaches the receiver over a safe channel, since anyone can recompute it for a forged message. A \emph{MAC} is a keyed hash $h(K, M)$ under a secret key shared by the two parties: it gives integrity and \emph{message (data-origin) authentication}, but not nonrepudiation, because the receiver holds the same key and could have produced the MAC himself. A \emph{digital signature} is computed with the sender's \emph{private} key and verified with her \emph{public} key: it gives integrity, authentication and \emph{nonrepudiation}, since only the signer could have produced it. None of the three gives confidentiality. (Details: \S\ref{sec:mac}, \S\ref{sec:dsig}.)
+
+\textbf{Q1 (b).} The key is padded to the hash block size $b$ to give $K^+$. HMAC computes
+\[
+\text{HMAC}(K, M) = h\bigl[(K^+ \oplus \text{opad}) \,|\, h[(K^+ \oplus \text{ipad}) \,|\, M]\bigr],
+\]
+with ipad $= \texttt{36}$ and opad $= \texttt{5C}$ (hex) repeated $b/8$ times. A single keyed hash $h(K \,|\, M)$ built on an iterated (Merkle--Damg\aa rd) hash is open to \emph{length extension}: from $h(K \,|\, M)$ Eve can continue the iteration and obtain $h(K \,|\, M \,|\, \text{pad} \,|\, X)$ for any $X$ without knowing $K$, because the digest \emph{is} the chaining state. In HMAC the inner digest is hashed again under a second, different key block, so the published value is no longer a chaining state that can be extended, and forging requires breaking the hash itself. Draw the two hash boxes, inner fed by $(K^+ \oplus \text{ipad}) \,|\, M$, outer fed by $(K^+ \oplus \text{opad}) \,|\,$ inner digest.
+
+\textbf{Q2 (a).} $n = 187$, $\phi(n) = 10 \times 16 = 160$, and $d = 7^{-1} \bmod 160$:
+\begin{center}\small
+\begin{tabular}{@{}rrrrrrr@{}}
+\toprule
+$q$ & $r_1$ & $r_2$ & $r$ & $t_1$ & $t_2$ & $t$\\
+\midrule
+22 & 160 & 7 & 6 & 0 & 1 & $-22$\\
+1 & 7 & 6 & 1 & 1 & $-22$ & 23\\
+6 & 6 & 1 & 0 & $-22$ & 23 & $-160$\\
+ & \textbf{1} & 0 & & \textbf{23} & $-160$ & \\
+\bottomrule
+\end{tabular}
+\end{center}
+$r_1 = 1$, so $d = \mathbf{23}$. Check: $7 \times 23 = 161 = 160 + 1$.
+
+\textbf{Q2 (b).} $S = M^d \bmod n = 65^{23} \bmod 187$, with $23 = 10111_2$ (square, then multiply when the bit is 1):
+\begin{center}\small
+\begin{tabular}{@{}lccccc@{}}
+\toprule
+bit of $d$ & 1 & 0 & 1 & 1 & 1\\
+\midrule
+square ($\bmod 187$) & $1^2 = 1$ & $65^2 \equiv 111$ & $111^2 \equiv 166$ & $131^2 \equiv 144$ & $10^2 = 100$\\
+then $\times 65$ if bit $= 1$ & $65$ & $111$ & $166 \cdot 65 \equiv 131$ & $144 \cdot 65 \equiv 10$ & $100 \cdot 65 \equiv \mathbf{142}$\\
+\bottomrule
+\end{tabular}
+\end{center}
+So $S = \mathbf{142}$ and Alice sends $(M, S) = (65, 142)$. Bob computes $S^e \bmod n = 142^7 \bmod 187$ ($7 = 111_2$): $142 \to 142^2 \cdot 142 \equiv 155 \cdot 142 \equiv 131 \to 131^2 \cdot 142 \equiv 144 \cdot 142 \equiv \mathbf{65}$. Since $65 = M$, he accepts.
+
+\textbf{Q2 (c).} In a key-only attack Eve picks any $S'$, say $S' = 5$, and computes $M' = S'^e \bmod n = 5^7 \bmod 187 = 146$. The pair $(146, 5)$ passes verification although Alice never signed it; it is \emph{existential} forgery because Eve cannot choose $M'$. If the scheme signs $h(M)$, Eve obtains only a value $D' = S'^e$ and would need a message with $h(M') = D'$, which preimage resistance makes infeasible.
+
+\textbf{Q3 (a).} $e_2 = e_1^d \bmod p = 5^6 \bmod 23 = \mathbf{8}$. $\gcd(7, 22) = 1$ and $r^{-1} = 7^{-1} \bmod 22 = 19$ ($7 \cdot 19 = 133 = 6 \cdot 22 + 1$).
+$S_1 = e_1^r \bmod p = 5^7 \bmod 23 = \mathbf{17}$; $\;S_2 = (M - d S_1)\, r^{-1} \bmod (p - 1) = (10 - 102) \cdot 19 \bmod 22 = 18 \cdot 19 \bmod 22 = \mathbf{12}$.
+Verification: $V_1 = e_1^M \bmod p = 5^{10} \bmod 23 = 9$; $\;V_2 = e_2^{S_1} S_1^{S_2} \bmod p = 8^{17} \cdot 17^{12} \bmod 23 = 13 \cdot 6 \bmod 23 = 9$. $V_1 = V_2$, so the signature is valid.
+\emph{Why it works}: $e_2^{S_1} S_1^{S_2} = e_1^{d S_1} e_1^{r S_2} = e_1^{d S_1 + (M - d S_1)} = e_1^M$, because $r S_2 \equiv M - d S_1 \pmod{p - 1}$ and exponents of $e_1$ live modulo $p - 1$.
+
+\textbf{Q3 (b).} With the same $r$, $S_1 = 17$ again and $S_2' = (9 - 102) \cdot 19 \bmod 22 = 15$ (check: $V_1 = 5^9 \equiv 11 \equiv 8^{17} \cdot 17^{15} \pmod{23}$). Subtracting the two signing equations,
+\[
+S_2 - S_2' \equiv (M - M')\, r^{-1} \pmod{22} \;\Rightarrow\; r \equiv (M - M')(S_2 - S_2')^{-1} = 1 \cdot (-3)^{-1} = 19^{-1} \equiv \mathbf 7 \pmod{22}.
+\]
+Then from $r S_2 \equiv M - d S_1$: $d \equiv (M - r S_2)\, S_1^{-1} = (10 - 84) \cdot 17^{-1} \equiv 14 \cdot 13 = 182 \equiv \mathbf 6 \pmod{22}$, which is Alice's private key. (This works because $\gcd(S_2 - S_2', 22) = \gcd(S_1, 22) = 1$; otherwise Eve gets a few candidates and tests each against $e_2$.)
+
+\textbf{Q4.} $q = 11$ divides $p - 1 = 22$. $e_1 = e_0^{(p-1)/q} \bmod p = 5^2 \bmod 23 = \mathbf 2$, and $2^{11} = 2048 = 89 \cdot 23 + 1$, so $e_1$ has order $q$. $e_2 = e_1^d = 2^4 = \mathbf{16}$.
+Signing: $S_1 = (e_1^r \bmod p) \bmod q = (2^3 \bmod 23) \bmod 11 = 8$; $\;r^{-1} \bmod 11 = 4$; $\;S_2 = (h(M) + d S_1)\, r^{-1} \bmod q = (7 + 32) \cdot 4 \bmod 11 = 156 \bmod 11 = \mathbf 2$. Signature $(S_1, S_2) = (\mathbf 8, \mathbf 2)$.
+Verifying: $w = S_2^{-1} \bmod 11 = 6$; $A = h(M)\, w = 42 \equiv 9$; $B = S_1 w = 48 \equiv 4 \pmod{11}$;
+$V = (e_1^A e_2^B \bmod p) \bmod q = (2^9 \cdot 16^4 \bmod 23) \bmod 11 = (6 \cdot 9 \bmod 23) \bmod 11 = 8 \bmod 11 = 8 = S_1$ \checkmark.
+
+\textbf{Q5 (a).} $R_1 = 3^{97} \bmod 353 = \mathbf{40}$, $R_2 = 3^{233} \bmod 353 = \mathbf{248}$. Alice computes $K = R_2^{x} = 248^{97} \bmod 353 = \mathbf{160}$ and Bob computes $K = R_1^{y} = 40^{233} \bmod 353 = 160$; both equal $g^{xy} \bmod p$.
+
+\textbf{Q5 (b).} Eve sends $R_3 = 3^{50} \bmod 353 = 155$ to both. Alice computes $K_1 = R_3^{x} = 155^{97} \bmod 353 = \mathbf{233}$, which Eve also gets as $R_1^{z} = 40^{50} \bmod 353 = 233$; Bob computes $K_2 = R_3^{y} = 155^{233} \bmod 353 = \mathbf{201} = R_2^{z}$. Eve decrypts with one key and re-encrypts with the other, and neither party notices, because nothing in plain Diffie--Hellman tells Alice whose $R$ she received. In the station-to-station protocol each party signs $(\text{other's ID} \,|\, R_1 \,|\, R_2)$ with its private key and attaches a CA certificate; Eve cannot produce Bob's signature over her own $R_3$, so the substitution is detected. (\S\ref{sec:keymgmt}.)
+
+\textbf{Q6.} Model answer outline (full treatment in \S\ref{sec:keymgmt}): (1) Alice $\to$ AS: her ID (and TGS ID). (2) AS $\to$ Alice: $E_{K_A}(K_{A\text{-}TGS},\ \text{ticket}_{TGS})$ where $\text{ticket}_{TGS} = E_{K_{TGS}}(\text{Alice}, K_{A\text{-}TGS}, \text{times})$; only the real Alice, who knows the password-derived $K_A$, can open it. (3) Alice $\to$ TGS: server ID, $\text{ticket}_{TGS}$, authenticator $E_{K_{A\text{-}TGS}}(\text{timestamp})$. (4) TGS $\to$ Alice: $E_{K_{A\text{-}TGS}}(K_{A\text{-}B})$ and $\text{ticket}_B = E_{K_B}(\text{Alice}, K_{A\text{-}B})$. (5) Alice $\to$ Bob: $\text{ticket}_B$, $E_{K_{A\text{-}B}}(T)$. (6) Bob $\to$ Alice: $E_{K_{A\text{-}B}}(T + 1)$ for mutual authentication. The TGS is separate so that the password is used once per login: the TGS ticket then obtains tickets for any number of servers (single sign-on) without retyping or storing the password. v5 vs v4: v5 adds longer ticket lifetimes with start and end times, renewable/forwardable tickets, any encryption algorithm (v4 only DES), ASN.1 encoding instead of fixed byte order, inter-realm authentication without $N^2$ keys, and no double encryption of the ticket.
+
+\textbf{Q7 (a).} $\gcd(9, 77) = 1$ and $v = s^2 \bmod n = 81 \bmod 77 = \mathbf 4$. Commitment $x = r^2 \bmod n = 225 \bmod 77 = \mathbf{71}$.
+For $c = 0$: $y = r = 15$, Bob checks $y^2 = 225 \equiv 71 = x \cdot v^0$ \checkmark.
+For $c = 1$: $y = r s \bmod n = 135 \bmod 77 = 58$, Bob checks $y^2 = 3364 \equiv 53$ and $x v = 284 \equiv 53 \pmod{77}$ \checkmark.
+
+\textbf{Q7 (b).} An impostor guesses the challenge. Guessing $c = 0$, she sends $x = r^2$ and answers $y = r$; guessing $c = 1$, she picks $y$ first and sends $x = y^2 v^{-1}$, so that $y^2 = x v$. Either preparation fails if the other challenge comes, and she cannot prepare for both (that would need $s$ itself), so she passes a round with probability $1/2$ and $k$ rounds with $2^{-k}$. $2^{-20} \approx 9.5 \times 10^{-7} < 10^{-6}$ while $2^{-19} > 10^{-6}$, so \textbf{20 rounds} are needed.
+
+\textbf{Q8 (a).} CBC: $C_i = E_K(P_i \oplus C_{i-1})$, so encryption is sequential (decryption can be parallel); one corrupted ciphertext block garbles its own plaintext block completely and flips the corresponding bits of the next block, then recovery; the IV must be unpredictable. CTR: $C_i = P_i \oplus E_K(\text{counter}_i)$, so both directions are fully parallel and blocks can be accessed at random; a ciphertext bit error flips only the same plaintext bit; the counter (nonce) must never repeat under the same key, otherwise $C_i \oplus C'_i = P_i \oplus P'_i$ leaks. (\S\ref{sec:modes}.)
+
+\textbf{Q8 (b).} For each photon Eve guesses a basis. With probability $1/2$ she guesses Alice's basis, reads the bit correctly and resends an identical photon, causing no error. With probability $1/2$ she uses the wrong basis, gets a random result and resends a photon in her wrong basis; in the sifted key Bob used Alice's basis, so he then reads a random bit, wrong with probability $1/2$. Hence the error rate in the sifted key is $\tfrac12 \times 0 + \tfrac12 \times \tfrac12 = \mathbf{25\%}$. Alice and Bob compare a random sample of sifted bits publicly; an error rate near 25\% (far above the channel's noise) reveals Eve, and the key is discarded. The detection is guaranteed by quantum mechanics: measuring in the wrong basis disturbs the state, and the no-cloning theorem forbids Eve from copying the photon to measure it later. (\S\ref{sec:othertech}.)
+
+\textbf{Q9.} (a) X.509 fields: version, serial number, signature algorithm identifier, issuer name, validity period (not before/not after), subject name, subject public-key information, issuer and subject unique identifiers (v2), extensions (v3), and the CA's signature over all of these. (b) Salting: a random salt is stored with each user and the file holds $h(\text{password} \,|\, \text{salt})$; equal passwords then give different entries and a precomputed dictionary must be rebuilt for every salt value, which multiplies the attacker's work by the number of possible salts. (c) Dual signature: the cardholder computes $\text{PIMD} = h(\text{PI})$, $\text{OIMD} = h(\text{OI})$ and signs $\text{POMD} = h(\text{PIMD} \,|\, \text{OIMD})$; the merchant gets OI and PIMD, the bank gets PI and OIMD, and each can recompute POMD and check the one signature while seeing only its own part. (d) Firewalls: packet-filtering router (rules on IP addresses, ports, protocol), stateful inspection (also tracks TCP connections), application-level gateway or proxy (relays and inspects application data), circuit-level gateway (relays TCP connections without inspecting content). (\S\ref{sec:keymgmt}, \S\ref{sec:entityauth}, \S\ref{sec:netsec}.)
+
+\textbf{Q10.} Doubling $G = (2, 7)$: $\lambda = (3x_1^2 + a)(2y_1)^{-1} = (12 + 1) \cdot 14^{-1} \equiv 2 \cdot 3^{-1} = 2 \cdot 4 = 8 \pmod{11}$.
+$x_3 = \lambda^2 - 2x_1 = 64 - 4 = 60 \equiv 5$, $\;y_3 = \lambda(x_1 - x_3) - y_1 = 8(2 - 5) - 7 = -31 \equiv 2$. So $2G = \mathbf{(5, 2)}$.
+Adding $2G + G = (5, 2) + (2, 7)$: $\lambda = (7 - 2)(2 - 5)^{-1} = 5 \cdot (-3)^{-1} = 5 \cdot 8^{-1} = 5 \cdot 7 = 35 \equiv 2$.
+$x_3 = 4 - 5 - 2 = -3 \equiv 8$, $\;y_3 = 2(5 - 8) - 2 = -8 \equiv 3$. So $3G = \mathbf{(8, 3)}$.
+Check: $3^2 = 9$ and $8^3 + 8 + 6 = 526 = 47 \cdot 11 + 9$ \checkmark.

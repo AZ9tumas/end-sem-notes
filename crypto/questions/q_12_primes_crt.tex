@@ -1,0 +1,27 @@
+% Moved from sections/12_primes_crt.tex (end-sem split: questions live in the Question Bank PDF).
+\section{Primes, Primality Testing, Factorization, CRT and Discrete Logs}\label{q:12_primes_crt}
+\noindent{\small Notes: \S\ref{sec:primes}.}
+
+\subsection*{Check your understanding}
+\begin{enumerate}[leftmargin=1.5em]
+  \item \textbf{Why is it enough to test divisors up to $\sqrt n$, and why is this still too slow for RSA?} If $n = ab$ with $a \le b$, then $a \le \sqrt n$, so a composite always has a factor at most $\sqrt n$. But $\sqrt n = 2^{n_b/2}$ for an $n_b$-bit number, which is exponential in the input size ($2^{512}$ trials for a 1024-bit number).
+  \item \textbf{Differentiate deterministic and probabilistic primality tests.} A deterministic test (divisibility, AKS) always answers correctly; a probabilistic test (Fermat, Miller--Rabin) is fast and its ``composite'' answer is always correct, but its ``prime'' answer may be wrong with a small probability that shrinks with every extra base tried ($\le 4^{-t}$ for Miller--Rabin).
+  \item \textbf{What is a Carmichael number, and why does 561 pass the Fermat test for every coprime base?} A composite $n$ with $a^{n-1} \equiv 1$ for all $a$ coprime to $n$. For $561 = 3 \cdot 11 \cdot 17$, each $p - 1 \in \{2, 10, 16\}$ divides 560, so $a^{560} \equiv 1$ modulo 3, 11 and 17, hence modulo 561 by the CRT.
+  \item \textbf{Apply Miller--Rabin with base 2 to 221.} $220 = 55 \cdot 2^2$; $T = 2^{55} \bmod 221 = 128$ (not $\pm1$); one squaring: $128^2 \bmod 221 = 30$ (not $\pm1$). The loop ends without a decision, so 221 is composite ($= 13 \times 17$).
+  \item \textbf{Why must the CRT moduli be pairwise coprime?} Step 3 needs $M_i^{-1} \bmod m_i$, which exists only if $\gcd(M_i, m_i) = 1$, and uniqueness needs $\operatorname{lcm}$ of the moduli to equal their product. Without it the system can be unsolvable: $x \equiv 1 \pmod 4$, $x \equiv 2 \pmod 6$ has no solution.
+  \item \textbf{Solve $x \equiv 1 \pmod 5$, $x \equiv 2 \pmod 7$, $x \equiv 3 \pmod 9$, $x \equiv 4 \pmod{11}$.} $M = 3465$; $M_i = 693, 495, 385, 315$; reduced $3, 5, 7, 7$; inverses $2, 3, 4, 8$; $x = (1386 + 2970 + 4620 + 10080) \bmod 3465 = 19056 \bmod 3465 = 1731$.
+  \item \textbf{How many modular multiplications does $a^{65537} \bmod n$ need, and why?} $65537 = 2^{16} + 1$ has 17 bits with two 1s, so 16 squarings and one non-trivial multiplication (17 in total) instead of 65536.
+  \item \textbf{Why does Fermat factorization break $8051$ at once, and what does that teach about RSA?} $\lceil\sqrt{8051}\rceil = 90$ and $90^2 - 8051 = 49 = 7^2$, so $8051 = 97 \times 83$. The method ends after about $(p + q)/2 - \sqrt n$ steps, so $p$ and $q$ must not be close together.
+  \item \textbf{Solve $2^x \equiv 9 \pmod{11}$.} 2 is a primitive root of 11 (powers $2, 4, 8, 5, 10, 9, \dots$), and $2^6 = 64 \equiv 9$, so $x = 6$ (unique modulo 10).
+  \item \textbf{Why is the discrete logarithm a good basis for public-key cryptography?} Computing $g^x \bmod p$ takes $O(\log p)$ multiplications by square-and-multiply, but recovering $x$ needs exhaustive search over up to $p - 1$ exponents (or still-infeasible sub-exponential algorithms for 2048-bit $p$). This one-way property protects the Diffie--Hellman shared key and the ElGamal private key.
+\end{enumerate}
+
+\subsection*{Practice problems (video homework, solved)}
+\begin{enumerate}[leftmargin=1.6em,itemsep=4pt]
+  \item \textbf{Solve $x \equiv 5 \pmod 3$, $x \equiv 2 \pmod 5$, $x \equiv 1 \pmod{11}$ using the CRT.}\\
+  \textbf{Solution.} First reduce $5 \bmod 3 = 2$, so $a = (2, 2, 1)$, $m = (3, 5, 11)$, pairwise coprime, $M = 165$.
+  $M_1 = 55 \equiv 1 \pmod 3$, inverse 1; $\;M_2 = 33 \equiv 3 \pmod 5$, inverse 2 ($3 \cdot 2 = 6 \equiv 1$); $\;M_3 = 15 \equiv 4 \pmod{11}$, inverse 3 ($4 \cdot 3 = 12 \equiv 1$).
+  $x = (2 \cdot 55 \cdot 1 + 2 \cdot 33 \cdot 2 + 1 \cdot 15 \cdot 3) \bmod 165 = (110 + 132 + 45) \bmod 165 = 287 \bmod 165 = \mathbf{122}$.
+  Check: $122 = 40 \cdot 3 + 2$, $122 = 24 \cdot 5 + 2$, $122 = 11 \cdot 11 + 1$ \checkmark.
+  \item \textbf{Solve $4x \equiv 5 \pmod 9$, $2x \equiv 6 \pmod{20}$.} Fully solved in \S\ref{sec:primes} (CRT after reducing the coefficients): $x \equiv 53 \pmod{90}$, i.e.\ $x = 53$ or $143$ modulo 180.
+\end{enumerate}
