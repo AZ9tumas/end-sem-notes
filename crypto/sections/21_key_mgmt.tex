@@ -1,0 +1,732 @@
+% College Lecture 16: key management (slides L16, 20 slides) + Forouzan ch. 15 (KDC, Needham-Schroeder, Otway-Rees,
+% Kerberos, Diffie-Hellman, STS, public-key distribution, X.509, PKI) + Stallings (key distribution, Kerberos v4/v5,
+% X.509, PKI trust). Every number recomputed by script (scratchpad/w21/verify.py).
+\section{Key Management and Key Distribution}\label{sec:keymgmt}
+\usetikzlibrary{decorations.pathreplacing}
+\tikzset{
+  kmact/.style={draw, rounded corners=2pt, fill=acc!10, font=\small\bfseries, minimum width=1.5cm, minimum height=0.6cm, inner sep=2pt},
+  kmn/.style={circle, fill=black, text=white, font=\scriptsize\bfseries, inner sep=0pt, minimum size=3.8mm},
+  kmdo/.style={draw, fill=gray!12, font=\footnotesize, inner sep=2pt, align=center},
+  kmm/.style={-{Stealth[length=2mm]}, thick},
+  kmu/.style={circle, draw, fill=acc!10, minimum size=6mm, inner sep=0pt, font=\footnotesize},
+  kmca/.style={draw, rounded corners=2pt, fill=gold!15, font=\footnotesize, inner sep=2pt, minimum height=5mm}
+}
+% \kmLife{x}{name}{bottom y}: actor box and lifeline.  \kmMsg{y}{from x}{to x}{number}{label}: numbered message arrow.
+\providecommand{\kmLife}[3]{\node[kmact] at (#1,0) {#2}; \draw[gray!80] (#1,-0.32) -- (#1,#3);}
+\providecommand{\kmMsg}[5]{\node[kmn] (kmN) at (#2,#1) {#4}; \draw[kmm] (kmN) -- node[above, font=\footnotesize, inner sep=1.5pt, align=center, fill=white]{#5} (#3,#1);}
+\providecommand{\kmK}[1]{K_{\text{#1}}}
+
+\textbf{Notation.} $E_K(X)$ is $X$ encrypted with the symmetric key $K$; a comma inside $E_K(\cdot)$ means concatenation. $K_A$ is Alice's long-term \emph{master key} shared with the key-distribution center, $K_{AB}$ a \emph{session key} between Alice and Bob, $R_A$ a \emph{nonce} (a random number used only once) chosen by Alice, and $T$ a timestamp. In the diagrams a black circle marks the sender and the number of each message.
+
+\subsection{The symmetric-key distribution problem: the $N^2$ problem \new}
+\likely{``What is the $N^2$ problem? How many keys do $N$ users need, with and without a KDC?'' (2--3 marks).}
+
+Symmetric-key cryptography is far faster than public-key cryptography, so it is used for all bulk data. Its weakness is that both parties must already hold the same secret key. If Alice wants to exchange confidential messages with $N$ people, she needs $N$ different keys, one per correspondent, since a key shared with Carol must not let Carol read Alice's traffic with Bob.
+
+\textbf{Counting the keys.} Now let $N$ people all communicate with each other. Each person needs a key with each of the other $N - 1$ people, which gives $N(N-1)$ (person, partner) combinations. Every key, however, is shared by exactly two people and has therefore been counted twice, so
+\[
+\text{number of keys} = \frac{N(N-1)}{2} = \binom{N}{2} \quad\text{(one key per pair)}, \qquad N(N-1) \quad\text{(a separate key for each direction)}.
+\]
+Each person stores $N - 1$ keys. Both counts grow like $N^2$, so this is called the \textbf{$N^2$ problem}. For one million people, each person holds $999\,999$ keys and the total is $10^6(10^6 - 1)/2 = 499\,999\,500\,000 \approx 5 \times 10^{11}$ keys, or about $10^{12}$ (one trillion) if each direction has its own key. A newcomer needs $N$ new keys, all delivered securely.
+
+\textbf{The distribution problem.} The number of keys is not the only problem: each key must reach both parties over a secure channel \emph{before} any secure communication is possible, and the Internet is not one. Stallings lists four ways for Alice and Bob to obtain a key: (1) Alice chooses it and delivers it physically to Bob; (2) a third party chooses it and delivers it physically to both; (3) if they already share a key, one sends the new key encrypted under the old one; (4) if each has an encrypted link to a trusted third party, the third party sends the key to both over those links. Physical delivery does not scale to millions of users, and option 3 still needs a first key, and one compromised key then exposes every later one. Option 4 is the key-distribution center.
+
+\begin{center}
+\begin{tikzpicture}[font=\footnotesize]
+\foreach \n [count=\i] in {A,B,C,D,E} \node[kmu] (m\n) at ({90+72*(\i-1)}:1.3) {\n};
+\foreach \a/\b in {A/B,A/C,A/D,A/E,B/C,B/D,B/E,C/D,C/E,D/E} \draw[gray] (m\a) -- (m\b);
+\node at (0,-2.3) {without a KDC: $\binom{5}{2} = 10$ pairwise keys};
+\begin{scope}[xshift=7cm]
+\node[kmca] (kdc) at (0,0) {KDC};
+\foreach \n [count=\i] in {A,B,C,D,E} {\node[kmu] (k\n) at ({90+72*(\i-1)}:1.9) {\n};
+  \draw[dashed] (k\n) -- node[font=\scriptsize, fill=white, inner sep=0.5pt, pos=0.45]{$K_{\n}$} (kdc);}
+\node at (0,-2.3) {with a KDC: $5$ master keys};
+\end{scope}
+\end{tikzpicture}
+\end{center}
+\begin{center}\small
+\begin{tabular}{@{}rrrr@{}}
+\toprule
+Users $N$ & Keys per user & Pairwise keys $N(N-1)/2$ & Keys with a KDC ($N$)\\
+\midrule
+10 & 9 & 45 & 10\\
+100 & 99 & 4\,950 & 100\\
+1\,000 & 999 & 499\,500 & 1\,000\\
+$10^6$ & 999\,999 & $\approx 5 \times 10^{11}$ & $10^6$\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection{Key-distribution center (KDC) and session keys \new}
+\likely{``Explain the role of a KDC; why are session keys temporary; flat versus hierarchical KDCs'' (3--4 marks).}
+
+A practical solution is a trusted third party called a \textbf{key-distribution center (KDC)}. \imp{Each member establishes one secret key, the master key, with the KDC}: Alice shares $K_{\text{Alice}}$ (written $K_A$), Bob shares $K_B$, and so on. The master key is set up once, for example in person when the member registers, and is used only between the member and the KDC, never between two members. As a result $N$ members need only $N$ master keys, and a newcomer needs one key instead of $N$.
+
+\textbf{Session keys.} When Alice wants to talk to Bob, she asks the KDC for a \textbf{session key} $K_{AB}$, a fresh random key valid only for one conversation. The KDC uses the master keys to deliver $K_{AB}$ secretly to both and to authenticate Alice and Bob to the center and to each other. When the conversation ends the session key is discarded. Session keys are kept temporary for four reasons. First, the less ciphertext is produced under one key, the less material a cryptanalyst has. Second, a compromised session key exposes only one session. Third, the master key is then used only to encrypt short random session keys, so it is rarely exposed and can stay valid for a long time. Fourth, the KDC need not store $N(N-1)/2$ pairwise keys, because it creates each one on demand. This two-level arrangement (long-term master keys protecting short-term session keys) is the \textbf{key hierarchy}.
+
+The slides describe the flow conceptually: Alice requests a session key with Bob, the KDC informs Bob, and if Bob agrees a session key is created. In the actual protocols below, the KDC does not contact Bob itself; it gives Alice two copies of $K_{AB}$, one encrypted under $K_A$ and one sealed under $K_B$ in a \textbf{ticket}, and Alice forwards the ticket to Bob.
+
+\textbf{Multiple KDCs.} A single KDC for the whole world would be a bottleneck and a single point of failure, and everyone would have to register with it. In \textbf{flat multiple KDCs} the world is divided into domains, each with one or more KDCs (more than one for redundancy). If Alice and Bob are in different domains, Alice contacts her KDC, which contacts the KDC of Bob's domain, and the two KDCs together create the session key. In \textbf{hierarchical multiple KDCs} the KDCs form a tree, for example local, national and international KDCs. A request from Alice to Bob in another country goes up from Alice's local KDC through her national KDC to an international KDC, and then down through Bob's national KDC to Bob's local KDC.
+
+\begin{center}
+\begin{tikzpicture}[font=\footnotesize, k/.style={kmca, minimum width=2.3cm}]
+\node[k] (int) at (0,0) {International KDC};
+\node[k] (n1) at (-3.6,-1.1) {National KDC (India)};
+\node[k] (n2) at (3.6,-1.1) {National KDC (USA)};
+\node[k] (l1) at (-5.4,-2.2) {Local KDC 1};
+\node[k] (l2) at (-1.8,-2.2) {Local KDC 2};
+\node[k] (l3) at (1.8,-2.2) {Local KDC 3};
+\node[k] (l4) at (5.4,-2.2) {Local KDC 4};
+\node[kmu] (al) at (-5.4,-3.2) {A}; \node[kmu] (bo) at (5.4,-3.2) {B};
+\foreach \a/\b in {n1/l2,n2/l3} \draw[gray] (\a) -- (\b);
+\foreach \a/\b in {al/l1,l1/n1,n1/int,int/n2,n2/l4,l4/bo} \draw[kmm, orange] (\a) -- (\b);
+\node[font=\scriptsize, orange, align=left] at (0,-1.5) {request path\\Alice $\to$ \dots $\to$ Bob};
+\end{tikzpicture}
+\end{center}
+\textbf{Advantages of the hierarchy.} Most master keys are shared between a local KDC and its local users, so the effort of distributing master keys stays local. A faulty or subverted KDC damages only its own subtree. The KDCs themselves need far fewer keys: $M$ KDCs in a flat full mesh need $M(M-1)/2$ inter-KDC keys, but a tree of $M$ KDCs has only $M - 1$ edges. \textbf{Disadvantage of every KDC scheme.} The KDC knows every session key, so it must be completely trusted, and it must be online for every new session.
+
+\subsection{Session-key creation: a simple KDC protocol and its flaw \new}
+\likely{``Show the simple KDC protocol; why is it vulnerable to replay?'' (2--3 marks).}
+
+The simplest protocol uses three messages.
+\begin{center}
+\begin{tikzpicture}[font=\footnotesize]
+\kmLife{0}{Alice}{-3.3} \kmLife{6.5}{KDC}{-3.3} \kmLife{13}{Bob}{-3.3}
+\kmMsg{-0.9}{0}{6.5}{1}{Alice, Bob \ (plaintext)}
+\kmMsg{-1.8}{6.5}{0}{2}{$E_{K_A}\bigl(K_{AB},\ \text{Ticket}\bigr)$, \ Ticket $= E_{K_B}(\text{Alice}, \text{Bob}, K_{AB})$}
+\kmMsg{-2.7}{0}{13}{3}{Ticket $= E_{K_B}(\text{Alice}, \text{Bob}, K_{AB})$}
+\end{tikzpicture}
+\end{center}
+\begin{enumerate}
+  \item Alice sends the KDC a plaintext request containing her registered identity and Bob's identity. Nothing in it is secret.
+  \item The KDC creates $K_{AB}$ and a \textbf{ticket} for Bob, encrypted with $K_B$ and containing both identities and $K_{AB}$. It sends Alice the ticket together with a copy of $K_{AB}$, the whole message encrypted with $K_A$ (the ticket is therefore encrypted twice). Only Alice can open the message and extract $K_{AB}$; she cannot read the ticket, because it is meant for Bob.
+  \item Alice forwards the ticket to Bob. Only Bob can open it, and since only the KDC could have made it, Bob learns that Alice wants to talk to him using $K_{AB}$. Alice trusts the KDC, so she is assured that only Bob can recover the key; Bob trusts the KDC, so he is assured that the key belongs to a session with Alice.
+\end{enumerate}
+\textbf{The flaw: no freshness.} Nothing in the messages shows that they are new. Eve can record message 3 and the session that follows, and later \textbf{replay} them; Bob accepts the old ticket and acts on the old messages a second time (for example, a repeated money transfer). Worse, if Eve ever breaks an old session key, she can answer a new request of Alice by replaying the old message 2, and Alice will use a key Eve knows. There is a third weakness: message 1 is not protected, so Eve can replace ``Bob'' by ``Eve''; the KDC then returns a ticket under $K_{\text{Eve}}$, Alice's part does not name the partner, and Alice unknowingly shares $K_{AB}$ with Eve. The next protocol closes all three holes.
+
+\subsection{The Needham--Schroeder protocol \new}
+\likely{``Draw and explain the Needham--Schroeder protocol; what is the purpose of each nonce; describe the Denning--Sacco attack'' (5 marks).}
+
+Needham and Schroeder (1978) designed the protocol that is the foundation of many later ones, including Kerberos. It uses challenge--response with two nonces, $R_A$ (Alice's challenge to the KDC) and $R_B$ (Bob's challenge to Alice).
+\begin{center}
+\begin{tikzpicture}[font=\footnotesize]
+\kmLife{0}{Alice}{-5.0} \kmLife{6.5}{KDC}{-5.0} \kmLife{13}{Bob}{-5.0}
+\kmMsg{-0.9}{0}{6.5}{1}{$R_A$, Alice, Bob}
+\kmMsg{-1.8}{6.5}{0}{2}{$E_{K_A}\bigl(R_A,\ \text{Bob},\ K_{AB},\ \text{Ticket}\bigr)$}
+\node[font=\scriptsize, gray!50!black] at (3.25,-2.15) {Ticket $= E_{K_B}(\text{Alice}, K_{AB})$};
+\kmMsg{-2.9}{0}{13}{3}{Ticket $= E_{K_B}(\text{Alice}, K_{AB})$}
+\kmMsg{-3.7}{13}{0}{4}{$E_{K_{AB}}(R_B)$}
+\kmMsg{-4.5}{0}{13}{5}{$E_{K_{AB}}(R_B - 1)$}
+\end{tikzpicture}
+\end{center}
+\begin{enumerate}
+  \item \textbf{Alice $\to$ KDC: $R_A$, Alice, Bob.} The nonce $R_A$ is a fresh challenge to the KDC. The message may travel in plaintext.
+  \item \textbf{KDC $\to$ Alice: $E_{K_A}(R_A, \text{Bob}, K_{AB}, \text{Ticket})$.} Returning $R_A$ proves to Alice that this reply was made for \emph{this} request, so an old message 2 (perhaps carrying a broken key) cannot be replayed. Including ``Bob'' lets Alice check that the key is for the partner she asked for, which defeats the substitution of ``Eve'' in message 1. The whole message is encrypted with $K_A$, so only Alice learns $K_{AB}$, and the fields cannot be cut apart and recombined. The ticket $E_{K_B}(\text{Alice}, K_{AB})$ gives Bob the key and tells him with whom he shares it.
+  \item \textbf{Alice $\to$ Bob: the ticket.} Bob decrypts it with $K_B$ and obtains $K_{AB}$ and Alice's identity.
+  \item \textbf{Bob $\to$ Alice: $E_{K_{AB}}(R_B)$.} Bob challenges the sender to prove that it holds $K_{AB}$ now. A replayed ticket from someone who does not know $K_{AB}$ fails here.
+  \item \textbf{Alice $\to$ Bob: $E_{K_{AB}}(R_B - 1)$.} Alice decrypts $R_B$, subtracts 1 and re-encrypts. The transformation is essential: if Alice simply returned $E_{K_{AB}}(R_B)$, Eve could reflect message 4 back to Bob without knowing the key. Only a holder of $K_{AB}$ can produce $E_{K_{AB}}(R_B - 1)$.
+\end{enumerate}
+
+\textbf{The Denning--Sacco replay attack (1981).} Alice receives a freshness guarantee through $R_A$, but Bob receives none: the ticket contains nothing chosen by Bob and no time. Suppose Eve recorded message 3 of an old session and has since learned that session's key $K_{AB}$ (by cryptanalysis of the old traffic, or because the key was carelessly disposed of). She replays the old ticket to Bob, decrypts his challenge with the known key, and answers it:
+\begin{center}
+\begin{tikzpicture}[font=\footnotesize]
+\kmLife{0}{Eve (as Alice)}{-3.3} \kmLife{8}{Bob}{-3.3}
+\kmMsg{-0.9}{0}{8}{3}{old Ticket $= E_{K_B}(\text{Alice}, K_{AB})$}
+\kmMsg{-1.8}{8}{0}{4}{$E_{K_{AB}}(R_B')$}
+\kmMsg{-2.7}{0}{8}{5}{$E_{K_{AB}}(R_B' - 1)$ \ (Eve knows $K_{AB}$)}
+\end{tikzpicture}
+\end{center}
+Bob now believes he shares a fresh key with Alice, and Eve can impersonate Alice for as long as she likes. The challenge $R_B$ does not help, because Eve really does know the (old) key. Two fixes exist.
+\begin{itemize}
+  \item \textbf{Timestamps (Denning--Sacco).} The KDC puts a timestamp $T$ in message 2 and in the ticket, $E_{K_B}(\text{Alice}, K_{AB}, T)$. Bob accepts only if $|\text{Clock} - T| < \Delta t_1 + \Delta t_2$, where $\Delta t_1$ is the expected difference between the KDC's clock and his own and $\Delta t_2$ the expected network delay. An old ticket fails this test. The price is that all clocks must be synchronised; this is the route Kerberos takes.
+  \item \textbf{Bob's nonce inside the ticket (revised protocol, 1987).} Bob first gives Alice a nonce sealed under his own key, and the KDC copies it into the ticket, so Bob can see that the ticket was issued after his nonce. This gives the seven-message version below.
+\end{itemize}
+\begin{center}
+\begin{tikzpicture}[font=\footnotesize]
+\kmLife{0}{Alice}{-6.6} \kmLife{6.5}{KDC}{-6.6} \kmLife{13}{Bob}{-6.6}
+\kmMsg{-0.9}{0}{13}{1}{Alice}
+\kmMsg{-1.7}{13}{0}{2}{$E_{K_B}(\text{Alice}, R_B')$}
+\kmMsg{-2.5}{0}{6.5}{3}{$R_A$, Alice, Bob, $E_{K_B}(\text{Alice}, R_B')$}
+\kmMsg{-3.3}{6.5}{0}{4}{$E_{K_A}\bigl(R_A, \text{Bob}, K_{AB}, \text{Ticket}\bigr)$}
+\kmMsg{-4.3}{0}{13}{5}{Ticket $= E_{K_B}(\text{Alice}, K_{AB}, R_B')$}
+\kmMsg{-5.2}{13}{0}{6}{$E_{K_{AB}}(R_B)$}
+\kmMsg{-6.1}{0}{13}{7}{$E_{K_{AB}}(R_B - 1)$}
+\end{tikzpicture}
+\end{center}
+In messages 1--2 Bob issues the nonce $R_B'$, sealed so that Alice can neither read nor change it. Alice passes it to the KDC in message 3, the KDC places it inside Bob's ticket in message 4, and in message 5 Bob checks that the ticket contains the nonce he issued in this run. An old ticket carries an old nonce and is rejected. Messages 6--7 are the key confirmation of the original protocol.
+
+\subsection{The Otway--Rees protocol \new}
+\likely{``Draw the Otway--Rees protocol; what is the role of the common nonce?'' (4--5 marks).}
+
+Otway and Rees (1987) give both parties their own freshness guarantee and let \emph{Bob}, not Alice, talk to the KDC. A \textbf{common nonce} $R$ identifies the run, and each party adds a private nonce ($R_A$, $R_B$) inside a part encrypted for the KDC.
+\begin{center}
+\begin{tikzpicture}[font=\footnotesize]
+\kmLife{0}{Alice}{-4.9} \kmLife{6.8}{Bob}{-4.9} \kmLife{14.4}{KDC}{-4.9}
+\kmMsg{-0.9}{0}{6.8}{1}{$R$, Alice, Bob, $E_{K_A}(R_A, R, \text{Alice}, \text{Bob})$}
+\kmMsg{-2.0}{6.8}{14.4}{2}{$R$, Alice, Bob, $E_{K_A}(R_A, R, \text{Alice}, \text{Bob})$,\\ $E_{K_B}(R_B, R, \text{Alice}, \text{Bob})$}
+\kmMsg{-2.9}{14.4}{6.8}{3}{$R$, $E_{K_A}(R_A, K_{AB})$, $E_{K_B}(R_B, K_{AB})$}
+\kmMsg{-3.7}{6.8}{0}{4}{$R$, $E_{K_A}(R_A, K_{AB})$}
+\kmMsg{-4.5}{0}{6.8}{5}{$E_{K_{AB}}(\text{short message})$}
+\end{tikzpicture}
+\end{center}
+\begin{enumerate}
+  \item Alice sends Bob the common nonce $R$, both identities, and a part for the KDC encrypted with $K_A$ that contains her nonce $R_A$ (her challenge to the KDC), a copy of $R$ and the identities.
+  \item Bob creates the same kind of part with his own nonce $R_B$ under $K_B$, and sends both encrypted parts to the KDC. The KDC decrypts them and checks that the $R$ and the identities inside \emph{both} parts agree with the plaintext. This proves that Alice and Bob each asked for a key with the other in this very run, so Eve cannot splice requests from different runs.
+  \item The KDC creates $K_{AB}$ and returns $R$ with two sealed parts, $E_{K_A}(R_A, K_{AB})$ for Alice and $E_{K_B}(R_B, K_{AB})$ for Bob. Bob opens his part and checks $R_B$: the key was made in answer to his current request.
+  \item Bob forwards Alice's part. Alice checks $R_A$, so she too knows the key is fresh.
+  \item (Forouzan) Alice sends a short message encrypted with $K_{AB}$ to show that she has the key (key confirmation).
+\end{enumerate}
+\textbf{Why this defeats the Denning--Sacco replay.} Bob obtains the key from a part that contains his own fresh $R_B$, so an old message 3 is rejected even if Eve knows the old $K_{AB}$. No synchronised clocks are needed. A known weakness is a \emph{type-flaw} attack: Eve reflects Alice's encrypted part from message 1 back to her in message 4, and if Alice cannot tell the field types apart she accepts $(R, \text{Alice}, \text{Bob})$ as the key; tagging each field with its type stops this.
+
+\subsection{Kerberos \hot\new}\label{sec:kerberos}
+\likely{``Draw and explain Kerberos: AS, TGS, server and the six messages'' (8--10 marks); ``why is the TGS separate from the AS?''; ``differentiate Kerberos v4 and v5''.}
+
+\textbf{The problem.} In a campus or company network, users sit at workstations and use services on many servers (mail, files, printing). Each server must know who is asking, but the network is open: a user may pretend to be another, a workstation may forge its network address, and Eve may record and replay traffic. Building password checks into every server would scatter passwords everywhere and send them over the network. \textbf{Kerberos}, developed at MIT (Project Athena), is \imp{an authentication protocol and at the same time a KDC}: a central server authenticates every user once, and then hands out tickets and session keys for the other servers, so that the password is typed once per logon and never travels over the network. Version 4 is described in Forouzan and Stallings; version 5 is the standard in use (for example in Windows domains).
+
+\textbf{The three servers.} The \textbf{authentication server (AS)} is the KDC of Kerberos: every user registers with it and it holds a key derived from each user's password. It verifies the user and issues a session key and a ticket for the TGS. The \textbf{ticket-granting server (TGS)} issues tickets for the real servers and creates the session key between the user and the server. The \textbf{real server} (Bob) provides the service. In the notation below, $\kmK{A-AS}$ is Alice's long-term key with the AS, $\kmK{AS-TGS}$ and $\kmK{TGS-B}$ are long-term keys between servers, and $\kmK{A-TGS}$, $\kmK{A-B}$ are session keys.
+\begin{center}
+\begin{tikzpicture}[font=\footnotesize]
+\kmLife{2.4}{Alice}{-5.6} \kmLife{6.6}{AS}{-5.6} \kmLife{10.8}{TGS}{-5.6} \kmLife{15.4}{Bob}{-5.6}
+\kmMsg{-0.9}{2.4}{6.6}{1}{Alice, TGS, $TS_1$}
+\kmMsg{-1.7}{6.6}{2.4}{2}{$E_{\kmK{A-AS}}(\kmK{A-TGS},\ \text{TGT})$}
+\kmMsg{-2.6}{2.4}{10.8}{3}{TGT, \ Bob, \ $E_{\kmK{A-TGS}}(\text{Alice}, TS_3)$}
+\kmMsg{-3.4}{10.8}{2.4}{4}{$E_{\kmK{A-TGS}}(\text{Bob}, \kmK{A-B})$, \ Ticket$_B$}
+\kmMsg{-4.3}{2.4}{15.4}{5}{Ticket$_B$, \ $E_{\kmK{A-B}}(\text{Alice}, TS_5)$}
+\kmMsg{-5.1}{15.4}{2.4}{6}{$E_{\kmK{A-B}}(TS_5 + 1)$}
+\draw[decorate, decoration={brace, amplitude=3pt, mirror}] (1.55,-0.7) -- node[left=3pt, align=right, font=\scriptsize]{once per\\logon} (1.55,-1.9);
+\draw[decorate, decoration={brace, amplitude=3pt, mirror}] (1.55,-2.4) -- node[left=3pt, align=right, font=\scriptsize]{once per\\server} (1.55,-3.6);
+\draw[decorate, decoration={brace, amplitude=3pt, mirror}] (1.55,-4.1) -- node[left=3pt, align=right, font=\scriptsize]{once per\\session} (1.55,-5.3);
+\end{tikzpicture}
+
+\small TGT $= E_{\kmK{AS-TGS}}(\text{Alice}, \kmK{A-TGS}, \dots)$ \qquad Ticket$_B = E_{\kmK{TGS-B}}(\text{Alice}, \kmK{A-B}, \dots)$
+\end{center}
+\begin{enumerate}
+  \item \textbf{Alice $\to$ AS.} Alice sends her request in plaintext, using her registered identity.
+  \item \textbf{AS $\to$ Alice.} The AS replies with a message encrypted with Alice's permanent key $\kmK{A-AS}$. It contains the session key $\kmK{A-TGS}$ for talking to the TGS and a \textbf{ticket-granting ticket (TGT)} encrypted with the TGS's key $\kmK{AS-TGS}$. Alice does not store $\kmK{A-AS}$: when the message arrives she types her password, and the password with a fixed algorithm (a one-way function) produces $\kmK{A-AS}$ if the password is correct. The password and $\kmK{A-AS}$ are used for this one decryption and then destroyed; the password is never sent over the network and does not stay in the workstation.
+  \item \textbf{Alice $\to$ TGS.} Alice sends three items: the TGT, the name of the real server (Bob), and a timestamp encrypted with $\kmK{A-TGS}$ (the \textbf{authenticator}). The TGS opens the TGT with $\kmK{AS-TGS}$, takes $\kmK{A-TGS}$ from it, and checks the authenticator. The timestamp prevents a replay by Eve, who cannot make a new one without $\kmK{A-TGS}$.
+  \item \textbf{TGS $\to$ Alice.} The TGS sends two tickets, each containing the new session key $\kmK{A-B}$: Alice's copy is encrypted with $\kmK{A-TGS}$, Bob's copy (Ticket$_B$) with Bob's key $\kmK{TGS-B}$. Eve cannot extract $\kmK{A-B}$, since she knows neither key. Even if she replays message 3 before its timestamp expires, she only receives the same two tickets, which she cannot decrypt.
+  \item \textbf{Alice $\to$ Bob.} Alice sends Bob's ticket with a timestamp encrypted under $\kmK{A-B}$.
+  \item \textbf{Bob $\to$ Alice.} Bob confirms receipt by adding 1 to the timestamp, encrypted with $\kmK{A-B}$. Only the real Bob could open the ticket and read the timestamp, so Alice now knows she is talking to Bob (mutual authentication).
+\end{enumerate}
+To use another server (say a printer), Alice repeats only messages 3--6 with the same TGT; messages 1--2 are needed once per logon.
+
+\textbf{Every field of version 4 (Stallings).} The diagram shows the core; the full messages carry identities, addresses and lifetimes, each with a job. $\text{AD}_A$ is the network address of Alice's workstation, and an authenticator $\text{Auth}$ is $E_{\text{session key}}(\text{Alice}, \text{AD}_A, TS)$.
+\begin{center}\small
+\begin{tabularx}{\textwidth}{@{}l>{\raggedright\arraybackslash}p{6.2cm}X@{}}
+\toprule
+Msg & Contents & Why each field is there\\
+\midrule
+(1) & Alice, TGS, $TS_1$ & Asks for a TGT; $TS_1$ lets the AS check that Alice's clock is synchronised.\\
+(2) & $E_{\kmK{A-AS}}(\kmK{A-TGS}$, TGS, $TS_2$, Lifetime$_2$, TGT$)$ & Only the holder of the password can read it. $\kmK{A-TGS}$ is Alice's copy of the session key; ``TGS'' confirms whom the ticket is for; $TS_2$ and Lifetime$_2$ tell her when it expires.\\
+ & TGT $= E_{\kmK{AS-TGS}}(\kmK{A-TGS}$, Alice, $\text{AD}_A$, TGS, $TS_2$, Lifetime$_2)$ & Readable only by the TGS, so Alice cannot alter it. ``Alice'' names the owner, $\text{AD}_A$ ties the ticket to her workstation, and the lifetime bounds how long a stolen ticket is useful.\\
+(3) & Bob, TGT, $\text{Auth} = E_{\kmK{A-TGS}}(\text{Alice}, \text{AD}_A, TS_3)$ & A TGT can be copied off the network; the authenticator proves that the sender knows $\kmK{A-TGS}$ \emph{now}. The TGS checks that the name and address match the TGT and that $TS_3$ is current.\\
+(4) & $E_{\kmK{A-TGS}}(\kmK{A-B}$, Bob, $TS_4$, Ticket$_B)$ & Encrypted with the session key, so no password is needed for further servers. ``Bob'' and $TS_4$ confirm the server and the issue time.\\
+ & Ticket$_B = E_{\kmK{TGS-B}}(\kmK{A-B}$, Alice, $\text{AD}_A$, Bob, $TS_4$, Lifetime$_4)$ & Readable only by Bob; reusable for repeated access to Bob until it expires.\\
+(5) & Ticket$_B$, $\text{Auth} = E_{\kmK{A-B}}(\text{Alice}, \text{AD}_A, TS_5)$ & Bob opens the ticket with $\kmK{TGS-B}$, obtains $\kmK{A-B}$, and checks the fresh authenticator.\\
+(6) & $E_{\kmK{A-B}}(TS_5 + 1)$ & Proves Bob's identity (only he could read $TS_5$); the $+1$ makes it differ from anything Alice sent, so it cannot be reflected.\\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\textbf{What each key protects.}
+\begin{center}\small
+\begin{tabular}{@{}llll@{}}
+\toprule
+Key & Shared by & Origin and lifetime & Protects\\
+\midrule
+$\kmK{A-AS}$ & Alice, AS & long-term, derived from Alice's password & message 2\\
+$\kmK{AS-TGS}$ & AS, TGS & long-term, set by the administrator & the TGT\\
+$\kmK{A-TGS}$ & Alice, TGS & session key made by the AS, lives as long as the TGT & authenticator of 3, message 4\\
+$\kmK{TGS-B}$ & TGS, Bob & long-term, set by the administrator & Ticket$_B$\\
+$\kmK{A-B}$ & Alice, Bob & session key made by the TGS & authenticator of 5, message 6, data\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\textbf{Tickets versus authenticators.} A \textbf{ticket} is made by a Kerberos server, encrypted with the key of the server it is meant for, and can be reused until its lifetime ends. An \textbf{authenticator} is made by the client, encrypted with the session key from the ticket, has a very short lifetime and is used once. The ticket delivers the session key securely; the authenticator proves that the person presenting the ticket is its owner, since a ticket alone could have been copied from the network.
+
+\textbf{Why the TGS is separate from the AS.} Alice contacts several servers in one day. If the AS issued server tickets directly, every reply would be encrypted with the password-derived key $\kmK{A-AS}$, so Alice would have to type her password for every new server, or the workstation would have to keep $\kmK{A-AS}$ in memory all day, exposing the long-term key. Splitting the roles solves this: \imp{Kerberos separates user verification (AS, once per logon) from ticket issuing (TGS, once per server)}. The password is typed once, $\kmK{A-AS}$ is used once and destroyed, and all later requests use the TGT and the session key $\kmK{A-TGS}$, which expires with the TGT. This is \textbf{single sign-on}. A stolen $\kmK{A-TGS}$ is useful only until the TGT expires, while the password itself is never exposed again.
+
+\textbf{Realms and inter-realm authentication.} A \textbf{realm} is one Kerberos server (AS and TGS) together with the users and application servers registered with it: the server holds every user's password-derived key and shares a secret key with every application server. Organisations with separate administrations run separate realms. For Alice in realm A to use Bob in realm B, the Kerberos servers of the two realms must share a secret key, which makes the TGS of realm B a ``server'' that the TGS of realm A can issue tickets for.
+\begin{center}
+\begin{tikzpicture}[font=\footnotesize]
+\kmLife{0}{Alice (realm A)}{-6.3} \kmLife{5}{AS + TGS (realm A)}{-6.3} \kmLife{10}{TGS (realm B)}{-6.3} \kmLife{14.6}{Bob (realm B)}{-6.3}
+\kmMsg{-0.9}{0}{5}{1}{request TGT}
+\kmMsg{-1.6}{5}{0}{2}{TGT (for local TGS)}
+\kmMsg{-2.4}{0}{5}{3}{request ticket for remote TGS}
+\kmMsg{-3.1}{5}{0}{4}{ticket for TGS of realm B}
+\kmMsg{-3.9}{0}{10}{5}{request ticket for Bob (with that ticket)}
+\kmMsg{-4.6}{10}{0}{6}{Ticket$_B$}
+\kmMsg{-5.6}{0}{14.6}{7}{Ticket$_B$ + authenticator: request service}
+\end{tikzpicture}
+\end{center}
+In version 4, $N$ realms that all trust each other need $N(N-1)/2$ inter-realm keys (45 for 10 realms), the $N^2$ problem again at the level of realms; version 5 allows a hierarchy of realms with fewer keys.
+
+\textbf{Kerberos version 4 versus version 5.} Version 5 (RFC 4120) removes environmental limits and technical flaws of version 4.
+\begin{center}\small
+\begin{tabularx}{\textwidth}{@{}l>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}X@{}}
+\toprule
+Aspect & Version 4 & Version 5\\
+\midrule
+Encryption & DES only & any algorithm; ciphertext tagged with type and key length\\
+Network addresses & IP addresses only & any type, tagged with type and length\\
+Message encoding & sender's byte order, with a flag & ASN.1 with Basic Encoding Rules (unambiguous)\\
+Ticket lifetime & 8-bit field in units of 5 min, about 21 h maximum & explicit start and end times; tickets can be renewed\\
+Forwarding credentials & not allowed & allowed (a server can act for the client)\\
+Inter-realm & $N(N-1)/2$ realm-to-realm keys & hierarchy of realms, fewer keys\\
+Double encryption & tickets encrypted a second time in messages 2 and 4 & removed\\
+Mode of encryption & PCBC (non-standard, weak) & CBC with an explicit integrity check\\
+Password guessing & anyone can request message 2 & pre-authentication (encrypted timestamp first)\\
+Overhead & smaller & larger\\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\textbf{Weaknesses of Kerberos.}
+\begin{itemize}
+  \item \textbf{Clock synchronisation.} Freshness rests on timestamps, so all clocks must agree within a few minutes. Within that window a captured authenticator can be replayed unless servers keep a cache of recently seen authenticators, and an attacker who can change a server's clock can make old tickets look valid.
+  \item \textbf{Password guessing.} Message 2 is encrypted with a key derived from the password. In version 4 anyone can ask the AS for Alice's message 2 and then try dictionary words offline: a guess is right when the decryption gives meaningful fields (the name of the TGS). Version 5 pre-authentication stops the free requests, but an eavesdropped exchange can still be attacked offline, so strong passwords remain essential.
+  \item \textbf{Single point of failure and attack.} The Kerberos server holds every user's key. If it is down, nobody can log in; if it is compromised, every key is exposed. It is therefore replicated and physically protected.
+  \item \textbf{Workstation compromise.} Tickets and session keys are cached on the workstation; malware there can steal a TGT and use it until it expires.
+\end{itemize}
+
+\begin{mustknow}[: Kerberos in six messages]
+(1) A $\to$ AS: Alice, TGS. \ (2) AS $\to$ A: $E_{\kmK{A-AS}}(\kmK{A-TGS}, \text{TGT})$. \ (3) A $\to$ TGS: TGT, Bob, $E_{\kmK{A-TGS}}(T)$. \ (4) TGS $\to$ A: $E_{\kmK{A-TGS}}(\text{Bob}, \kmK{A-B})$, $E_{\kmK{TGS-B}}(\text{Alice}, \kmK{A-B})$. \ (5) A $\to$ B: $E_{\kmK{TGS-B}}(\text{Alice}, \kmK{A-B})$, $E_{\kmK{A-B}}(T)$. \ (6) B $\to$ A: $E_{\kmK{A-B}}(T + 1)$.\\
+AS verifies the user once (password $\to \kmK{A-AS}$), TGS issues server tickets (single sign-on), timestamps stop replays.
+\end{mustknow}
+
+\subsection{Comparing the KDC-based protocols}
+\begin{center}\small
+\begin{tabularx}{\textwidth}{@{}l>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}X@{}}
+\toprule
+ & Needham--Schroeder & Otway--Rees & Kerberos (v4)\\
+\midrule
+Messages & 5 (7 in the revised version) & 4 (+1 key confirmation) & 6 (2 once per logon)\\
+Who talks to the KDC & Alice & Bob, carrying both requests & Alice (AS, then TGS)\\
+Freshness by & nonces $R_A$, $R_B$ & nonces $R_A$, $R_B$ and common nonce $R$ & timestamps and lifetimes\\
+Replay of an old ticket & possible (Denning--Sacco) & prevented by $R_B$ & prevented by timestamp\\
+Synchronised clocks & not needed & not needed & needed\\
+Proof of Bob's identity & implicit (only Bob reads the ticket) & implicit & explicit, message 6\\
+Single sign-on & no & no & yes, through the TGS\\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\subsection{Symmetric-key agreement: Diffie--Hellman \hot\new}
+\likely{``Explain Diffie--Hellman key exchange; prove that both parties get the same key; compute $R_1$, $R_2$, $K$ for given $p$, $g$, $x$, $y$'' (5--6 marks).}
+
+A KDC needs a trusted third party that is online for every session and a master key registered in advance. In \textbf{symmetric-key agreement}, Alice and Bob create a session key between themselves, over a public channel, without a KDC and without any earlier shared secret. The slides discuss two methods: Diffie--Hellman and station-to-station.
+
+\textbf{The idea.} Diffie and Hellman (1976) combined two facts. Modular exponentiation is a one-way function: $g^x \bmod p$ is fast to compute (square-and-multiply, \S\ref{sec:modexp}), but recovering $x$ from it is the discrete logarithm problem (\S\ref{sec:primes}), infeasible for a large prime. And exponents commute: $(g^x)^y = (g^y)^x = g^{xy}$. Each party therefore keeps an exponent secret, publishes $g$ raised to it, and raises the other's public value to its own secret exponent.
+
+\textbf{Setup.} Before establishing a key, the two parties choose two numbers $p$ and $g$. $p$ is a large prime, on the order of 300 decimal digits (1024 bits; 2048 bits today). $g$ is a generator of order $p - 1$ in the group $\langle \mathbb{Z}_p^*, \times \rangle$, that is, a primitive root of $p$ (\S\ref{sec:fermat}), so that its powers run through all of $\mathbb{Z}_p^*$. Neither number needs to be secret: they can be sent over the Internet and shared by many users.
+\begin{enumerate}
+  \item Alice chooses a large random number $x$ with $0 < x < p - 1$ and calculates $R_1 = g^x \bmod p$.
+  \item Bob chooses another large random number $y$ with $0 < y < p - 1$ and calculates $R_2 = g^y \bmod p$.
+  \item Alice sends $R_1$ to Bob. She does not send $x$.
+  \item Bob sends $R_2$ to Alice. He does not send $y$.
+  \item Alice calculates $K = (R_2)^x \bmod p$.
+  \item Bob calculates $K = (R_1)^y \bmod p$.
+\end{enumerate}
+\begin{center}
+\begin{tikzpicture}[font=\footnotesize]
+\kmLife{0}{Alice}{-3.9} \kmLife{9}{Bob}{-3.9}
+\node[kmdo] at (0,-0.8) {$x$ secret\\$R_1 = g^x \bmod p$};
+\node[kmdo] at (9,-0.8) {$y$ secret\\$R_2 = g^y \bmod p$};
+\node[draw, dashed, font=\scriptsize] at (4.5,-0.8) {$p$, $g$ public};
+\kmMsg{-1.65}{0}{9}{1}{$R_1$}
+\kmMsg{-2.35}{9}{0}{2}{$R_2$}
+\node[kmdo] at (0,-3.1) {$K = (R_2)^x \bmod p$};
+\node[kmdo] at (9,-3.1) {$K = (R_1)^y \bmod p$};
+\draw[dashed, ok, thick] (0,-3.75) -- node[fill=white, font=\footnotesize, text=black]{shared secret key $K = g^{xy} \bmod p$} (9,-3.75);
+\end{tikzpicture}
+\end{center}
+
+\textbf{Proof that both obtain the same key.} Reducing modulo $p$ before raising to a power does not change the result modulo $p$, because $a \equiv b \pmod p$ implies $a^k \equiv b^k \pmod p$. Hence
+\begin{align*}
+\text{Alice: } K &= (R_2)^x \bmod p = (g^y \bmod p)^x \bmod p = g^{yx} \bmod p,\\
+\text{Bob: } K &= (R_1)^y \bmod p = (g^x \bmod p)^y \bmod p = g^{xy} \bmod p ,
+\end{align*}
+and $g^{yx} = g^{xy}$. Both reach the same value without Bob knowing $x$ and without Alice knowing $y$: \imp{the symmetric (shared) key in the Diffie--Hellman method is $K = g^{xy} \bmod p$}.
+
+\textbf{What Eve faces.} Eve sees $p$, $g$, $R_1 = g^x$ and $R_2 = g^y$. Computing $g^{xy}$ from these is the \textbf{(computational) Diffie--Hellman problem}; the only known general method is to solve a discrete logarithm, finding $x$ from $R_1$ (or $y$ from $R_2$), which is infeasible for a properly chosen 1024-bit or larger $p$. Note that Diffie--Hellman encrypts nothing: it is a key \emph{agreement}, in which both parties contribute to the key, and the resulting $K$ (usually hashed) then keys a symmetric cipher such as AES.
+
+\begin{mustknow}[: Diffie--Hellman]
+Public: prime $p$, generator $g$ of $\mathbb{Z}_p^*$. \ Alice: $R_1 = g^x \bmod p$. \ Bob: $R_2 = g^y \bmod p$.\\
+$K = (R_2)^x \bmod p = (R_1)^y \bmod p = g^{xy} \bmod p$. \ Security rests on the discrete logarithm; no authentication, so man-in-the-middle is possible.
+\end{mustknow}
+
+\begin{worked}[: the slide example (Forouzan)]
+\textbf{Q.} Alice and Bob use Diffie--Hellman with $g = 7$ and $p = 23$. Alice chooses $x = 3$ and Bob chooses $y = 6$. Find the values exchanged and the shared key.
+
+\textbf{A.} Powers of 7 modulo 23 (each line from the ones above):
+\begin{center}\small
+\begin{tabular}{@{}lll@{}}
+\toprule
+Power & Computation & mod 23\\
+\midrule
+$7^1$ & & 7\\
+$7^2$ & $49 = 2 \cdot 23 + 3$ & 3\\
+$7^3$ & $7^2 \cdot 7 = 3 \cdot 7$ & 21\\
+$7^4$ & $(7^2)^2 = 3^2$ & 9\\
+$7^6$ & $7^4 \cdot 7^2 = 9 \cdot 3 = 27 = 23 + 4$ & 4\\
+\bottomrule
+\end{tabular}
+\end{center}
+$R_1 = 7^3 \bmod 23 = \mathbf{21}$ (sent to Bob), \quad $R_2 = 7^6 \bmod 23 = \mathbf{4}$ (sent to Alice).\\
+Alice: $K = 4^3 \bmod 23 = 64 \bmod 23 = 64 - 46 = \mathbf{18}$.\\
+Bob: $K = 21^6 \bmod 23$; $21^2 = 441 = 19 \cdot 23 + 4 \equiv 4$, $21^4 \equiv 4^2 = 16$, $21^6 = 21^4 \cdot 21^2 \equiv 16 \cdot 4 = 64 \equiv \mathbf{18}$.\\
+\emph{Check}: $g^{xy} = 7^{18} \bmod 23 = (7^6)^3 = 4^3 \equiv 18$ \checkmark. (By Fermat, $7^{22} \equiv 1$, so $7^{18} \equiv 7^{-4} = 9^{-1} \bmod 23 = 18$, since $9 \cdot 18 = 162 = 7 \cdot 23 + 1$.) The modulus is 23; the slide's ``$7^{18} \bmod 35$'' is a typo.
+\end{worked}
+
+\begin{worked}[: new, Stallings' example with full square-and-multiply]
+\textbf{Q.} Users A and B use the Diffie--Hellman key exchange with the common prime $q = 353$ and primitive root $\alpha = 3$. A's private key is $X_A = 97$ and B's is $X_B = 233$. Compute the public keys $Y_A$, $Y_B$ and the common secret key, showing both sides.
+
+\textbf{A.} In Stallings' notation $Y_A = \alpha^{X_A} \bmod q$ (our $R_1$), $Y_B = \alpha^{X_B} \bmod q$ (our $R_2$) and $K = Y_B^{X_A} = Y_A^{X_B} \bmod q$. The exponents in binary: $97 = 1100001_2 = 64 + 32 + 1$ and $233 = 11101001_2 = 128 + 64 + 32 + 8 + 1$. Squaring table modulo 353 (each entry is the square of the one above it):
+\begin{center}\small
+\begin{tabular}{@{}llll@{}}
+\toprule
+Power & base $3$ & base $248$ & base $40$\\
+\midrule
+$b^{1}$ & 3 & 248 & 40\\
+$b^{2}$ & 9 & $61504 \to 82$ & $1600 \to 188$\\
+$b^{4}$ & 81 & $6724 \to 17$ & $35344 \to 44$\\
+$b^{8}$ & $6561 \to 207$ & $289 \to 289$ & $1936 \to 171$\\
+$b^{16}$ & $42849 \to 136$ & $83521 \to 213$ & $29241 \to 295$\\
+$b^{32}$ & $18496 \to 140$ & $45369 \to 185$ & $87025 \to 187$\\
+$b^{64}$ & $19600 \to 185$ & $34225 \to 337$ & $34969 \to 22$\\
+$b^{128}$ & $34225 \to 337$ & (not needed) & $484 \to 131$\\
+\bottomrule
+\end{tabular}
+\end{center}
+(``$6561 \to 207$'' means $81^2 = 6561 = 18 \cdot 353 + 207$.) Multiplying the powers selected by the 1-bits, reducing after each product:\\
+$Y_A = 3^{97} = 3^{64} \cdot 3^{32} \cdot 3$: \ $185 \cdot 140 = 25900 = 73 \cdot 353 + 131$; \ $131 \cdot 3 = 393 \equiv \mathbf{40}$.\\
+$Y_B = 3^{233} = 3^{128} \cdot 3^{64} \cdot 3^{32} \cdot 3^{8} \cdot 3$: \ $337 \cdot 185 = 62345 \equiv 217$; \ $217 \cdot 140 = 30380 \equiv 22$; \ $22 \cdot 207 = 4554 \equiv 318$; \ $318 \cdot 3 = 954 \equiv \mathbf{248}$.\\
+A computes $K = 248^{97} = 248^{64} \cdot 248^{32} \cdot 248$: \ $337 \cdot 185 \equiv 217$; \ $217 \cdot 248 = 53816 = 152 \cdot 353 + 160 \equiv \mathbf{160}$.\\
+B computes $K = 40^{233} = 40^{128} \cdot 40^{64} \cdot 40^{32} \cdot 40^{8} \cdot 40$: \ $131 \cdot 22 = 2882 \equiv 58$; \ $58 \cdot 187 = 10846 \equiv 256$; \ $256 \cdot 171 = 43776 \equiv 4$; \ $4 \cdot 40 = \mathbf{160}$.\\
+\emph{Check}: both sides give $K = 160$ \checkmark. Eve sees 40 and 248; to get 160 she must find 97 or 233 by a discrete logarithm, which for $q = 353$ takes at most 352 trials but for a 2048-bit $q$ is infeasible.
+\end{worked}
+
+\begin{trap}[: Diffie--Hellman slips]
+The key is $g^{xy} \bmod p$, not $g^{x+y}$ and not $R_1 \cdot R_2$. Each party raises the \emph{other's} public value to its \emph{own} secret exponent. $x$ and $y$ are never sent. Reduce modulo $p$ (not $p - 1$) after every multiplication; exponents may be reduced modulo $p - 1$ (Fermat).
+\end{trap}
+
+\subsection{Security of Diffie--Hellman: discrete logarithm and man-in-the-middle \hot\new}
+\likely{``Explain the man-in-the-middle (bucket brigade) attack on Diffie--Hellman with a diagram; compute the two keys Eve shares'' (5 marks); ``what are the requirements on $p$ and $g$?''.}
+
+The slides list two attacks: the discrete logarithm attack, which breaks the mathematics, and the man-in-the-middle attack, which does not need to.
+
+\textbf{Discrete logarithm attack.} Eve intercepts $R_1$ and $R_2$. If she can find $x$ from $R_1 = g^x \bmod p$ (or $y$ from $R_2$), she computes $K = R_2^{\,x} \bmod p$ exactly as Alice does. With the slide numbers this is trivial: trying $7^1 = 7$, $7^2 \equiv 3$, $7^3 \equiv 21 = R_1$ gives $x = 3$ and $K = 4^3 \bmod 23 = 18$. Forouzan's recommendations make the attack infeasible, each for a reason:
+\begin{enumerate}
+  \item \textbf{The prime $p$ must be very large} (more than 300 decimal digits), so that exhaustive search and the faster index-calculus algorithms are out of reach.
+  \item \textbf{$p - 1$ must have at least one large prime factor} (more than 60 decimal digits). The Pohlig--Hellman algorithm splits a discrete logarithm modulo $p$ into separate logarithms in the subgroups whose orders are the prime-power factors of $p - 1$ and joins the answers with the CRT, so its cost is set by the largest prime factor. A \emph{safe prime} $p = 2q + 1$ with $q$ prime is the usual choice.
+  \item \textbf{The generator must be chosen from the group $\langle \mathbb{Z}_p^*, \times\rangle$} with order $p - 1$ (or with a large prime order). If $g$ has a small order $d$, then $R_1$ and $K$ take only $d$ values. For example, $2$ has order 11 modulo 23 ($2^{11} = 2048 = 89 \cdot 23 + 1$), so with $g = 2$ only 11 keys are possible. For the same reason a party should reject a received value of $1$ or $p - 1$, which would force the key into $\{1, p - 1\}$.
+  \item \textbf{Alice and Bob must destroy $x$ and $y$ after computing $K$, and use them only once.} If $x$ were kept and later stolen, every recorded $R_2$ would reveal an old key; if it were reused, all sessions would share related keys. Fresh exponents give \emph{forward secrecy}: breaking into a machine later reveals nothing about past sessions.
+\end{enumerate}
+
+\textbf{Man-in-the-middle attack.} The protocol has a deeper weakness: Eve does not have to find $x$ or $y$. She can fool Alice and Bob by creating two keys, one between herself and Alice and another between herself and Bob.
+\begin{enumerate}
+  \item Alice chooses $x$, calculates $R_1 = g^x \bmod p$, and sends $R_1$ to Bob.
+  \item Eve intercepts $R_1$. She chooses $z$, calculates $R_2 = g^z \bmod p$, and sends $R_2$ to both Alice and Bob.
+  \item Bob chooses $y$, calculates $R_3 = g^y \bmod p$, and sends $R_3$ to Alice. Eve intercepts $R_3$, and it never reaches Alice.
+  \item Alice and Eve calculate $K_1 = g^{xz} \bmod p$, which becomes a key shared between Alice and Eve. Alice, however, thinks that it is a key shared between Bob and herself.
+  \item Eve and Bob calculate $K_2 = g^{zy} \bmod p$, which becomes a key shared between Eve and Bob. Bob, however, thinks that it is a key shared between Alice and himself.
+\end{enumerate}
+\begin{center}
+\begin{tikzpicture}[font=\footnotesize]
+\kmLife{0}{Alice}{-6.9} \kmLife{6.5}{Eve}{-6.9} \kmLife{13}{Bob}{-6.9}
+\node[kmdo] at (0,-0.75) {$R_1 = g^x \bmod p$};
+\kmMsg{-1.45}{0}{6.5}{1}{$R_1$ \ (meant for Bob)}
+\node[kmdo] at (6.5,-2.1) {$R_2 = g^z \bmod p$};
+\kmMsg{-2.8}{6.5}{0}{2}{$R_2$ \ (``from Bob'')}
+\kmMsg{-3.45}{6.5}{13}{3}{$R_2$ \ (``from Alice'')}
+\node[kmdo] at (13,-4.1) {$R_3 = g^y \bmod p$};
+\kmMsg{-4.8}{13}{6.5}{4}{$R_3$ \ (meant for Alice)}
+\node[kmdo] at (0,-5.65) {$K_1 = (R_2)^x \bmod p$};
+\node[kmdo] at (6.5,-5.65) {$K_1 = (R_1)^z \bmod p$\\$K_2 = (R_3)^z \bmod p$};
+\node[kmdo] at (13,-5.65) {$K_2 = (R_2)^y \bmod p$};
+\draw[dashed, warn, thick] (0,-6.6) -- node[fill=white, text=black]{Alice--Eve key $K_1 = g^{xz} \bmod p$} (6.5,-6.6);
+\draw[dashed, warn, thick] (6.5,-6.6) -- node[fill=white, text=black]{Eve--Bob key $K_2 = g^{zy} \bmod p$} (13,-6.6);
+\end{tikzpicture}
+\end{center}
+\textbf{Why each party computes Eve's key.} Alice raises the value she received, $R_2 = g^z$, to her $x$: $K_1 = (g^z)^x = g^{xz}$. Eve raises Alice's $R_1 = g^x$ to her $z$: $(g^x)^z = g^{xz} = K_1$. In the same way Bob gets $(g^z)^y = g^{zy}$ and Eve gets $(g^y)^z = g^{zy} = K_2$. From now on Eve decrypts every message from Alice with $K_1$, reads or changes it, re-encrypts it with $K_2$ and forwards it to Bob, and the reverse for Bob's replies. Neither victim notices anything, because each has completed a perfectly valid Diffie--Hellman exchange, only with the wrong party. The attack is called man-in-the-middle because Eve comes in between and intercepts $R_1$, sent by Alice to Bob, and $R_3$, sent by Bob to Alice. It is also known as a \textbf{bucket brigade attack} because it resembles a short line of volunteers passing a bucket of water from person to person.
+
+\begin{worked}[: man-in-the-middle with the slide numbers]
+\textbf{Q.} In the exchange $g = 7$, $p = 23$, $x = 3$, $y = 6$, Eve performs a man-in-the-middle attack with $z = 9$. Find the value Eve sends, the key Eve shares with each party, and compare with the honest key.
+
+\textbf{A.} $R_1 = 21$ and $R_3 = 7^6 \bmod 23 = 4$ as before. Eve: $7^8 = (7^4)^2 = 81 = 3 \cdot 23 + 12 \equiv 12$, so $R_2 = 7^9 = 12 \cdot 7 = 84 = 3 \cdot 23 + 15 \equiv \mathbf{15}$.
+\begin{center}\small
+\begin{tabular}{@{}lll@{}}
+\toprule
+Key & Victim computes & Eve computes\\
+\midrule
+$K_1$ (Alice--Eve) & $15^3$: $15^2 = 225 \equiv 18$, $18 \cdot 15 = 270 = 11 \cdot 23 + 17 \Rightarrow \mathbf{17}$ & $21^9 \equiv (-2)^9 = -512 \equiv -6 \equiv \mathbf{17}$\\
+$K_2$ (Eve--Bob) & $15^6 = (15^3)^2 = 17^2 = 289 = 12 \cdot 23 + 13 \Rightarrow \mathbf{13}$ & $4^9 = 2^{18} \equiv 2^7 = 128 \equiv \mathbf{13}$ \ ($2^{11} \equiv 1$)\\
+\bottomrule
+\end{tabular}
+\end{center}
+Alice uses $K_1 = 17$ and Bob uses $K_2 = 13$, each believing it is the shared key; the honest key would have been $18$.\\
+\emph{Check}: $K_1 = 7^{xz} = 7^{27} \equiv 7^{5} \equiv 17$ and $K_2 = 7^{zy} = 7^{54} \equiv 7^{10} \equiv 13$ (exponents reduced mod 22) \checkmark.
+\end{worked}
+
+\textbf{Why Diffie--Hellman alone gives no authentication.} The values $R_1$ and $R_2$ carry nothing that ties them to Alice or Bob: any number in $\mathbb{Z}_p^*$ looks like a valid public value, and Eve can produce one as easily as Bob. Diffie--Hellman therefore guarantees only that Alice shares $K$ with \emph{whoever sent the value she received}, not who that is. The cure is to authenticate the exchanged values, by digital signatures with certificates (station-to-station, below), by certified long-term Diffie--Hellman values, or by a MAC under a key or password the two already share.
+
+\subsection{Station-to-station protocol \new}
+\likely{``Explain the station-to-station protocol and show how it prevents the man-in-the-middle attack'' (4--5 marks).}
+
+The \textbf{station-to-station (STS)} protocol (Diffie, van Oorschot and Wiener, 1992) is a method based on Diffie--Hellman. It uses digital signatures with public-key certificates to establish a session key between Alice and Bob while authenticating both of them. Each party has a signature key pair and a certificate, issued by a trusted certification authority (\S\ref{sec:pki}), that binds its identity to its public verification key.
+\begin{center}
+\begin{tikzpicture}[font=\footnotesize]
+\kmLife{0}{Alice}{-6.1} \kmLife{11}{Bob}{-6.1}
+\node[kmdo] at (0,-0.75) {$x$ random, $R_1 = g^x \bmod p$};
+\kmMsg{-1.45}{0}{11}{1}{$R_1$}
+\node[kmdo] at (11,-2.2) {$y$ random, $R_2 = g^y \bmod p$\\$K = (R_1)^y \bmod p$};
+\kmMsg{-3.0}{11}{0}{2}{$R_2$, \ Cert$_B$, \ $E_K\bigl(\text{Sig}_B(\text{Alice} \,|\, R_1 \,|\, R_2)\bigr)$}
+\node[kmdo] at (0,-3.75) {$K = (R_2)^x \bmod p$\\verify Cert$_B$ and Bob's signature};
+\kmMsg{-4.55}{0}{11}{3}{Cert$_A$, \ $E_K\bigl(\text{Sig}_A(\text{Bob} \,|\, R_1 \,|\, R_2)\bigr)$}
+\node[kmdo] at (11,-5.25) {verify Cert$_A$ and Alice's signature\\keep $K$};
+\draw[dashed, ok, thick] (0,-5.95) -- node[fill=white, text=black]{shared secret key $K = g^{xy} \bmod p$} (11,-5.95);
+\end{tikzpicture}
+\end{center}
+The slide's figure numbers nine steps; they map onto the three messages as follows.
+\begin{itemize}
+  \item \textbf{Message 1 (steps 1--2).} After calculating $R_1$, Alice sends $R_1$ to Bob, exactly as in Diffie--Hellman.
+  \item \textbf{Message 2 (steps 3--5).} After calculating $R_2$ and the session key $K$, Bob concatenates Alice's ID, $R_1$ and $R_2$, and signs the result with his private key. He sends $R_2$, the signature and his own public-key certificate to Alice; the signature is encrypted with the session key.
+  \item \textbf{Message 3 (steps 6--8).} After calculating the session key, Alice verifies Bob's certificate with the CA's public key, decrypts the signature with $K$ and verifies it with Bob's public key from the certificate. If it is valid, she concatenates Bob's ID, $R_1$ and $R_2$, signs the result with her own private key, encrypts the signature with $K$ and sends it with her certificate.
+  \item \textbf{Step 9.} If Alice's signature is verified, Bob keeps the session key.
+\end{itemize}
+
+\textbf{Why each field is there.} The signature covers \emph{both} Diffie--Hellman values, so it binds this particular exchange to the signer: a signature from another run (with other $R$ values) is useless to Eve. The signature also names the \emph{intended partner} (Bob signs ``Alice'', Alice signs ``Bob''), so Eve cannot take Bob's signed statement and present it in a session with a third party. Encrypting the signature with $K$ proves that the sender has actually computed $K$ (key confirmation) and hides the identity proof from eavesdroppers. The certificates let each side obtain the other's genuine public key without an earlier meeting, and they are trusted because they are issued by trusted authorities.
+
+\textbf{Derivation: why the man-in-the-middle attack fails.} Suppose Eve intercepts $R_1$ and sends Bob her own $R_E = g^z$. Bob computes $K_2 = g^{zy}$ and signs $(\text{Alice} \,|\, R_E \,|\, R_2)$. Eve now has only three options towards Alice, and each fails.
+\begin{itemize}
+  \item \textbf{Forward Bob's message 2 unchanged.} Alice sent $R_1$, so she computes $K = R_2^{\,x} = g^{xy} \ne K_2$; the decryption gives garbage, and even a correctly decrypted signature covers $R_E$, not Alice's $R_1$, so the check against $(\text{Alice} \,|\, R_1 \,|\, R_2)$ fails.
+  \item \textbf{Substitute her own value $R_E' = g^{z'}$ for $R_2$.} Alice then needs Bob's signature on $(\text{Alice} \,|\, R_1 \,|\, R_E')$. Bob never signed this string, and Eve cannot produce the signature without Bob's private key; a signature with Eve's own key fails verification with the public key in Bob's certificate, and she cannot forge a certificate binding her key to Bob's name without the CA's private key.
+  \item \textbf{Leave $R_1$ and $R_2$ untouched.} Then Alice and Bob share $K = g^{xy}$, which Eve cannot compute (Diffie--Hellman problem), so she is reduced to a passive eavesdropper.
+\end{itemize}
+The same argument applies to Alice's signature in message 3, which Eve cannot forge either. Hence the station-to-station protocol prevents man-in-the-middle attacks: whatever Eve does, she is either detected or learns nothing.
+
+\begin{center}\small
+\begin{tabularx}{\textwidth}{@{}l>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}X@{}}
+\toprule
+ & Diffie--Hellman & Station-to-station\\
+\midrule
+Messages & 2 ($R_1$, $R_2$) & 3 ($R_1$; $R_2$ + certificate + signature; certificate + signature)\\
+Authentication & none & mutual, by signatures and certificates\\
+Man-in-the-middle & possible & prevented\\
+Key confirmation & none & yes (signatures encrypted under $K$)\\
+Infrastructure & only public $p$, $g$ & signature key pairs and a CA (PKI)\\
+Cost per party & 2 exponentiations & 2 exponentiations + 1 signature + 2 verifications (certificate, signature)\\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\section{Public-Key Distribution, X.509 and PKI}\label{sec:pki}
+
+\subsection{The public-key distribution problem; public announcement \new}
+\likely{``Explain the methods of public-key distribution: announcement, trusted center, controlled trusted center, CA'' (4--5 marks).}
+
+In asymmetric-key cryptography the private key never leaves its owner and the public key is meant to be known, so secrecy is not the problem. \textbf{Authenticity} is: Alice must be sure that the key she holds as ``Bob's'' really belongs to Bob. If Eve can make Alice accept Eve's public key as Bob's, Alice encrypts for Eve, who reads the message and re-encrypts it under Bob's real key (a man-in-the-middle), and Alice also accepts Eve's signatures as Bob's. Forouzan describes four ways of distributing public keys, each closing a hole of the previous one.
+
+\textbf{Public announcement.} Bob simply announces his public key: on his website, in a newspaper, on a mailing list or at the end of his e-mails. This is simple and needs no third party. It is not secure, because the announcement itself is not authenticated: Eve can announce her own key as Bob's (\textbf{forgery}), and until Bob notices, Eve reads every message sent to ``Bob'' and signs in his name. There is also no reliable way to withdraw a key once it has been announced.
+
+\subsection{Trusted center and controlled trusted center \new}
+
+\textbf{Trusted center.} A higher level of security is obtained with a trusted center that keeps a \textbf{directory} of public keys, a table of (name, public key) entries. Each user selects a private and public key, keeps the private key and delivers the public key to the center in a secure way, for example in person, so that the center can check the identity. The directory is published, and users can look keys up. Users may replace their keys, for example after a compromise. The weak point is the response: if the lookup reply travels unprotected, Eve can intercept it and substitute her own key.
+
+\textbf{Controlled trusted center (public-key authority).} Here the distribution itself is controlled: the center's replies include a timestamp and are signed with the center's private key, whose public counterpart every user knows. Stallings gives the full scenario in seven messages ($PU$ = public key, $PR$ = private key, $N_1, N_2$ nonces); messages 1--2 are Forouzan's controlled trusted center.
+\begin{center}
+\begin{tikzpicture}[font=\footnotesize]
+\kmLife{0}{Alice}{-6.0} \kmLife{6.5}{Authority}{-6.0} \kmLife{13}{Bob}{-6.0}
+\kmMsg{-0.9}{0}{6.5}{1}{Request (Bob's key), $T_1$}
+\kmMsg{-1.6}{6.5}{0}{2}{$E_{PR_{\text{auth}}}(PU_B,\ \text{Request},\ T_1)$}
+\kmMsg{-2.4}{0}{13}{3}{$E_{PU_B}(\text{Alice},\ N_1)$}
+\kmMsg{-3.2}{13}{6.5}{4}{Request (Alice's key), $T_2$}
+\kmMsg{-3.9}{6.5}{13}{5}{$E_{PR_{\text{auth}}}(PU_A,\ \text{Request},\ T_2)$}
+\kmMsg{-4.7}{13}{0}{6}{$E_{PU_A}(N_1,\ N_2)$}
+\kmMsg{-5.5}{0}{13}{7}{$E_{PU_B}(N_2)$}
+\end{tikzpicture}
+\end{center}
+In message 2 the \textbf{signature} (encryption with $PR_{\text{auth}}$) lets Alice verify with the authority's public key that the reply really comes from the authority and was not altered. The copy of the \textbf{request} lets her check that the reply answers her question, so Eve cannot change ``Bob'' into ``Eve'' on the way. The \textbf{timestamp} $T_1$ shows that the reply is fresh, so Eve cannot replay an old reply carrying an old (perhaps revoked) key of Bob. Messages 3--7 then authenticate the two parties: only Bob can read $N_1$ in message 3 and return it in message 6, and only Alice can read $N_2$ in message 6 and return it in message 7. (This is the Needham--Schroeder public-key protocol; Lowe showed in 1995 that message 6 should also contain Bob's identity.) \textbf{Disadvantage.} The authority must be online for every request, so it is a bottleneck and an attractive target, and its directory must be protected.
+
+\subsection{Certification authority and certificates \hot\new}
+\likely{``What is a public-key certificate? Why is it signed by the CA? How does it solve the problems of announcement and the trusted center?'' (3--4 marks).}
+
+The idea is to let the authority sign the binding between a name and a key \emph{once, in advance}, instead of answering every request online. \imp{A certificate binds an identity to a public key and is signed with the private key of a certification authority (CA).} Bob goes to the CA with his public key and proof of identity (for example a passport); the CA checks the identity and that Bob holds the matching private key (Bob signs the request with it). The CA then writes a certificate containing Bob's identity, his public key, a validity period, a serial number and the CA's name, and signs it with the CA's private key. Bob can now publish the certificate anywhere or send it inside a protocol (as in station-to-station). Alice verifies it with the CA's public key, which she obtained securely in advance (for example pre-installed in the browser or operating system); if the signature is valid, the key in the certificate is Bob's.
+\begin{center}
+\begin{tikzpicture}[font=\footnotesize]
+\kmLife{0}{Bob}{-3.6} \kmLife{7}{CA}{-3.6} \kmLife{13.5}{Alice}{-3.6}
+\kmMsg{-0.9}{0}{7}{1}{$PU_B$ + proof of identity}
+\kmMsg{-1.7}{7}{0}{2}{Cert$_B = $ (Bob, $PU_B$, validity, \dots) signed with $PR_{\text{CA}}$}
+\kmMsg{-2.5}{0}{13.5}{3}{Cert$_B$ \ (any channel, even an insecure one)}
+\node[kmdo] at (13.5,-3.2) {verify with $PU_{\text{CA}}$};
+\end{tikzpicture}
+\end{center}
+\textbf{Why the certificate is signed by the CA.} The signature is computed over all the fields, so changing the name or the key breaks it; and producing a valid signature requires the CA's private key, so Eve cannot make a certificate that binds her key to Bob's name. A certificate is therefore \emph{self-protecting}: it can be sent over insecure channels, cached and copied, even delivered by Eve, without losing its value. This removes both earlier weaknesses: a forged announcement fails the signature check, and the CA need not be online, because the certificate was made in advance. Alice needs only \emph{one} key obtained securely, the CA's, instead of the key of every correspondent. The CA never sees private keys, so unlike a KDC it cannot read anyone's traffic; a dishonest or compromised CA can, however, issue false certificates, which is why CAs are carefully audited.
+
+Stallings states the requirements: any participant can read a certificate to learn the owner's name and public key; any participant can verify that it came from the CA and is not counterfeit; only the CA can create and update certificates; and any participant can check that it is still current (validity period and revocation, below).
+
+\subsection{X.509 certificates \hot\new}
+\likely{``Draw and explain the X.509 certificate format'' (5 marks); ``what does $X\langle\!\langle A \rangle\!\rangle$ mean''.}
+
+Certificates from different CAs are only useful if everyone parses them the same way. \textbf{X.509} is the ITU-T recommendation (part of the X.500 directory series, first issued in 1988, version 3 in 1996) that defines the certificate structure, written in ASN.1. It is used by IPSec, SSL/TLS, S/MIME and the Internet PKI.
+\begin{center}\small
+\begin{tabularx}{\textwidth}{@{}l>{\raggedright\arraybackslash}X@{}}
+\toprule
+Field & Meaning and purpose\\
+\midrule
+Version number & Version of X.509 used. Numbering starts at 0, so the current version 3 is coded as 2; it tells the reader which fields to expect.\\
+Serial number & Unique identifier of the certificate among those issued by this CA; it is what a revocation list names.\\
+Signature algorithm ID & Algorithm (and parameters) used by the CA to sign the certificate, e.g.\ SHA-256 with RSA.\\
+Issuer name & X.500 name of the CA that issued the certificate: a hierarchy of strings (country, state, organisation, department, \dots).\\
+Validity period & Earliest (``not before'') and latest (``not after'') time at which the certificate is valid.\\
+Subject name & X.500 name of the entity the public key belongs to, again a hierarchy of strings.\\
+Subject public key info & The owner's public key, the heart of the certificate, with its algorithm (RSA, DSS, \dots) and parameters.\\
+Issuer unique identifier & Optional (v2): distinguishes two issuers with the same name.\\
+Subject unique identifier & Optional (v2): distinguishes two subjects with the same name.\\
+Extensions & Optional (v3): extra information, each with an identifier, a criticality flag and a value (see below).\\
+Signature & Three parts: all the other fields; their digest encrypted with the CA's \emph{private} key; the identifier of the algorithm used.\\
+\bottomrule
+\end{tabularx}
+\end{center}
+\textbf{Verification.} Alice hashes the to-be-signed fields, verifies the signature with the issuer's public key, compares, checks that the current date lies within the validity period and that the serial number is not revoked, and only then uses the subject public key.
+
+\textbf{Versions and extensions.} Version 1 has the basic fields. Version 2 added the two unique identifiers, so that names could be reused. Version 3 added extensions, because experience showed that more information was needed. Stallings groups them into three classes: \emph{key and policy information} (key identifiers, key usage such as ``signature only'' or ``key encipherment'', certificate policies), \emph{subject and issuer attributes} (alternative names such as an e-mail address or DNS name), and \emph{certification path constraints} (whether the subject may itself act as a CA and how long a chain below it may be). A reader that does not understand a \emph{critical} extension must reject the certificate.
+
+\textbf{Notation.} Stallings writes $Y\langle\!\langle X \rangle\!\rangle$ for the certificate of user $X$ issued by CA $Y$, and $Y\{I\}$ for the signing of $I$ by $Y$ (that is, $I$ with an encrypted hash appended). So $\text{CA}\langle\!\langle A \rangle\!\rangle = \text{CA}\{V, SN, AI, \text{CA}, UCA, A, UA, A_p, T^A\}$, listing version, serial number, algorithm, issuer, issuer ID, subject, subject ID, subject public key and validity period.
+
+\begin{trap}[: who signs with what]
+A certificate is signed with the \emph{CA's private} key and verified with the \emph{CA's public} key. It contains the \emph{subject's public} key, never a private key. ``Issuer'' is the CA, ``subject'' is the owner of the key.
+\end{trap}
+
+\subsection{Certificate renewal and revocation \new}
+\likely{``Why are certificates revoked? Explain the CRL format and delta CRL'' (3--4 marks).}
+
+\textbf{Renewal.} Each certificate has a validity period. If there is no problem with it, the CA issues a new certificate before the old one expires, much as a bank renews a credit card; the new certificate has a new serial number and validity period and may carry a new key pair (key update).
+
+\textbf{Revocation.} Sometimes a certificate must be cancelled before it expires. Forouzan gives three reasons: the subject's private key may have been compromised; the CA may no longer be willing to certify the subject (for example, the certificate relates to an organisation the subject has left); or the CA's own private key may have been compromised, in which case the CA must revoke all its unexpired certificates. Revocation is done by periodically publishing a \textbf{certificate revocation list (CRL)}, a list of revoked certificates signed by the CA. When a user wants to use a certificate, she first checks the CA's directory for the latest CRL.
+\begin{center}\small
+\begin{tabularx}{\textwidth}{@{}l>{\raggedright\arraybackslash}X@{}}
+\toprule
+CRL field & Purpose\\
+\midrule
+Signature algorithm ID & Algorithm used to sign the CRL.\\
+Issuer name & CA that issued the list.\\
+This update date & When this list was issued.\\
+Next update date & When the next list will appear; a list older than this is stale, so a user can tell that she must fetch a new one.\\
+Revoked certificates (repeated) & For each one, the user certificate serial number and the revocation date.\\
+Signature & CA's signature over the list, so that Eve cannot delete an entry and revive a revoked certificate.\\
+\bottomrule
+\end{tabularx}
+\end{center}
+A revoked certificate stays on the list only until its own validity period ends; after that it is invalid anyway. \textbf{Delta CRL.} To make revocation more efficient, the CA publishes a full (base) CRL at fixed intervals, say monthly, and in between a \textbf{delta CRL} that contains only the changes made since the last base CRL. A delta CRL is created and posted whenever revocations happen between the ``this update'' and ``next update'' dates. It is much smaller, so it can be issued often, and a user combines the base CRL with the latest delta. \textbf{OCSP} (Online Certificate Status Protocol) goes further: the user asks an online responder about one certificate and gets a signed answer (good, revoked or unknown). It is as fresh as possible and avoids downloading lists, but the responder must always be online, and it learns which certificates (and so which sites) the user checks.
+
+\subsection{Public-key infrastructure (PKI) \new}
+\likely{``What is a PKI? List and explain its duties'' (3 marks).}
+
+A \textbf{public-key infrastructure (PKI)} is a model for creating, distributing and revoking certificates based on X.509; the IETF's version is called \textbf{PKIX}. Its components are the end entities (users and devices), the CAs, \emph{registration authorities} (which check identities on behalf of a CA), CRL issuers and repositories (directories from which certificates and CRLs are fetched).
+\begin{center}
+\begin{tikzpicture}[font=\footnotesize, d/.style={draw, fill=acc!6, text width=5.2cm, minimum height=0.6cm, align=center}]
+\node[draw, fill=gray!15, minimum height=1.2cm, align=center] (p) at (0,0) {PKI's\\duties};
+\node[d] (d1) at (5.2,1.2) {Certificates' issuing, renewal, revocation};
+\node[d] (d2) at (5.2,0.4) {Keys' storage and update};
+\node[d] (d3) at (5.2,-0.4) {Providing services to other protocols};
+\node[d] (d4) at (5.2,-1.2) {Providing access control};
+\foreach \i in {1,...,4} \draw (p.east) -- ++(0.5,0) |- (d\i.west);
+\end{tikzpicture}
+\end{center}
+\begin{itemize}
+  \item \textbf{Certificates' issuing, renewal and revocation.} This is the main duty: verifying identities, creating certificates, renewing them before expiry, and publishing CRLs or answering OCSP queries.
+  \item \textbf{Keys' storage and update.} A PKI should be a storage place for the private keys of members who need to keep them somewhere safe (for example a backup of a decryption key, without which encrypted data would be lost), and it is responsible for updating keys when members ask.
+  \item \textbf{Providing services to other protocols.} Internet security protocols such as IPSec, SSL/TLS and S/MIME rely on a PKI to supply and validate the certificates they use.
+  \item \textbf{Providing access control.} A PKI can give different levels of access to the information in its database; an organisation's PKI may give top management access to the whole database and employees access only to their own records.
+\end{itemize}
+
+\subsection{Trust models and certificate chains \hot\new}
+\likely{``Explain the hierarchical, mesh and web-of-trust models; show how User1 verifies User3's public key'' (5 marks).}
+
+No single CA can certify everyone in the world, so there are many CAs, each responsible for creating, storing, issuing and revoking a limited number of certificates. A user, however, holds securely the key of only one or a few CAs. A \textbf{trust model} defines the rules by which a user can verify a certificate issued by a CA she does not know directly.
+
+\textbf{Certificate chains.} Suppose Alice trusts CA $X_1$ but Bob's certificate $X_2\langle\!\langle B \rangle\!\rangle$ was issued by $X_2$. If $X_1$ has certified $X_2$, Alice fetches $X_1\langle\!\langle X_2 \rangle\!\rangle$, verifies it with $X_1$'s key, extracts $X_2$'s public key, and with it verifies $X_2\langle\!\langle B \rangle\!\rangle$. The chain is written $X_1\langle\!\langle X_2 \rangle\!\rangle\, X_2\langle\!\langle B \rangle\!\rangle$, and in general $X_1\langle\!\langle X_2 \rangle\!\rangle\, X_2\langle\!\langle X_3 \rangle\!\rangle \cdots X_N\langle\!\langle B \rangle\!\rangle$: each certificate is verified with the key taken from the one before, and the first with a key Alice already trusts (a \textbf{trust anchor}).
+\begin{center}
+\begin{tikzpicture}[font=\scriptsize, c/.style={kmca, font=\scriptsize}, u/.style={draw, rounded corners=2pt, fill=acc!8, inner sep=2pt}]
+% hierarchical
+\node[c] (r) at (2.2,0) {Root CA};
+\node[c] (c1) at (0.6,-1) {CA1}; \node[c] (c2) at (2.2,-1) {CA2}; \node[c] (c3) at (3.8,-1) {CA3};
+\node[u] (u1) at (0.1,-2) {User1}; \node[u] (u2) at (1.2,-2) {User2}; \node[u] (u3) at (2.3,-2) {User3}; \node[u] (u4) at (3.8,-2) {User4};
+\foreach \a/\b in {r/c1,r/c2,r/c3,c1/u1,c1/u2,c2/u3,c3/u4} \draw[kmm, thin] (\a) -- (\b);
+\draw[kmm, thin] (r.north east) to[out=40, in=-10, looseness=5] (r.east);
+\node at (2.2,-2.7) {\footnotesize (a) hierarchical};
+% mesh
+\begin{scope}[xshift=6.4cm]
+\node[c] (m1) at (0,0) {Root1}; \node[c] (m2) at (2.6,0) {Root2};
+\node[c] (m3) at (0,-1.5) {Root3}; \node[c] (m4) at (2.6,-1.5) {Root4};
+\foreach \a/\b in {m1/m2,m1/m3,m1/m4,m2/m3,m2/m4,m3/m4} \draw[{Stealth[length=1.5mm]}-{Stealth[length=1.5mm]}] (\a) -- (\b);
+\node[u] (al) at (-0.2,-2.25) {Alice}; \node[u] (bb) at (2.8,-2.25) {Bob};
+\draw[kmm, thin] (m3) -- (al); \draw[kmm, thin] (m4) -- (bb);
+\node at (1.3,-2.7) {\footnotesize (b) mesh (cross-certified roots)};
+\end{scope}
+% web of trust
+\begin{scope}[xshift=11.6cm]
+\node[u] (a) at (0,0) {Alice}; \node[u] (b) at (2.4,0) {Bob};
+\node[u] (cc) at (2.4,-1.5) {Carol}; \node[u] (dd) at (0,-1.5) {Dave};
+\node[u] (ee) at (1.2,-2.2) {Emma};
+\draw[kmm, thin] (a) -- (b); \draw[kmm, thin] (b) -- (cc); \draw[kmm, thin] (a) -- (dd); \draw[kmm, thin] (dd) -- (ee); \draw[kmm, thin] (cc) -- (ee); \draw[kmm, thin] (b) -- (dd);
+\node at (1.2,-2.7) {\footnotesize (c) web of trust (PGP)};
+\end{scope}
+\end{tikzpicture}
+\end{center}
+An arrow $X \to Y$ means ``$X$ has signed a certificate for $Y$''.
+
+\textbf{(a) Hierarchical model.} The CAs form a tree. The \textbf{root CA} has a self-signed, self-issued certificate $\text{Root}\langle\!\langle \text{Root} \rangle\!\rangle$ and must be trusted by every user for the system to work; it certifies the level-1 CAs, which certify users or lower CAs. Every user holds the root's public key. To obtain a verified copy of User3's key, User1 receives the chain $\text{Root}\langle\!\langle \text{CA2} \rangle\!\rangle\, \text{CA2}\langle\!\langle \text{User3} \rangle\!\rangle$ and (i) validates $\text{Root}\langle\!\langle \text{CA2} \rangle\!\rangle$ with the root's public key, (ii) extracts CA2's public key from it, (iii) validates $\text{CA2}\langle\!\langle \text{User3} \rangle\!\rangle$ with CA2's key, and (iv) extracts User3's public key. Web browsers use a variant: they ship with the certificates of many independent roots, without a single higher authority above them, and trust a site's chain if it ends at any of them.
+
+\textbf{(b) Mesh model.} A single hierarchy is not enough for a very large community, so several hierarchies are connected by letting their roots \textbf{cross-certify} each other: every root issues a certificate for every other root. With $n$ roots this takes $n(n-1)$ certificates (12 for the four roots shown). Alice under Root3 obtains Bob's key (under Root4) by taking $\text{Root3}\langle\!\langle \text{Root4} \rangle\!\rangle$ from her root's directory, verifying it with Root3's key, and then verifying Bob's chain down from Root4, e.g.\ $\text{Root4}\langle\!\langle \text{Bob} \rangle\!\rangle$ or $\text{Root4}\langle\!\langle \text{CA} \rangle\!\rangle\, \text{CA}\langle\!\langle \text{Bob} \rangle\!\rangle$.
+
+\textbf{(c) Web of trust.} PGP uses no CAs at all. Every user may sign the public keys of people she knows, and each user keeps her own key ring. Alice obtains Bob's key directly (for example in person) and, if she considers Bob a trustworthy \emph{introducer}, she accepts Carol's key because Bob has signed it. PGP lets each user assign a trust level to each introducer, and a key is accepted as valid if it is signed by one fully trusted introducer or by enough partially trusted ones (by default two). This needs no infrastructure and suits small communities, but trust is subjective, chains are hard to evaluate for strangers, and revocation depends on each user spreading the news.
+\begin{center}\small
+\begin{tabularx}{\textwidth}{@{}l>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}X@{}}
+\toprule
+ & Hierarchical & Mesh & Web of trust\\
+\midrule
+Trust anchor & one root CA & the user's own root; roots trust each other & keys the user verified personally\\
+Who certifies & CAs only & CAs; roots cross-certify & any user\\
+Path & unique, down from the root & up to own root, across, down & any chain of introducers, judged by the user\\
+Strength & simple, unique paths & connects independent hierarchies & no infrastructure, free\\
+Weakness & root is a single point of failure & $n(n-1)$ cross-certificates & does not scale; weak revocation\\
+Example & a national or corporate PKI & linked government PKIs & PGP\\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\subsection{KDC versus public-key distribution}
+\noindent\begin{minipage}{\textwidth}
+\likely{``Differentiate symmetric-key distribution (KDC) and public-key distribution (CA)'' (3 marks).}
+\begin{center}\small
+\begin{tabularx}{\textwidth}{@{}l>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}X@{}}
+\toprule
+ & KDC (symmetric keys) & CA / PKI (public keys)\\
+\midrule
+What must be protected & secrecy of master and session keys & authenticity of the name--key binding\\
+Keys for $N$ users & $N$ master keys + session keys on demand & $N$ key pairs + the CA's key pair\\
+Third party online & yes, for every session & no; certificates are made in advance\\
+What the third party knows & every session key, so it can read all traffic & only public keys; it cannot read traffic\\
+Effect of compromise & all keys and traffic exposed & false certificates can be issued; past traffic stays safe\\
+Revocation & delete the master key at the KDC (immediate) & CRL, delta CRL or OCSP needed\\
+Speed & fast symmetric operations & slower public-key operations\\
+Non-repudiation & no & possible (signatures)\\
+Examples & Needham--Schroeder, Otway--Rees, Kerberos & X.509, PKIX, PGP, TLS certificates\\
+\bottomrule
+\end{tabularx}
+\end{center}
+\end{minipage}
+
+\begin{fixbox}
+\begin{itemize}[nosep]
+  \item Slide 12: ``The value of K is the same for both Alice and Bob; $g^{xy} \bmod p = 7^{18} \bmod 35 = 18$''. The modulus is $p = 23$: $7^{18} \bmod 23 = 18$. (With 35 the value would be $7^{18} \bmod 35 = 14$.)
+  \item Slide 2: ``if one million people need to communicate \dots\ almost one trillion keys are needed''. That count assumes two keys per pair, $N(N-1) \approx 10^{12}$. With one key per pair, $N(N-1)/2 = 499\,999\,500\,000 \approx 5 \times 10^{11}$ (half a trillion). Likewise ``the number of required keys for $N$ entities is $N^2$'' means it grows like $N^2$; the exact count is $N(N-1)/2$.
+  \item Slides 6 and 7 are identical (the symmetric-key agreement slide is repeated).
+  \item Slide 5 says ``the KDC informs Bob about Alice's request''. This is the conceptual flow; in the actual protocols (Needham--Schroeder, Kerberos) the KDC gives Alice a ticket sealed under Bob's key and Alice forwards it, and in Otway--Rees Bob himself contacts the KDC.
+  \item Slide 19: ``Eve cannot forge the private key of Bob to create the signature'' should read: Eve cannot forge Bob's \emph{signature}, because she does not know his private key.
+  \item Slide 8: 1024 bits is about 309 decimal digits (``on the order of 300'' is fine); 2048 bits (617 digits) is the minimum recommended today.
+\end{itemize}
+\end{fixbox}

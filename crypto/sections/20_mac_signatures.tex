@@ -1,0 +1,473 @@
+% College Lecture 15 (message authentication, digital signatures; 48 slides) + Forouzan 11.3, ch. 13, Stallings (MACs, HMAC, CMAC, DSS).
+% Every number recomputed by script (scratchpad/w20/v1.py ... v9.py, ec.py, lenext.py): RSA/ElGamal/DSS/Schnorr/ECDSA runs, attacks, HMAC, CMAC.
+\section{Message Authentication: MDC, MAC, HMAC and CMAC}\label{sec:mac}
+\usetikzlibrary{decorations.pathreplacing}
+\tikzset{
+  dsgop/.style={draw, fill=white, align=center, inner sep=3pt, minimum height=0.62cm, font=\small},
+  dsgdia/.style={draw, diamond, aspect=2.3, inner sep=0.5pt, fill=white, font=\small},
+  dsgblk/.style={draw, fill=gray!15, minimum height=0.55cm, inner sep=2pt, font=\small},
+  dsgtag/.style={draw, fill=black, text=white, font=\small\bfseries, inner sep=3pt},
+  dsgzone/.style={draw, dashed, fill=gray!8}
+}
+
+\subsection{Why a digest does not authenticate: MDC versus MAC \new}
+\likely{``Why can a message digest not provide message authentication? Differentiate MDC and MAC with diagrams'' (3--4 marks).}
+
+A message digest guarantees \textbf{integrity}: if Alice sends $M$ and Bob recomputes $h(M)$, any change to $M$ produces a different digest (\S\ref{sec:integrity}). It does \emph{not} tell Bob who created the message. The hash function is public and needs no secret, so Eve can write her own message $M'$, compute $h(M')$ and send the pair $(M', h(M'))$; Bob's comparison succeeds, because the pair is internally consistent, and he has no way of telling it from a pair made by Alice. To prove that the message comes from Alice and not an impostor (\textbf{message authentication}, also called \textbf{data-origin authentication}), the check value must depend on something that only Alice and Bob know.
+
+\textbf{Modification detection code (MDC).} A digest made by a keyless cryptographic hash function is called an MDC, because it can only detect modification. The MDC itself must therefore travel over a \emph{safe} channel (a channel immune to change), while the message may travel over an insecure one. Bob hashes the received message and compares the result with the MDC from the safe channel; if they are equal the message is accepted, otherwise rejected.
+
+\begin{center}
+\begin{tikzpicture}[font=\small, >=Stealth]
+\fill[gray!8] (0,-1.9) rectangle (3.8,1.1); \draw[dashed] (0,-1.9) rectangle (3.8,1.1);
+\fill[gray!8] (7.6,-1.9) rectangle (15.8,1.1); \draw[dashed] (7.6,-1.9) rectangle (15.8,1.1);
+\node[above right] at (0,1.1) {\textbf{Alice}}; \node[above left] at (15.8,1.1) {\textbf{Bob}};
+\node[dsgblk] (m) at (0.9,0.5) {$M$};
+\node[dsgop] (h) at (0.9,-0.7) {Hash};
+\node[dsgtag] (mdc) at (2.7,-0.7) {MDC};
+\draw[->] (m) -- (h); \draw[->] (h) -- (mdc);
+\node[dsgblk] (mb) at (8.3,0.5) {$M$};
+\node[dsgop] (hb) at (10.2,0.5) {Hash};
+\node[dsgtag] (mdcb) at (8.5,-0.7) {MDC};
+\node[dsgdia] (cmp) at (12.4,-0.7) {Same?};
+\draw[->] (m) -- (mb); \node[above] at (5.7,0.5) {insecure channel};
+\draw[->] (mdc) -- (mdcb); \node[below, align=center, font=\footnotesize] at (5.7,-0.75) {safe channel\\(immune to change)};
+\draw[->] (mb) -- (hb); \draw[->] (hb) -| (cmp);
+\draw[->] (mdcb) -- (cmp);
+\draw[->] (cmp) -- node[above]{yes} (14.6,-0.7) node[right]{accept};
+\draw[->] (cmp.south) -- ++(0,-0.45) node[right, font=\footnotesize]{no: reject};
+\end{tikzpicture}
+\end{center}
+
+\textbf{Message authentication code (MAC).} A MAC removes the need for a safe channel by mixing a \textbf{shared secret key} $K$ into the digest. Alice computes $\mathrm{MAC} = h(K \,|\, M)$, where $|$ denotes concatenation, and sends $M$ and the MAC together over the insecure channel. Bob separates the two, computes a new MAC from the received message and his copy of $K$, and compares it with the received MAC. \imp{If the two MACs match, the message is authentic (it was made by a holder of $K$) and has not been modified.} Eve can still change $M$, but without $K$ she cannot compute the MAC that goes with the new message, so the change is detected.
+
+\begin{center}
+\begin{tikzpicture}[font=\small, >=Stealth]
+\fill[gray!8] (-0.9,-1.9) rectangle (3.8,1.3); \draw[dashed] (-0.9,-1.9) rectangle (3.8,1.3);
+\fill[gray!8] (7.6,-1.9) rectangle (15.8,1.3); \draw[dashed] (7.6,-1.9) rectangle (15.8,1.3);
+\node[above right] at (-0.9,1.3) {\textbf{Alice}}; \node[above left] at (15.8,1.3) {\textbf{Bob}};
+\node[dsgblk] (m) at (0.9,0.5) {$M$};
+\node[dsgop] (h) at (0.9,-0.7) {Hash};
+\node (k) at (-0.45,-0.7) {$K$}; \draw[->] (k) -- (h);
+\node[dsgtag] (mac) at (2.4,-0.7) {MAC};
+\node[draw, dashed, fill=white, align=center, inner sep=2pt] (pkt) at (3.2,0.2) {$M$\\[-1pt]\colorbox{black}{\textcolor{white}{\scriptsize MAC}}};
+\draw[->] (m) -- (h); \draw[->] (h) -- (mac); \draw[->] (mac) -| (pkt); \draw[->] (m) -- (m -| pkt.west);
+\node[draw, dashed, fill=white, align=center, inner sep=2pt] (pkb) at (8.3,0.2) {$M$\\[-1pt]\colorbox{black}{\textcolor{white}{\scriptsize MAC}}};
+\draw[->] (pkt) -- (pkb); \node[above] at (5.7,0.2) {insecure channel: $M + \mathrm{MAC}$};
+\node[dsgop] (hb) at (10.4,0.2) {Hash};
+\node (kb) at (10.4,0.95) {$K$}; \draw[->] (kb) -- (hb);
+\node[dsgdia] (cmp) at (12.6,-0.9) {Same?};
+\draw[->] (pkb) -- (hb); \draw[->] (hb) -| node[above, pos=0.3, font=\footnotesize]{new MAC} (cmp);
+\draw[->] (pkb.south) |- node[below, pos=0.7, font=\footnotesize]{received MAC} (cmp);
+\draw[->] (cmp) -- node[above]{yes} (14.6,-0.9) node[right]{accept};
+\draw[->] (cmp.south) -- ++(0,-0.35) node[right, font=\footnotesize]{no: reject};
+\end{tikzpicture}
+\end{center}
+
+\begin{center}\small
+\begin{tabularx}{\textwidth}{@{}l X X@{}}
+\toprule
+ & MDC (modification detection code) & MAC (message authentication code)\\
+\midrule
+Computed as & $h(M)$, keyless hash & $h(K \,|\, M)$ (or HMAC, CMAC) with a shared secret key $K$\\
+Service & integrity only & integrity \emph{and} data-origin authentication\\
+Channel for the code & must be safe (immune to change) & the MAC travels with $M$ over the insecure channel\\
+Who can create a valid code & anyone & only holders of $K$ (Alice and Bob)\\
+Nonrepudiation & no & no: Bob holds $K$ too, so he could have made the MAC himself\\
+\bottomrule
+\end{tabularx}
+\end{center}
+The last row is the reason digital signatures (\S\ref{sec:dsig}) are needed: a MAC convinces Bob, but it cannot convince a judge that Alice, rather than Bob, produced it.
+
+\subsection{Prefix, postfix and envelope MACs from a hash \new}
+\likely{``What is a prefix MAC? Why is $h(K|M)$ insecure with an iterated hash?'' (2--3 marks).}
+
+The slide's MAC $h(K \,|\, M)$ is a \textbf{prefix MAC}: the secret key is placed at the beginning of the message before hashing. In a \textbf{postfix MAC} the key is appended at the end, $h(M \,|\, K)$, and the two can be combined into an \textbf{envelope} $h(K \,|\, M \,|\, K)$, with the same key at both ends or two different keys $h(K_1 \,|\, M \,|\, K_2)$. All three look reasonable, but each inherits a weakness from the iterated (Merkle--Damg\aa rd) structure of real hash functions.
+
+\textbf{Length extension breaks the prefix MAC.} In an iterated hash the digest is simply the last chaining value $H_t$, and the computation of $h$ on a longer message just continues from it: $H_{t+1} = f(H_t, X)$. Suppose Eve sees $M$ and its tag $T = h(K \,|\, M)$. She knows the length of $K \,|\, M$ (key lengths are public), so she knows the padding block $P$ that the hash appended. She can therefore take $T$ as the chaining value, run the compression function on an extra block $X$ of her choice (followed by the correct new padding), and obtain
+\[
+T' = h(K \,|\, M \,|\, P \,|\, X)
+\]
+without ever knowing $K$. The pair $(M \,|\, P \,|\, X,\ T')$ is a valid message--MAC pair, so Eve has forged a MAC on a longer message that begins with Alice's message (we checked this on SHA-256 by script: the forged tag equals the true $h(K \,|\, M \,|\, P \,|\, X)$).
+\begin{center}
+\begin{tikzpicture}[font=\small, >=Stealth]
+\node[draw, minimum height=0.6cm] (iv) at (0,0) {IV};
+\node[dsgop] (f1) at (1.7,0) {$f$}; \node[dsgop] (f2) at (3.3,0) {$f$}; \node (dd) at (4.6,0) {$\cdots$}; \node[dsgop] (ft) at (5.9,0) {$f$};
+\node[dsgtag] (t) at (7.6,0) {$T$};
+\node[dsgop, fill=warn!12] (fx) at (9.6,0) {$f$}; \node[draw, fill=gold!25, inner sep=3pt] (t2) at (11.5,0) {$T'$};
+\node[dsgblk] (b1) at (1.7,1.1) {$K$}; \node[dsgblk] (b2) at (3.3,1.1) {$M_1$}; \node[dsgblk] (bt) at (5.9,1.1) {$M_t \,|\, P$};
+\node[dsgblk, fill=warn!20] (bx) at (9.6,1.1) {$X \,|\, P'$};
+\draw[->] (iv) -- (f1); \draw[->] (f1) -- (f2); \draw[->] (f2) -- (dd); \draw[->] (dd) -- (ft); \draw[->] (ft) -- (t); \draw[->] (t) -- (fx); \draw[->] (fx) -- (t2);
+\foreach \a/\b in {b1/f1, b2/f2, bt/ft, bx/fx} \draw[->] (\a) -- (\b);
+\draw[decorate, decoration={brace, mirror, amplitude=4pt}] (0.9,-0.5) -- node[below=4pt, font=\footnotesize]{computed by Alice: $T = h(K \,|\, M)$, sent with $M$} (7.9,-0.5);
+\draw[decorate, decoration={brace, mirror, amplitude=4pt}] (8.9,-0.5) -- node[below=4pt, font=\footnotesize, align=center]{Eve, from $T$ alone: valid tag on $M \,|\, P \,|\, X$} (12.0,-0.5);
+\end{tikzpicture}
+\end{center}
+
+\textbf{Postfix MAC.} Here the key comes last, so length extension does not work (Eve cannot hash past the unknown key). But if Eve finds an ordinary collision of the keyless hash, $h(M) = h(M')$ with $M$ and $M'$ of the same block length, the chaining values before the key are equal, so $h(M \,|\, K) = h(M' \,|\, K)$ for \emph{every} key. The collision is found offline with about $2^{n/2}$ work (birthday attack), after which a MAC on $M$ is also a MAC on $M'$. The envelope with two keys blocks both tricks, and the cleanest standard solution is the nested MAC (HMAC) below.
+
+\subsection{Security of a MAC \new}
+\likely{``How can Eve forge a MAC? On what does its security depend?'' (2--3 marks).}
+
+Suppose Eve has intercepted $M$ and $h(K \,|\, M)$ and wants to forge a message without knowing $K$. The slide lists three possible cases.
+\begin{enumerate}[leftmargin=1.6em]
+  \item \textbf{Exhaustive key search.} If the key is short, Eve prepends every possible key $K'$ to $M$ and hashes $K' \,|\, M$ until the result equals the intercepted MAC. She then knows the key and can replace the message with any forged message and a correct MAC. The cost is about $2^k$ hash computations for a $k$-bit key, so the key must be long (128 bits or more).
+  \item \textbf{Preimage attack.} Since the key is normally too long for exhaustive search, Eve can instead attack the hash: she runs a preimage attack until she finds an $X$ with $h(X)$ equal to the intercepted MAC. Because $X = K \,|\, M$ and she knows $M$, the front of $X$ is the key, which she can then use to forge. This costs about $2^n$ for an $n$-bit digest (\S\ref{sec:integrity}), so the MAC is only as strong as the preimage resistance of $h$.
+  \item \textbf{Forging from known pairs.} Given some pairs of messages and their MACs, Eve may be able to manipulate them into a new message with a valid MAC without finding the key at all. Length extension of the prefix MAC is exactly such an attack, and the CBC-MAC splice below is another.
+\end{enumerate}
+\textbf{Conclusion (slide 7).} \imp{The security of a MAC depends on the security of the underlying hash algorithm} (or block cipher), and on its construction. A brute-force forger needs the smaller of $2^k$ (key search) and $2^n$ (guessing a valid tag), which is why both the key and the tag must be long; the construction must in addition leave no algebraic shortcut such as length extension.
+
+\subsection{Nested MAC and HMAC \hot\new}
+\likely{``Explain HMAC with a block diagram; what are ipad and opad; why are two hashes used?'' (5 marks). The most likely MAC question.}
+
+The weakness of $h(K \,|\, M)$ is that its output is the internal state of the hash, which anyone can continue. A \textbf{nested MAC} hides that state by hashing a second time with the key: first $h(K \,|\, M)$ is computed, and then the result is prefixed with the key again and hashed, giving $h\big(K \,|\, h(K \,|\, M)\big)$ (slide 8). Eve can still extend the inner hash in principle, but she never sees it; she sees only the outer digest, and extending \emph{that} produces a hash of $K \,|\, \text{inner} \,|\, P \,|\, X$, which is not the nested MAC of any message. \textbf{HMAC} (hashed MAC, RFC 2104, standardized by NIST as FIPS 198) is the standardized nested MAC; it derives two different keys from $K$ for the two passes.
+
+\textbf{Design objectives (Stallings).} HMAC was designed to use an existing hash function (MD5, SHA-1, SHA-2) without modification, so that available fast code can be used; to allow the hash to be replaced by a newer one when needed; to keep the speed of the hash; to handle keys in a simple way; and to have a security proof relating its strength to that of the hash.
+
+\textbf{Notation.} $H$ is the hash function, with block size $b$ bits (512 for MD5, SHA-1 and SHA-256; 1024 for SHA-512) and digest size $n$ bits. $M$ is the message, split by $H$ into blocks $Y_0, \dots, Y_{L-1}$. $K$ is the secret key; if $|K| > b$ it is first replaced by $H(K)$. $K^+$ is $K$ padded with zeros to exactly $b$ bits (RFC 2104 and FIPS 198 append the zeros at the end; Stallings' figure pads on the left; either way the convention is fixed). The two constant pads are
+\[
+\mathrm{ipad} = \texttt{00110110} = \texttt{0x36}\ \text{repeated } b/8 \text{ times}, \qquad \mathrm{opad} = \texttt{01011100} = \texttt{0x5C}\ \text{repeated } b/8 \text{ times}.
+\]
+
+\begin{mustknow}[: HMAC (FIPS 198, RFC 2104)]
+\[
+\mathrm{HMAC}(K, M) = H\Big[\, (K^+ \oplus \mathrm{opad}) \;\big\|\; H\big[\, (K^+ \oplus \mathrm{ipad}) \,\|\, M \,\big] \,\Big]
+\]
+Steps: (1) pad $K$ with zeros to $b$ bits, giving $K^+$; (2) $S_i = K^+ \oplus \mathrm{ipad}$; (3) append $M$ to $S_i$; (4) hash $S_i \| M$ to get the $n$-bit inner digest; (5) $S_o = K^+ \oplus \mathrm{opad}$; (6) append the inner digest to $S_o$ (the hash pads it to a full block); (7) hash $S_o \| \text{inner digest}$; the $n$-bit result is the HMAC.
+\end{mustknow}
+
+\begin{center}
+\begin{tikzpicture}[font=\small, >=Stealth]
+% inner row
+\node[draw, minimum height=0.6cm] (k1) at (0,2.4) {$K^+$};
+\node[font=\Large, inner sep=0pt] (x1) at (1.6,2.4) {$\oplus$};
+\node[font=\footnotesize] (ip) at (1.6,3.4) {ipad $=$ \ttx{36\dots36}};
+\node[dsgblk, minimum width=1.35cm] (si) at (3.45,2.4) {$S_i$};
+\node[dsgblk, minimum width=1.2cm, anchor=west] (y0) at (si.east) {$Y_0$};
+\node[dsgblk, minimum width=1.2cm, anchor=west] (y1) at (y0.east) {$Y_1$};
+\node[dsgblk, minimum width=1.0cm, anchor=west, fill=white] (yd) at (y1.east) {$\cdots$};
+\node[dsgblk, minimum width=1.35cm, anchor=west] (yl) at (yd.east) {$Y_{L-1}$};
+\draw[decorate, decoration={brace, amplitude=4pt}] (y0.north west) -- node[above=4pt, font=\footnotesize]{message $M$} (yl.north east);
+\node[below=1pt of si, font=\footnotesize] {$b$ bits};
+\node[dsgop, fill=acc!10, minimum width=1.5cm] (h1) at (11.2,2.4) {Hash};
+\node[above=2pt of h1, font=\footnotesize] (iv1) {IV ($n$ bits)}; \draw[->] (iv1) -- (h1);
+\node[draw, inner sep=3pt] (in) at (13.9,2.4) {inner digest};
+\draw[->] (k1) -- (x1); \draw[->] (ip) -- (x1); \draw[->] (x1) -- (si);
+\draw[->] (yl) -- (h1); \draw[->] (h1) -- node[above, font=\footnotesize]{$n$} (in);
+% outer row
+\node[draw, minimum height=0.6cm] (k2) at (0,0) {$K^+$};
+\node[font=\Large, inner sep=0pt] (x2) at (1.6,0) {$\oplus$};
+\node[font=\footnotesize] (op) at (1.6,-1.0) {opad $=$ \ttx{5C\dots5C}};
+\node[dsgblk, minimum width=1.35cm] (so) at (3.45,0) {$S_o$};
+\node[dsgblk, minimum width=3.2cm, anchor=west, fill=gold!20] (pd) at (so.east) {inner digest $\|$ pad};
+\node[below=1pt of so, font=\footnotesize] {$b$ bits};
+\node[dsgop, fill=acc!10, minimum width=1.5cm] (h2) at (11.2,0) {Hash};
+\node[below=2pt of h2, font=\footnotesize] (iv2) {IV ($n$ bits)}; \draw[->] (iv2) -- (h2);
+\node[dsgtag] (hm) at (13.9,0) {HMAC ($n$ bits)};
+\draw[->] (k2) -- (x2); \draw[->] (op) -- (x2); \draw[->] (x2) -- (so);
+\draw[->] (pd) -- (h2); \draw[->] (h2) -- (hm);
+\draw[->] (in.south) -- ++(0,-0.75) -| (pd.north);
+\end{tikzpicture}
+\end{center}
+
+\textbf{Why two different pads.} Both pads have exactly four 1-bits per byte ($\texttt{0x36} = \texttt{00110110}$, $\texttt{0x5C} = \texttt{01011100}$), so each XOR flips half of the bits of $K^+$, and the two pads flip different halves ($\texttt{0x36} \oplus \texttt{0x5C} = \texttt{0x6A} = \texttt{01101010}$). After the first compression step, $S_i$ and $S_o$ therefore act as two pseudo-randomly derived, unrelated keys, one for the inner and one for the outer hash, although only one key $K$ is stored.
+
+\textbf{Why two nested hashes.} The inner hash $H[S_i \| M]$ compresses the long message under the secret $S_i$; on its own it would be a prefix MAC and open to length extension. The outer hash takes the inner digest as its \emph{message} and prefixes the second secret $S_o$. Its output reveals nothing usable about the inner chaining state, and extending it only yields a hash of $S_o \| \text{inner} \| \text{pad} \| X$, which is not the HMAC of any message. The outer pass is short (one block), so the protection costs almost nothing.
+
+\textbf{Efficiency.} The blocks $S_i$ and $S_o$ depend only on the key. An implementation computes $f(\mathrm{IV}, S_i)$ and $f(\mathrm{IV}, S_o)$ once per key and stores them as the starting chaining values of the inner and outer hash. After that, each message costs the plain hash of $M$ plus \textbf{one extra compression-function call} (the outer block), so for long messages HMAC runs at practically the speed of the hash itself.
+
+\textbf{Security.} Bellare, Canetti and Krawczyk proved that forging HMAC is as hard as one of two things: computing outputs of the compression function when its IV is secret and random, or finding collisions in the hash when its IV is secret and random. In the second case the birthday attack cannot be run offline, because Eve cannot evaluate the keyed function herself; she must observe about $2^{n/2}$ MACs produced by Alice under one key. For MD5 ($n = 128$) that is $2^{64}$ MACs, more than $2^{72}$ bits of traffic, or about 150\,000 years on a 1 Gbit/s link. Hence \imp{the security of HMAC depends on the cryptographic strength of the underlying hash function}, but HMAC needs much less from the hash than plain hashing does: HMAC-MD5 is still unbroken although MD5 collisions are easy.
+
+\begin{worked}[: one HMAC-SHA-256 computation, block by block]
+\textbf{Q.} Describe the computation of HMAC-SHA-256 with key $K = $ ``key'' (3 bytes, \ttx{6B 65 79}) on the 43-byte message $M = $ ``The quick brown fox jumps over the lazy dog''. Give $K^+$, the first bytes of $S_i$ and $S_o$, the number of compression-function calls, and the result.
+
+\textbf{A.} SHA-256 has $b = 512$ bits $= 64$ bytes and $n = 256$ bits.\\
+(1) $K^+ = $ \ttx{6B 65 79} followed by 61 zero bytes (64 bytes).\\
+(2) $S_i = K^+ \oplus$ \ttx{36 36 \dots}: $\texttt{6B} \oplus \texttt{36} = \texttt{5D}$, $\texttt{65} \oplus \texttt{36} = \texttt{53}$, $\texttt{79} \oplus \texttt{36} = \texttt{4F}$, $\texttt{00} \oplus \texttt{36} = \texttt{36}$, so $S_i = $ \ttx{5D 53 4F 36 36 \dots 36}.\\
+(3) $S_o = K^+ \oplus$ \ttx{5C 5C \dots} $=$ \ttx{37 39 25 5C 5C \dots 5C}.\\
+(4) Inner hash of $S_i \| M$: $64 + 43 = 107$ bytes; with the \ttx{80} byte and the 8-byte length field it needs $107 + 1 + 8 = 116 \le 128$ bytes, i.e.\ \textbf{2 blocks}.\\
+(5) Outer hash of $S_o \| \text{inner}$: $64 + 32 = 96$ bytes, $96 + 9 = 105 \le 128$, again \textbf{2 blocks}.\\
+Total 4 compression calls; with $f(\mathrm{IV}, S_i)$ and $f(\mathrm{IV}, S_o)$ cached for this key, only 2 per message.\\
+Result (256 bits):\\
+\hspace*{1.5em}$\mathrm{HMAC} = $ \ttx{f7bc83f4 30538424 b13298e6 aa6fb143 ef4d59a1 49461759 97479dbc 2d1a3cd8}\\
+\emph{Check}: the script's two-pass computation $H[S_o \| H[S_i \| M]]$ equals the library HMAC value.
+\end{worked}
+
+\subsection{CBC-MAC (Data Authentication Algorithm) and CMAC \new}
+\likely{``Explain CMAC with a diagram; how are the subkeys $k_1, k_2$ generated? Why is plain CBC-MAC insecure for variable-length messages?'' (4--5 marks).}
+
+A MAC can also be built from a block cipher instead of a hash. The idea comes from \textbf{cipher block chaining} (CBC) mode, in which each plaintext block is XORed with the previous ciphertext block before encryption, $C_i = E_K(M_i \oplus C_{i-1})$. Because of the chaining, the last ciphertext block depends on every bit of every message block and on the key, so it can serve as a MAC: only a holder of $K$ can compute it, and any change to any block changes it unpredictably.
+
+\textbf{CBC-MAC / Data Authentication Algorithm (DAA).} The message is split into $N$ blocks of $n$ bits each ($n = 64$ for DES, 128 for AES), the last one padded with zeros. With an all-zero IV, $C_0 = 0^n$,
+\[
+C_1 = E_K(M_1), \qquad C_i = E_K(M_i \oplus C_{i-1})\ \ (i = 2, \dots, N), \qquad \mathrm{MAC} = \text{leftmost } t \text{ bits of } C_N .
+\]
+Unlike CBC encryption, only the last block is output; the intermediate $C_i$ are kept secret. The DAA of FIPS PUB 113 is exactly this with DES and a tag of $16 \le t \le 64$ bits.
+
+\textbf{Why plain CBC-MAC fails for variable-length messages.} CBC-MAC is secure when all messages have one fixed length, but not otherwise. Suppose Eve obtains the tag $T = E_K(X)$ of a one-block message $X$. She forms the two-block message $X \,\|\, (X \oplus T)$ and computes its CBC-MAC symbolically:
+\[
+C_1 = E_K(X) = T, \qquad C_2 = E_K\big((X \oplus T) \oplus C_1\big) = E_K(X \oplus T \oplus T) = E_K(X) = T .
+\]
+The new message has the \emph{same} tag $T$, so Eve has a valid forgery without knowing $K$ (checked by script with AES). More generally, given $(M, T)$ and $(M', T')$, the splice $M \,\|\, (M'_1 \oplus T) \,\|\, M'_2 \cdots$ has tag $T'$: XORing $T$ into the first block of $M'$ cancels the chaining value that $M$ leaves behind. The root cause is that the last step is an ordinary step, so a tag is also a usable intermediate chaining value. The fix is to make the last step different from the others.
+
+\textbf{CMAC (cipher-based MAC, NIST SP 800-38B).} CMAC (also called OMAC1; Forouzan and the slide call the family ``CMAC or CBC-MAC'') keeps the CBC chain but XORs a secret \textbf{subkey} into the last block, so the input to the final encryption is never a value Eve can predict from earlier tags. One cipher key $K$ is used; the subkeys are derived from it.
+\begin{enumerate}[leftmargin=1.6em]
+  \item \textbf{Subkey generation.} Encrypt the all-zero block: $L = E_K(0^n)$. Then $k_1 = x \cdot L$ and $k_2 = x \cdot k_1 = x^2 \cdot L$, where multiplication by $x$ is done in GF$(2^n)$ (\S\ref{sec:algebra}). Multiplying by $x$ is a left shift by one bit; if the bit shifted out (the MSB) was 1, the result is reduced by XORing the constant $R_n$:
+  \[
+  x \cdot L = \begin{cases} L \ll 1 & \text{if } \mathrm{MSB}(L) = 0,\\ (L \ll 1) \oplus R_n & \text{if } \mathrm{MSB}(L) = 1,\end{cases} \qquad R_{128} = 0^{120}\texttt{10000111} = \texttt{0x87},\quad R_{64} = 0^{59}\texttt{11011} = \texttt{0x1B}.
+  \]
+  The constants are the low terms of the field moduli $x^{128} + x^7 + x^2 + x + 1$ and $x^{64} + x^4 + x^3 + x + 1$: the shifted-out $x^n$ is replaced by its residue.
+  \item \textbf{Chaining.} Split $M$ into blocks $M_1, \dots, M_N$ and run CBC with IV $= 0^n$ on $M_1, \dots, M_{N-1}$.
+  \item \textbf{Last block.} If $M_N$ is a \emph{complete} block, XOR it with $k_1$. If it is incomplete, pad it with a single 1 bit followed by 0s (\ttx{10\dots0}) to $n$ bits and XOR it with $k_2$. Then $C_N = E_K(M'_N \oplus C_{N-1})$.
+  \item \textbf{Tag.} The CMAC is the leftmost $t$ bits of $C_N$ (Forouzan's figure calls the block size $m$ and the tag size $n$).
+\end{enumerate}
+
+\begin{center}
+\begin{tikzpicture}[font=\small, >=Stealth]
+\node[dsgblk, minimum width=1.6cm] (m1) at (0,2.2) {$M_1$};
+\node[dsgblk, minimum width=1.6cm] (m2) at (3.2,2.2) {$M_2$};
+\node (md) at (5.6,2.2) {$\cdots$};
+\node[dsgblk, minimum width=1.6cm] (mn) at (8.0,2.2) {$M_N$};
+\node[dsgop, fill=acc!10] (e1) at (0,0) {Encrypt $E_K$};
+\node[font=\Large, inner sep=0pt] (x2) at (3.2,1.1) {$\oplus$};
+\node[dsgop, fill=acc!10] (e2) at (3.2,0) {Encrypt $E_K$};
+\node (ed) at (5.6,0) {$\cdots$};
+\node[font=\Large, inner sep=0pt] (xn) at (8.0,1.1) {$\oplus$};
+\node[dsgop, fill=acc!10] (en) at (8.0,0) {Encrypt $E_K$};
+\node[dsgop] (sel) at (8.0,-1.2) {select $t$ leftmost bits};
+\node[dsgtag] (tag) at (11.2,-1.2) {CMAC ($t$ bits)};
+\draw[->] (m1) -- (e1); \draw[->] (m2) -- (x2); \draw[->] (x2) -- (e2); \draw[->] (mn) -- (xn); \draw[->] (xn) -- (en);
+\draw[->] (e1.east) -- ++(0.6,0) |- (x2.west);
+\draw[->] (e2.east) -- (ed); \draw[->] (ed.east) -- ++(0.4,0) |- (xn.west);
+\draw[->] (en) -- (sel); \draw[->] (sel) -- (tag);
+\node (kk) at (10.2,1.1) {$k_1$ or $k_2$}; \draw[->] (kk) -- (xn);
+% key generator
+\fill[gray!8] (-0.9,-3.4) rectangle (7.6,-2.0); \draw[dashed] (-0.9,-3.4) rectangle (7.6,-2.0);
+\node[font=\footnotesize, anchor=north west] at (-0.9,-2.0) {key generator for the last step};
+\node (zero) at (0.1,-2.85) {$0^n$};
+\node[dsgop, fill=acc!10] (ez) at (2.0,-2.85) {Encrypt $E_K$};
+\node[dsgop] (mul) at (5.4,-2.85) {multiply by $x$ or $x^2$};
+\draw[->] (zero) -- (ez); \draw[->] (ez) -- node[above, font=\footnotesize]{$L$} (mul);
+\draw[->] (mul.east) -- ++(0.9,0) node[right]{$k_1 = xL$, \; $k_2 = x^2 L$};
+\end{tikzpicture}
+\end{center}
+
+\textbf{Why the subkeys fix both problems.} First, the tag is $T = E_K(M_N \oplus C_{N-1} \oplus k)$, with a secret $k$ inside. If Eve appends blocks, $M_N$ becomes a \emph{middle} block, processed without $k$, so the chaining value after it is $E_K(M_N \oplus C_{N-1})$, a value Eve has never seen; XORing $T$ into the next block therefore no longer cancels anything, and the splice fails. Second, the two different subkeys separate padded from unpadded messages: a message whose last block is incomplete and is padded with \ttx{10\dots0} and a message whose last block happens to \emph{be} that padded block would otherwise get the same tag; with $k_2$ for the first and $k_1$ for the second they differ. Multiplication by $x$ is used because it costs only a shift and a conditional XOR, yet makes $L$, $k_1$, $k_2$ distinct secret values.
+
+\begin{worked}[: CMAC subkeys with AES-128 (the NIST/RFC 4493 test key)]
+\textbf{Q.} With AES-128 and $K = $ \ttx{2b7e1516 28aed2a6 abf71588 09cf4f3c}, $L = E_K(0^{128}) = $ \ttx{7df76b0c 1ab899b3 3e42f047 b91b546f}. Find $k_1$ and $k_2$. What is the CMAC of the one-block message $M = $ \ttx{6bc1bee2 2e409f96 e93d7e11 7393172a}?
+
+\textbf{A.} $\mathrm{MSB}(L)$: the first hex digit 7 is \ttx{0111}, so the MSB is 0 and $k_1 = L \ll 1$ with no reduction:\\
+$k_1 = $ \ttx{fbeed618 35713366 7c85e08f 7236a8de}.\\
+$\mathrm{MSB}(k_1)$: f $=$ \ttx{1111}, so the MSB is 1: $k_2 = (k_1 \ll 1) \oplus \texttt{0x87}$. The shift gives \ttx{f7ddac30 6ae266cc f90bc11e e46d51bc}; the last byte becomes $\texttt{bc} \oplus \texttt{87} = \texttt{10111100} \oplus \texttt{10000111} = \texttt{00111011} = \texttt{3b}$:\\
+$k_2 = $ \ttx{f7ddac30 6ae266cc f90bc11e e46d513b}.\\
+$M$ is one complete block, so $N = 1$, $C_0 = 0$ and the tag is $E_K(M \oplus k_1) = $ \ttx{070a16b4 6b4d4144 f79bdd9d d04a287c}.\\
+\emph{Check}: all three values agree with the script (AES via a library) and with the RFC 4493 test vectors.
+\end{worked}
+
+\begin{center}\small
+\begin{tabularx}{\textwidth}{@{}l X X@{}}
+\toprule
+ & HMAC & CMAC\\
+\midrule
+Built from & a hash function (SHA-1, SHA-2, MD5) & a block cipher (AES, 3DES)\\
+Structure & two nested hashes, keys $K^+ \oplus$ ipad and $K^+ \oplus$ opad & CBC chain, IV $= 0$, subkey $k_1$/$k_2$ XORed into the last block\\
+Tag length & $n$ (digest size), may be truncated & $\le$ block size, leftmost $t$ bits\\
+Stops length extension / splicing by & the outer hash & the secret subkey in the last step\\
+Standard & RFC 2104, FIPS 198 & NIST SP 800-38B\\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\begin{fixbox}
+\begin{itemize}[leftmargin=1.2em,itemsep=0pt]
+  \item Slide 8 titles the figure ``Nested MAC (OR) HMAC''. The figure is the generic nested MAC $h(K \,|\, h(K \,|\, M))$ with the same key twice; HMAC is the standardized nested MAC that pads the key to a block and uses $K^+ \oplus \mathrm{ipad}$ inside and $K^+ \oplus \mathrm{opad}$ outside.
+  \item Slide 9 says ``CMAC, or CBCMAC is also called Data Authentication Algorithm''. Strictly, the DAA (FIPS 113) is plain CBC-MAC with DES; CMAC (SP 800-38B) is the improved version with the subkeys $k_1, k_2$ shown in the slide's figure. Plain CBC-MAC is insecure for variable-length messages.
+  \item Slide 5: in a prefix MAC the key is \emph{prepended} (placed at the beginning), not ``appended to the beginning''.
+\end{itemize}
+\end{fixbox}
+
+% ======================================================================
+\section{Digital Signatures}\label{sec:dsig}
+
+\subsection{Conventional versus digital signatures \new}
+\likely{``Differentiate a conventional signature and a digital signature'' (inclusion, verification method, relationship, duplicity; 3--4 marks).}
+
+A person signs a document to show that it originated from her or was approved by her, and the signature is proof to the recipient that the document comes from the correct entity. When Alice sends a message to Bob over a network, Bob needs the same assurance: that the message comes from Alice and not from Eve. Bob therefore asks Alice to sign the message electronically, and such an electronic signature, which proves the authenticity of Alice as the sender, is called a \textbf{digital signature}. It differs from a pen-and-paper signature in four ways.
+
+\textbf{Inclusion.} A conventional signature is included in the document; it is part of it (the signature on a cheque is on the cheque, not on a separate sheet). A digital signature is sent as a \emph{separate} document: the sender sends two documents, the message and the signature. The recipient receives both, verifies that the signature belongs to the supposed sender, and keeps the message if this is proven, otherwise rejects it.
+
+\textbf{Verification method.} For a conventional signature, the recipient compares the signature on the document with a signature on file; if they are the same, the document is authentic, so the recipient needs a copy of the signature for comparison. For a digital signature no copy of the signature is stored anywhere. The recipient applies a \emph{verification technique} (an algorithm using the signer's public key) to the combination of the message and the signature.
+
+\textbf{Relationship.} A person uses the same conventional signature on many documents, a one-to-many relationship. A digital signature is computed \emph{from} the message, so there is a one-to-one relationship between a signature and a message: each message has its own signature, and the signature of one message cannot be used for another. If Bob receives two messages from Alice, he cannot use the signature of the first to verify the second. This is precisely what stops cut-and-paste forgery: a signature lifted from one message fails verification on any other.
+
+\textbf{Duplicity.} A copy of a signed paper document can be distinguished from the original on file. A copy of a digital document is bit-for-bit identical to the original, so there is no such distinction unless a factor of time, such as a \textbf{timestamp}, is included in the signed document. For example, if Alice sends a signed instruction asking Bob to pay Eve, Eve can intercept the message and signature and \textbf{replay} them later to be paid again; a timestamp or sequence number inside the signed message lets Bob reject the replay.
+
+\begin{center}\small
+\begin{tabularx}{\textwidth}{@{}l X X@{}}
+\toprule
+Aspect & Conventional signature & Digital signature\\
+\midrule
+Inclusion & part of the document & a separate document; the pair $(M, S)$ is sent\\
+Verification & compared with a signature on file & a verifying algorithm with the signer's public key is applied to $(M, S)$; nothing on file\\
+Relationship & one-to-many: one signature, many documents & one-to-one: every message has its own signature\\
+Duplicity & a copy can be told from the original & a copy is identical to the original; needs a timestamp to stop replay\\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\subsection{The signing and verifying process; why keys are needed \hot\new}
+\likely{``Draw the digital signature process. Why must Alice sign with her private key and not her public key? Which keys does a signature use compared with a cryptosystem?'' (3--4 marks).}
+
+A digital signature scheme consists of a \textbf{signing algorithm} and a \textbf{verifying algorithm}. The sender applies the signing algorithm to the message and obtains the signature $S$; she sends the pair $(M, S)$. The receiver applies the verifying algorithm to the pair; if the result is true the message is accepted, otherwise rejected.
+
+\textbf{Need for keys.} A conventional signature behaves like a private key belonging to the signer: she uses it to sign, and no one else has it. The copy of the signature on file behaves like a public key: anyone can use it to check a document against the original. A digital signature makes this explicit. The signer applies her \textbf{private key} to the signing algorithm to sign the document; the verifier applies the \textbf{public key of the signer} to the verifying algorithm. Since everyone has access to Alice's public key, anyone, including Bob, can verify a document she signed.
+
+\textbf{Why Alice must not sign with her public key.} A signature is valuable only if nobody else can produce it. The public key is known to everyone, so if Alice signed with it, anyone could run the same computation and forge her signature on any message. The signing step must therefore use something only Alice has (her private key), and the verifying step only what everyone has (her public key). \imp{The signer signs with her private key; the verifier verifies with the signer's public key.}
+
+\begin{center}
+\begin{tikzpicture}[font=\small, >=Stealth]
+\fill[gray!8] (0,-0.9) rectangle (4.6,1.6); \draw[dashed] (0,-0.9) rectangle (4.6,1.6);
+\fill[gray!8] (7.6,-0.9) rectangle (12.6,1.6); \draw[dashed] (7.6,-0.9) rectangle (12.6,1.6);
+\node[below] at (2.3,-0.9) {Alice (signer)}; \node[below] at (10.1,-0.9) {Bob (verifier)};
+\node (m) at (0.45,0) {$M$};
+\node[dsgop, fill=acc!10] (sg) at (2.6,0) {Signing\\algorithm};
+\node[font=\footnotesize, align=center] (kpr) at (2.6,1.15) {Alice's private key};
+\node[dsgop, fill=acc!10] (vf) at (10.1,0) {Verifying\\algorithm};
+\node[font=\footnotesize, align=center] (kpu) at (10.1,1.15) {Alice's public key};
+\draw[->] (m) -- (sg); \draw[->] (kpr) -- (sg); \draw[->] (kpu) -- (vf);
+\draw[->] (sg) -- node[above]{$(M, S)$} node[below, font=\footnotesize]{insecure channel} (vf);
+\draw[->] (vf) -- (13.3,0) node[right, align=left, font=\footnotesize]{true: accept $M$\\false: reject};
+\end{tikzpicture}
+\end{center}
+
+\textbf{Receiver's keys versus sender's keys.} A digital signature needs a public-key system. \imp{A cryptosystem uses the private and public keys of the receiver; a digital signature uses the private and public keys of the sender.} In encryption, anyone must be able to lock a message for Bob, but only Bob may unlock it, so the public operation is the encryption and it uses Bob's key. In signing, only Alice may produce the signature, but anyone must be able to check it, so the private operation is the signing and it uses Alice's key.
+
+\begin{center}\small
+\begin{tabularx}{\textwidth}{@{}l X X X@{}}
+\toprule
+ & Public-key encryption & Digital signature & MAC\\
+\midrule
+Key that creates & receiver's public key (encrypt) & sender's private key (sign) & shared secret key\\
+Key that checks & receiver's private key (decrypt) & sender's public key (verify) & the same shared key\\
+Who can check & only the receiver & anyone & only key holders\\
+Service & confidentiality & authentication, integrity, nonrepudiation & authentication, integrity\\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\begin{mustknow}[: keys in a digital signature]
+Alice \textbf{signs} with \textbf{her own private key}; anyone \textbf{verifies} with \textbf{Alice's public key}. A signature uses the \emph{sender's} key pair; encryption uses the \emph{receiver's} key pair. A signature gives message authentication, integrity and (with a trusted center) nonrepudiation, but \textbf{not} confidentiality.
+\end{mustknow}
+
+\subsection{Signing the digest \new}
+\likely{``Why is the digest signed instead of the message?'' (2 marks), often with the diagram.}
+
+Public-key operations are slow, and in RSA the signed value must be smaller than $n$. Signing a long message directly would mean cutting it into blocks and signing every block, which multiplies the cost; it would also allow Eve to delete, repeat or reorder individually signed blocks without detection. In addition, as shown in the attacks below, signing raw messages lets Eve exploit the algebra of the scheme to produce valid signatures on messages Alice never signed.
+
+The solution is to \textbf{sign the digest}. Alice computes the digest $h(M)$ (160--512 bits), signs only the digest with her private key, and sends $M$ with the signature. Bob recomputes $h(M)$ from the received message and checks the signature against this digest with Alice's public key. Since the digest is short, one signing operation suffices for any length of message. Integrity is preserved because Eve cannot find a different message with the same digest (second preimage resistance); and because the hash destroys any algebraic relation between messages and signed values, the forgeries of \S\ref{sec:dsig-attacks} stop working. The hash must also be \textbf{collision resistant}: otherwise Eve prepares a fair and an unfair contract with the same digest (alternate collision attack, \S\ref{sec:integrity}), lets Alice sign the fair one, and attaches the signature to the unfair one.
+
+\begin{center}
+\begin{tikzpicture}[font=\small, >=Stealth]
+\fill[gray!8] (0,-1.5) rectangle (6.6,1.6); \draw[dashed] (0,-1.5) rectangle (6.6,1.6);
+\fill[gray!8] (8.0,-1.5) rectangle (15.4,1.6); \draw[dashed] (8.0,-1.5) rectangle (15.4,1.6);
+\node[below] at (3.3,-1.5) {Alice (signer)}; \node[below] at (11.7,-1.5) {Bob (verifier)};
+\node (m) at (0.4,0.3) {$M$};
+\node[dsgop] (h) at (1.6,0.3) {Hash};
+\node[dsgop, fill=acc!10] (sg) at (4.6,0.3) {Signing};
+\node[font=\footnotesize] (kpr) at (4.6,1.2) {Alice's private key};
+\draw[->] (m) -- (h); \draw[->] (h) -- node[above, font=\footnotesize]{digest} (sg); \draw[->] (kpr) -- (sg);
+\draw[->] (sg) -- (8.6,0.3) node[pos=0.55, above]{$S$};
+\draw[->] (0.4,0.05) -- (0.4,-0.9) -- (8.6,-0.9) node[pos=0.88, above]{$M$};
+\node[dsgop] (hb) at (9.6,-0.9) {Hash};
+\node[dsgop, fill=acc!10] (vf) at (11.8,0.3) {Verifying};
+\node[font=\footnotesize] (kpu) at (11.8,1.2) {Alice's public key};
+\draw[->] (8.6,-0.9) -- (hb); \draw[->] (hb) -| node[below, pos=0.3, font=\footnotesize]{digest} (vf);
+\draw[->] (8.6,0.3) -- (vf); \draw[->] (kpu) -- (vf);
+\draw[->] (vf) -- (14.0,0.3) node[right, align=left, font=\footnotesize]{accept\\or reject};
+\end{tikzpicture}
+\end{center}
+
+\subsection{Services: authentication, integrity, nonrepudiation, but not confidentiality \hot\new}
+\likely{``Which security services does a digital signature provide? How is nonrepudiation achieved? How is confidentiality added?'' (4--5 marks), with the trusted-center diagram.}
+
+Of the four security services (message confidentiality, message authentication, message integrity and nonrepudiation), a digital signature directly provides the last three. For confidentiality, encryption is still needed.
+
+\textbf{Message authentication.} A secure digital signature scheme, like a secure conventional signature (one that cannot easily be copied), provides message authentication, also called data-origin authentication. Bob verifies the message with Alice's public key, and Alice's public key cannot verify a signature made with Eve's private key, so a valid signature proves the message was signed by the holder of Alice's private key.
+
+\textbf{Message integrity.} If the message is changed after signing, the signature no longer verifies, because each message has its own signature; Eve would need Alice's private key to make a new one. Today's schemes hash the message inside the signing and verifying algorithms, so any change to $M$ changes the digest and the check fails.
+
+\textbf{Nonrepudiation.} Suppose Alice signs a message asking her bank (Bob) to transfer \$10\,000 to Ted's account, and later denies having sent it. Bob might keep the message and signature on file and later verify it again with Alice's public key, but this is not a reliable proof: Alice may have changed her key pair in the meantime, and she may claim that Bob's file is not authentic. The solution is a \textbf{trusted third party}, the \emph{trusted center}, which both sides trust and which archives the evidence.
+\begin{center}
+\begin{tikzpicture}[font=\small, >=Stealth]
+\foreach \x/\n in {0/Alice, 6.6/Trusted center, 13.2/Bob} {
+  \node[draw, fill=acc!10, minimum width=2.6cm, minimum height=0.6cm] at (\x,0) {\textbf{\n}};
+  \draw[gray] (\x,-0.3) -- (\x,-5.0);
+}
+\node[draw, fill=white, font=\footnotesize, align=left] at (0,-0.85) {signs $M$ with her private key: $S_A$};
+\draw[->, thick] (0,-1.55) -- node[above]{1.\ $M$, $S_A$, ID$_{\text{Alice}}$, ID$_{\text{Bob}}$} (6.6,-1.55);
+\node[draw, fill=white, font=\footnotesize, align=left] at (6.6,-2.6) {checks Alice's public key is valid; verifies $S_A$;\\archives $M$, ID$_{\text{Alice}}$, ID$_{\text{Bob}}$ and a timestamp;\\signs $M$ with the center's private key: $S_T$};
+\draw[->, thick] (6.6,-3.65) -- node[above]{2.\ $M$, $S_T$, ID$_{\text{Alice}}$, ID$_{\text{Bob}}$} (13.2,-3.65);
+\node[draw, fill=white, font=\footnotesize, align=left] at (13.2,-4.45) {verifies $S_T$ with the\\center's public key};
+\end{tikzpicture}
+\end{center}
+\begin{enumerate}[leftmargin=1.6em]
+  \item Alice creates a signature $S_A$ from her message with her private key and sends the message, her identity, Bob's identity and $S_A$ to the center. The identities bind the message to this particular sender and recipient.
+  \item The center, after checking that Alice's public key is valid, verifies through it that the message came from Alice. Checking validity at this moment is what defeats a later ``I had changed my key'' claim.
+  \item The center saves a copy of the message with the sender identity, the recipient identity and a \textbf{timestamp} in its archive. The archive is the independent evidence; the timestamp also distinguishes this message from a later replay of it.
+  \item The center uses its own private key to create another signature $S_T$ from the message, and sends the message, $S_T$, Alice's identity and Bob's identity to Bob.
+  \item Bob verifies the message using the public key of the trusted center.
+\end{enumerate}
+If Alice later denies the message, the center shows the archived copy, which it accepted only after verifying Alice's signature with her then-valid key; Alice cannot deny it, and Bob's copy carries the center's signature, so he cannot have invented it either. \imp{Nonrepudiation can be provided using a trusted party.}
+
+\textbf{No confidentiality.} A digital signature does not provide privacy: the message travels in clear (and in RSA anyone can even compute $M = S^e$ from the signature), since the goal is not to hide the message but to prove who sent it. If confidentiality is required, the message and the signature must be encrypted with a secret-key or public-key cryptosystem, adding another layer of encryption and decryption. Alice first signs with her private key, then encrypts $(M, S)$ with Bob's public key (or a shared session key); Bob decrypts with his private key and then verifies with Alice's public key.
+\begin{center}
+\begin{tikzpicture}[font=\small, >=Stealth]
+\node (m) at (0,0) {$M$};
+\node[dsgop, fill=acc!10] (sg) at (1.7,0) {Signing};
+\node[dsgop, fill=warn!10] (en) at (4.6,0) {Encryption};
+\node[dsgop, fill=warn!10] (de) at (9.6,0) {Decryption};
+\node[dsgop, fill=acc!10] (vf) at (12.5,0) {Verifying};
+\node (out) at (14.4,0) {$M$};
+\node[font=\footnotesize, align=center] at (1.7,0.95) {Alice's\\private key};
+\node[font=\footnotesize, align=center] at (4.6,0.95) {Bob's\\public key};
+\node[font=\footnotesize, align=center] at (9.6,0.95) {Bob's\\private key};
+\node[font=\footnotesize, align=center] at (12.5,0.95) {Alice's\\public key};
+\foreach \n in {sg, en, de, vf} \draw[->] (\n.north) ++(0,0.25) -- (\n.north);
+\draw[->] (m) -- (sg); \draw[->] (sg) -- node[above, font=\footnotesize]{$(M, S)$} (en);
+\draw[->] (en) -- node[above]{encrypted $(M, S)$} node[below, font=\footnotesize]{insecure channel} (de);
+\draw[->] (de) -- node[above, font=\footnotesize]{$(M, S)$} (vf); \draw[->] (vf) -- (out);
+\draw[decorate, decoration={brace, mirror, amplitude=4pt}] (0.8,-0.45) -- node[below=4pt, font=\footnotesize]{Alice} (5.6,-0.45);
+\draw[decorate, decoration={brace, mirror, amplitude=4pt}] (8.6,-0.45) -- node[below=4pt, font=\footnotesize]{Bob} (13.4,-0.45);
+\end{tikzpicture}
+\end{center}
+The order \textbf{sign, then encrypt} matters. The signature is then on the plaintext, so Bob can later show $(M, S)$ to a judge without revealing his private key. If Alice encrypted first and signed the ciphertext, Eve could strip Alice's signature and attach her own to the same ciphertext, claiming authorship of a message she cannot even read.
+
+\subsection{Attacks on digital signatures; types of forgery \new}
+\likely{``Explain key-only, known-message and chosen-message attacks; differentiate existential and selective forgery'' (3--4 marks).}
+
+Attacks are classified by what Eve has access to, exactly as attacks on ciphers were.
+\begin{itemize}[leftmargin=1.4em]
+  \item \textbf{Key-only attack.} Eve has access only to the public information released by Alice (her public key). To forge a message, she must create Alice's signature to convince Bob that the message comes from Alice. This is the analogue of the ciphertext-only attack on encipherment.
+  \item \textbf{Known-message attack.} Eve has access to one or more message--signature pairs, i.e.\ some documents previously signed by Alice, and tries to create another message and forge Alice's signature on it. This is the analogue of the known-plaintext attack.
+  \item \textbf{Chosen-message attack.} Eve somehow makes Alice sign one or more messages of Eve's choice, so she holds chosen-message/signature pairs. She later creates another message, with the content she wants, and forges Alice's signature on it. This is the analogue of the chosen-plaintext attack, and the strongest of the three.
+\end{itemize}
+If an attack succeeds, the result is a \textbf{forgery}, of one of two types.
+
+\textbf{Existential forgery.} Eve is able to create a valid message--signature pair, but not one she can really use: the document is forged, but its content is calculated by the algebra (effectively random), so the message is likely to be syntactically or semantically unintelligible. Such forgery is probable for unprotected schemes, but Eve cannot benefit from it very much.
+
+\textbf{Selective forgery.} Eve is able to forge Alice's signature on a message whose content \emph{Eve selected}. This is beneficial to Eve and may be very detrimental to Alice; the probability of such forgery is low, but not negligible.
+
+\begin{center}\small
+\begin{tabularx}{\textwidth}{@{}l X X X@{}}
+\toprule
+Forgery & What Eve obtains & Who chooses the content & Likelihood and harm\\
+\midrule
+Existential & at least one valid $(M, S)$ & the algebra (random-looking $M$) & likely for raw (unhashed) schemes; little benefit\\
+Selective & a valid $S$ on a message she chose beforehand & Eve & low probability, very harmful\\
+\bottomrule
+\end{tabularx}
+\end{center}
+Stallings adds two stronger outcomes: a \textbf{universal forgery} (Eve can sign \emph{any} message) and a \textbf{total break} (Eve recovers the private key). A scheme is considered secure only if even the weakest outcome, existential forgery, is infeasible under the strongest attack, the chosen-message attack.
+
+%%%PART3%%%

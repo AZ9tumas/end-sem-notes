@@ -1,0 +1,238 @@
+% Syllabus Units IV-V topics not on this year's slides: PGP, S/MIME, IPSec, SSL/TLS, HTTPS, SET, intruders, malware,
+% firewalls, trusted systems. Sources: Stallings (CNS, chs. on e-mail, IP, web and system security), Forouzan chs. 16-18.
+% Every number (radix-64, AH/ESP sizes, anti-replay trace, TLS record sizes, dual-signature toy) checked by scratchpad/w24/net.py.
+\usetikzlibrary{decorations.pathreplacing,shapes.symbols}
+\tikzset{
+  nsB/.style={draw, fill=acc!8, font=\footnotesize, minimum height=0.55cm, inner sep=2pt, align=center},
+  nsC/.style={draw, circle, inner sep=0pt, minimum size=4.6mm, font=\scriptsize},
+  nsL/.style={font=\footnotesize, inner sep=1pt},
+  nsA/.style={-{Stealth[length=1.6mm]}},
+  nsF/.style={draw, font=\scriptsize, minimum height=0.5cm, inner sep=1pt, anchor=south west},
+  nsBr/.style={decorate, decoration={brace, amplitude=3pt}}
+}
+\providecommand{\nsfield}[5]{\node[nsF, minimum width=#3cm, fill=#5] at (#1,#2) {#4};}% x, y, width, label, fill
+
+\section{Network Security Protocols and System Security}\label{sec:netsec}
+
+The cryptographic tools of the earlier sections (block ciphers and modes, RSA and Diffie--Hellman, hashes, MACs and signatures) become useful only when a protocol fixes exactly which tool protects which bytes, how the keys get there, and in what order the operations are applied. This part of the syllabus studies the standard protocols at three layers of the TCP/IP stack, e-mail security (PGP, S/MIME), IP security (IPSec), web security (SSL/TLS, HTTPS, SET), and then the defence of the computer systems themselves (intruders, malicious software, firewalls, trusted systems). None of it is on this year's slides, so the notes follow Stallings and Forouzan.
+
+\subsection{Where security can be placed in the stack \new}
+\likely{``Compare security at the network, transport and application layers'' (3 marks).}
+
+Security can be added at three places, and the choice decides who must change and what is protected.
+\begin{center}
+\begin{tikzpicture}[font=\footnotesize]
+\tikzset{lay/.style={draw, minimum width=2.9cm, minimum height=0.5cm, inner sep=1pt}}
+\foreach \x/\a/\b/\c/\d in {0/{HTTP\ \ FTP\ \ SMTP}/TCP/{IP / IPSec}/{(a) network level},
+                            4.0/{HTTP\ \ FTP\ \ SMTP}/{SSL or TLS}/TCP/{(b) transport level},
+                            8.0/{S/MIME\ \ PGP\ \ SET}/{SMTP\ \ HTTP}/TCP/{(c) application level}} {
+  \node[lay] at (\x,1.5) {\a};
+  \node[lay] at (\x,1.0) {\b};
+  \node[lay] at (\x,0.5) {\c};
+  \node[font=\footnotesize\itshape] at (\x,-0.1) {\d};
+}
+\node[lay, fill=acc!15] at (0,0.5) {IP / IPSec};
+\node[lay, fill=acc!15] at (4.0,1.0) {SSL or TLS};
+\node[lay, fill=acc!15] at (8.0,1.5) {S/MIME\ \ PGP\ \ SET};
+\node[lay] at (8.0,0.0+0.5) {TCP};
+\end{tikzpicture}
+\end{center}
+\textbf{Network level (IPSec).} Security is applied to every IP packet, so it is transparent to applications and to users: no application has to be rewritten, and all traffic between two sites (web, mail, file transfer) is protected at once. \textbf{Transport level (SSL/TLS).} Security sits just above TCP and is used by the applications that ask for it (a browser opening an \ttx{https} connection); it protects one connection at a time. \textbf{Application level (PGP, S/MIME, SET).} Security is built into the application and can be tailored to it: an e-mail is signed by its author and stays signed in the recipient's mailbox, and SET can show the bank the card number while hiding it from the merchant. The price is that every application must implement its own security.
+
+\begin{center}\small
+\begin{tabularx}{\textwidth}{@{}l X X X@{}}
+\toprule
+ & Network (IPSec) & Transport (SSL/TLS) & Application (PGP, S/MIME, SET)\\
+\midrule
+Protects & every IP packet between two hosts or gateways & one TCP connection & one message or transaction\\
+Transparent to applications & yes & no (the application calls TLS) & no (built into the application)\\
+Protection after delivery & none (removed on arrival) & none & yes (a signed mail stays signed)\\
+Typical use & VPNs, site-to-site links & HTTPS, secure mail transport & signed/encrypted e-mail, card payments\\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\section{E-mail Security: PGP and S/MIME}\label{sec:email}
+
+\subsection{Why e-mail needs its own security \new}
+\likely{``Why can e-mail not use a handshake like TLS?'' (2 marks), as part of a PGP question.}
+
+E-mail is a \textbf{one-way, store-and-forward} service: Alice writes the message, it is passed from server to server, and Bob reads it hours later. Since Alice and Bob are never online together, there is no handshake in which they could agree on algorithms or a session key. Alice must therefore decide everything herself and put it \emph{into} the message: the identifiers of the algorithms, a fresh session key encrypted for Bob, her signature and the information Bob needs to find her public key. Two practical constraints of the mail system shape the design as well: classic SMTP carries only 7-bit ASCII text, so binary ciphertext must be converted to printable characters, and mail servers limit the size of a message. PGP and S/MIME are the two standard solutions; both use the same cryptographic idea (hybrid encryption plus a hash-and-sign signature) and differ mainly in formats and in how public keys are trusted.
+
+\subsection{PGP: the five services \hot\new}
+\likely{``Explain the operational description of PGP with a diagram (authentication, confidentiality, both)'' (5--8 marks).}
+
+\textbf{Pretty Good Privacy} (PGP), written by Phil Zimmermann in 1991, is a freely available package that provides confidentiality and authentication for e-mail and file storage. It selected the best available algorithms as building blocks, runs on every platform, and is not controlled by any government or standards body, which explains its spread. PGP offers five services.
+\begin{center}\small
+\begin{tabularx}{\textwidth}{@{}l l X@{}}
+\toprule
+Service & Algorithms (classic PGP) & What is done\\
+\midrule
+Digital signature & DSS/SHA-1 or RSA/SHA-1 & a SHA-1 hash of the message is signed with the sender's private key and attached\\
+Message encryption & CAST-128, IDEA or 3DES; session key by RSA or ElGamal & the message is encrypted with a one-time session key, which is encrypted with the recipient's public key and attached\\
+Compression & ZIP & the message is compressed for storage and transmission\\
+E-mail compatibility & radix-64 conversion & the binary result is converted to printable ASCII\\
+Segmentation & --- & long messages are split to fit mail size limits and reassembled\\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\textbf{Authentication only.} The sender creates the message $M$ and computes its 160-bit SHA-1 hash $H(M)$. The hash is encrypted with RSA under the sender's private key $PR_a$ and prepended to the message. The receiver decrypts the signature with the sender's public key $PU_a$ to recover the hash, computes $H(M)$ of the received message himself, and accepts if the two are equal. Since only Alice holds $PR_a$, a match proves that she created the signature, and since the hash is collision resistant (\S\ref{sec:integrity}), it proves that $M$ was not changed. Signing the hash instead of $M$ keeps the RSA operation short whatever the length of the message.
+
+\textbf{Confidentiality only.} The sender generates a random 128-bit \textbf{session key} $K_s$, used for this message only, and encrypts the message with CAST-128 (or IDEA or 3DES) in 64-bit CFB mode (\S\ref{sec:modes}). The session key is encrypted with RSA under the recipient's public key $PU_b$ and prepended. The receiver recovers $K_s$ with his private key $PR_b$ and decrypts the message. This is \textbf{hybrid encryption}: the slow public-key operation is applied to 128 bits only, the bulk is encrypted by the fast symmetric cipher, and the one-time key removes the need for any earlier key exchange, which a store-and-forward service could not have.
+
+\textbf{Both services.} The sender first signs the plaintext, then encrypts the message together with the signature under $K_s$, and attaches $E(PU_b, K_s)$:
+\[
+A \to B:\quad E(PU_b, K_s) \,\big\|\, E_{K_s}\!\Big(Z\big(E(PR_a, H(M)) \,\|\, M\big)\Big),
+\]
+where $Z$ is ZIP compression; the whole result is then radix-64 encoded.
+
+\begin{center}
+\begin{tikzpicture}[font=\footnotesize]
+% sender
+\node[nsL, font=\footnotesize\bfseries, anchor=west] at (-0.6,1.85) {Source A};
+\node[nsL] (m) at (-0.3,0) {$M$};
+\node[nsB] (h) at (0.9,1.0) {$H$};
+\node[nsB] (ep1) at (2.1,1.0) {$E_P$};
+\node[nsL] (pra) at (2.1,1.75) {$PR_a$};
+\node[nsC] (c1) at (3.2,0) {$\|$};
+\node[nsB] (z) at (4.2,0) {$Z$};
+\node[nsB] (ec) at (5.4,0) {$E_C$};
+\node[nsL] (ks) at (5.4,1.0) {$K_s$ (random)};
+\node[nsB] (ep2) at (6.9,1.0) {$E_P$};
+\node[nsL] (pub) at (6.9,1.75) {$PU_b$};
+\node[nsC] (c2) at (7.9,0) {$\|$};
+\node[nsB] (r64) at (9.0,0) {R64};
+\node[nsL] (net) at (10.4,0) {to mail};
+\draw[nsA] (m) -- (c1); \draw[nsA] (0.1,0) |- (h); \draw[nsA] (h) -- (ep1); \draw[nsA] (pra) -- (ep1);
+\draw[nsA] (ep1) -| (c1); \draw[nsA] (c1) -- (z); \draw[nsA] (z) -- (ec); \draw[nsA] (ks) -- (ec);
+\draw[nsA] (ks) -- (ep2); \draw[nsA] (pub) -- (ep2); \draw[nsA] (ep2) -| (c2); \draw[nsA] (ec) -- (c2);
+\draw[nsA] (c2) -- (r64); \draw[nsA] (r64) -- (net);
+% receiver
+\begin{scope}[yshift=-3.3cm]
+\node[nsL, font=\footnotesize\bfseries, anchor=west] at (-0.6,1.85) {Destination B};
+\node[nsL] (in) at (-0.3,0) {from mail};
+\node[nsB] (r64i) at (1.0,0) {R64$^{-1}$};
+\node[nsC] (s1) at (2.1,0) {$\div$};
+\node[nsB] (dp1) at (3.1,1.0) {$D_P$};
+\node[nsL] (prb) at (3.1,1.75) {$PR_b$};
+\node[nsB] (dc) at (4.3,0) {$D_C$};
+\node[nsB] (zi) at (5.4,0) {$Z^{-1}$};
+\node[nsC] (s2) at (6.4,0) {$\div$};
+\node[nsB] (dp2) at (7.7,1.0) {$D_P$};
+\node[nsL] (pua) at (7.7,1.75) {$PU_a$};
+\node[nsB] (h2) at (7.7,0) {$H$};
+\node[nsC] (cmp) at (9.0,0.5) {$=$?};
+\node[nsL] (mo) at (9.2,-0.9) {$M$};
+\draw[nsA] (in) -- (r64i); \draw[nsA] (r64i) -- (s1); \draw[nsA] (s1) |- (dp1); \draw[nsA] (prb) -- (dp1);
+\draw[nsA] (dp1) -| node[nsL, right, pos=0.7]{$K_s$} (dc); \draw[nsA] (s1) -- (dc); \draw[nsA] (dc) -- (zi); \draw[nsA] (zi) -- (s2);
+\draw[nsA] (s2) |- (dp2); \draw[nsA] (pua) -- (dp2); \draw[nsA] (dp2) -| (cmp);
+\draw[nsA] (s2) |- (6.8,-0.9) -- (mo); \draw[nsA] (6.95,-0.9) |- (h2); \draw[nsA] (h2) -| (cmp);
+\end{scope}
+\end{tikzpicture}
+\end{center}
+$E_P$/$D_P$ are public-key encryption/decryption (RSA), $E_C$/$D_C$ the symmetric cipher, $Z$ compression, R64 radix-64 conversion, $\|$ concatenation and $\div$ separation of the components.
+
+At the receiver the steps run in reverse: radix-64 decoding, recovery of $K_s$ with $PR_b$, symmetric decryption, decompression, and finally verification of the signature with $PU_a$ against a freshly computed $H(M)$.
+
+\subsection{PGP: the order of operations and why \hot\new}
+\likely{``Why does PGP sign before compressing and compress before encrypting?'' (3 marks).}
+
+The sender applies the operations in the order \textbf{sign $\to$ compress $\to$ encrypt $\to$ radix-64 $\to$ segment}, and each position has a reason.
+
+\textbf{Sign before compressing.} First, the signature is then computed on the uncompressed message, so the recipient can store the plain message together with the signature and verify it later without keeping a compressed copy or recompressing. Second, PGP's compression is not deterministic: different versions of ZIP trade speed against compression ratio and produce different compressed outputs from the same input. A signature on the compressed form would verify only with the same compressor version; a signature on the original message is independent of the compressor.
+
+\textbf{Compress before encrypting.} Compression removes redundancy, and redundancy is what cryptanalysis feeds on, so encrypting the compressed text strengthens the encryption. It also shortens what has to be encrypted and sent. (Compressing \emph{after} encryption would be useless anyway, since good ciphertext looks random and does not compress.)
+
+\textbf{Radix-64 after encrypting.} The signature, the encrypted session key and the ciphertext are arbitrary binary data, which 7-bit mail systems may corrupt. Radix-64 (the same encoding as MIME base64) maps every 3 bytes to 4 printable characters from a 64-symbol alphabet (A--Z, a--z, 0--9, $+$, $/$), and a 24-bit CRC is appended to detect transmission errors. It expands the data by $4/3$, about 33\%, but ZIP compresses ordinary text by about a factor of 2, so the final message is usually \emph{shorter} than the plaintext: $\frac{1}{2} \times \frac{4}{3} \approx 0.67$.
+
+\textbf{Segmentation last.} Many mail systems limit the message size (e.g.\ 50\,000 bytes), so after all other processing PGP splits a long message into segments that are mailed separately. The session key component and the signature component appear only once, at the start of the first segment; the receiver strips the mail headers and reassembles the whole block before any other processing.
+
+\begin{worked}[: radix-64 and the size of a PGP message]
+\textbf{Q.} (a) Radix-64 encode the three bytes \ttx{4D 61 6E} (``Man''). (b) A 60\,000-byte text is signed (signature component 300 bytes), compressed by ZIP with ratio 2, encrypted (CFB, no expansion), given a 260-byte session key component, and radix-64 encoded. Ignoring line breaks and the CRC, how many characters are sent, and how many segments if the mailer accepts at most 20\,000 characters?
+
+\textbf{A.} (a) The 24 bits $01001101\ 01100001\ 01101110$ are regrouped into four 6-bit groups $010011\ 010110\ 000101\ 101110 = 19, 22, 5, 46$. In the radix-64 alphabet (0--25 $\to$ A--Z, 26--51 $\to$ a--z, 52--61 $\to$ 0--9) these are \textbf{T, W, F, u}, so the output is \ttx{TWFu}.\\
+(b) Signed: $60\,000 + 300 = 60\,300$ bytes; compressed: $60\,300 / 2 = 30\,150$; with the session key component: $30\,410$ bytes; radix-64: $\lceil 30\,410 / 3 \rceil \times 4 = 10\,137 \times 4 = \mathbf{40\,548}$ \textbf{characters}; segments: $\lceil 40\,548 / 20\,000 \rceil = \mathbf{3}$.\\
+\emph{Check}: $40\,548 / 60\,000 = 0.676$, close to the predicted $\frac12 \cdot \frac43 = 0.67$.
+\end{worked}
+
+\textbf{Message format.} A PGP message consists of three components. The \emph{message component} holds the data with a filename and a timestamp. The \emph{signature component} holds a timestamp, the \textbf{key ID} of the sender's public key, the \textbf{leading two octets of the message digest} in the clear, and the digest encrypted with the sender's private key. The two clear octets let the receiver check, before doing anything else, that he used the right public key to decrypt the digest: if the decrypted digest does not start with them, the wrong key was used. The \emph{session key component} holds the key ID of the recipient's public key and the encrypted session key. Compression and symmetric encryption cover the signature and message components; radix-64 covers everything.
+
+\subsection{PGP: key IDs and key rings \new}
+\likely{``Explain the PGP private-key ring and public-key ring; what is a key ID?'' (4 marks).}
+
+\textbf{Key IDs.} A user may own several key pairs (to change keys from time to time, or to separate work and private use), and he will hold the public keys of many correspondents. The recipient therefore needs to know which public key was used. Sending the whole public key would waste space, so PGP sends a \textbf{key ID}, the least significant 64 bits of the public key: $\text{ID} = PU \bmod 2^{64}$. With 64 bits, the chance that two keys of one user share an ID is negligible.
+
+\textbf{Private-key ring.} Each user stores his own key pairs in a table with one row per pair: timestamp (when the pair was created), key ID, public key, \textbf{encrypted private key}, and user ID (normally the e-mail address); the table can be indexed by user ID or key ID. The private key is never stored in the clear. When a pair is generated, PGP asks for a passphrase, computes its 160-bit SHA-1 hash, and encrypts the private key with CAST-128 using 128 bits of that hash as the key; the passphrase and the hash are then discarded. To sign, the user types the passphrase again, PGP recomputes the hash and decrypts the private key. A thief who copies the ring therefore still needs the passphrase, so the security of the private key rests on the passphrase.
+
+\textbf{Public-key ring.} The public keys of other users are stored with timestamp, key ID, public key, user ID and the three trust fields described next: \textbf{owner trust}, the \textbf{signatures} on the key with their \textbf{signature trust}, and the computed \textbf{key legitimacy}. When a message arrives, PGP uses the key ID in the session key component to fetch the right private key from the private-key ring, and the key ID in the signature component to fetch the sender's public key from the public-key ring.
+
+\subsection{PGP: the web of trust \new}
+\likely{``Explain the PGP trust model: owner trust, signature trust, key legitimacy'' (4 marks), with a small example.}
+
+\textbf{Problem.} Public-key encryption is only as safe as the binding between a public key and its owner. If Eve can plant a key with Bob's user ID on Alice's ring, Alice will encrypt to Eve and accept Eve's signatures as Bob's (a man-in-the-middle). PGP has no central certificate authority. Instead, any user may sign another user's public key to vouch that it belongs to that user (a key signature acts as a certificate), and each user decides whom he trusts as an \textbf{introducer}. The resulting graph of mutual signatures is the \textbf{web of trust}.
+
+\textbf{Mechanism.} Each entry of Alice's public-key ring carries three kinds of trust information.
+\begin{itemize}
+  \item \textbf{Owner trust} says how far Alice trusts the owner of this key to sign \emph{other} people's keys correctly. It is assigned by Alice herself: unknown, usually not trusted, usually (partially) trusted, always (fully) trusted, or ultimate for her own keys.
+  \item \textbf{Signature trust} is attached to each signature on the key and is simply a copy of the owner trust of the signer, if the signer is on Alice's ring (otherwise unknown).
+  \item \textbf{Key legitimacy} says how far Alice believes the key really belongs to its user ID. PGP computes it from the signature trusts: one signature of ultimate trust makes it complete; otherwise PGP adds weights, $1/X$ for each always-trusted signature and $1/Y$ for each usually-trusted one ($X$ and $Y$ are user parameters, typically $X = 1$, $Y = 2$), and when the sum reaches 1 the key is complete, below 1 it is marginal.
+\end{itemize}
+The important distinction is that \textbf{legitimacy} concerns the key (is it really Bob's?) while \textbf{owner trust} concerns the person (does Bob check keys carefully before signing them?). A key can be fully legitimate while its owner is not trusted as an introducer. A user revokes a compromised key by issuing a \textbf{key revocation certificate} signed with the corresponding private key and spreading it as widely as possible.
+
+\begin{worked}[: key legitimacy in a web of trust]
+\textbf{Q.} Alice gives owner trust \emph{always} to Bob and \emph{usually} to Carol and Dave, and has not assigned any trust to Frank. Weights are 1 for an always-trusted and $\frac12$ for a usually-trusted signer. Determine the legitimacy of the keys of (a) Gita, signed by Bob; (b) Hari, signed by Carol and Dave; (c) Ivan, signed by Carol; (d) Jaya, signed by Frank, whose own key on Alice's ring is legitimate.
+
+\textbf{A.} (a) $1 \ge 1$: \textbf{complete}. (b) $\frac12 + \frac12 = 1$: \textbf{complete}. (c) $\frac12 < 1$: \textbf{marginal}. (d) Frank's owner trust is unknown, so his signature has weight 0: Jaya's key is \textbf{not legitimate}, although Frank's own key is. Legitimacy of the signer's key is not enough; Alice must trust him as an introducer.\\
+\emph{Check}: only (a) and (b) reach the threshold 1.
+\end{worked}
+
+\subsection{S/MIME and MIME \new}
+\likely{``What are the limitations of SMTP/RFC 822 that MIME removes? List the MIME header fields and content types'' (4 marks).}
+
+\textbf{Problem.} The original Internet mail format (RFC 822) and SMTP were designed for short 7-bit ASCII text. As a result, SMTP cannot carry executable files or other binary objects, cannot carry national-language characters (8-bit codes), and may reject messages above a size limit; gateways translating between ASCII and EBCDIC or to X.400 networks use inconsistent mappings; and non-standard SMTP implementations delete or add carriage returns and line feeds, truncate or wrap lines longer than 76 characters, remove trailing white space, pad lines to the same length and convert tabs to spaces. Any of these silently corrupts binary data such as ciphertext or a signature.
+
+\textbf{MIME} (Multipurpose Internet Mail Extensions) solves this within RFC 822 by adding five header fields (MIME-Version, Content-Type, Content-Transfer-Encoding, Content-ID and Content-Description), a set of standard content types, and transfer encodings (7bit, 8bit, binary, quoted-printable for mostly-ASCII text, and \textbf{base64} for arbitrary binary data) that make any content survive the mail system.
+\begin{center}\small
+\begin{tabularx}{\textwidth}{@{}l l X@{}}
+\toprule
+Type & Subtypes & Content\\
+\midrule
+text & plain, enriched & unformatted or formatted text\\
+multipart & mixed, parallel, alternative, digest & several parts in one message (in order, in any order, alternative versions, digest of messages)\\
+message & rfc822, partial, external-body & an encapsulated message, a fragment of a large one, a pointer to one\\
+image, video, audio & jpeg, gif; mpeg; basic & media\\
+application & postscript, octet-stream & other data, e.g.\ arbitrary binary\\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\textbf{S/MIME} (Secure/MIME), based on RSA Data Security's technology and standardised by the IETF, adds security to MIME by defining new content types that carry signed and/or encrypted data in the PKCS\#7 (Cryptographic Message Syntax) format. It provides four functions.
+\begin{itemize}
+  \item \textbf{Enveloped data} (\ttx{application/pkcs7-mime; smime-type=envelopedData}): the sender generates a random session key, encrypts the content with it (3DES or AES), and for \emph{each} recipient encrypts the session key with that recipient's public RSA key and builds a RecipientInfo block (recipient's certificate identifier, algorithm identifier, encrypted session key). The RecipientInfo blocks and the encrypted content are then base64 encoded. This gives confidentiality, and one message serves many recipients with one bulk encryption.
+  \item \textbf{Signed data} (\ttx{smime-type=signedData}): the sender hashes the content (SHA), encrypts the digest with his private key, and builds a SignerInfo block (signer's certificate, digest and signature algorithm identifiers, encrypted digest). Content and signature are base64 encoded \emph{together}, so only an S/MIME-capable reader can see the content.
+  \item \textbf{Clear-signed data} (\ttx{multipart/signed}): the signature is computed the same way, but the message has two parts: the content in its normal MIME form, readable by anyone, and a detached signature (\ttx{application/pkcs7-signature}) in base64. Recipients without S/MIME can still read the message, though they cannot verify it.
+  \item \textbf{Signed and enveloped data}: the two operations can be nested in either order, signing the plaintext and then enveloping it, or enveloping and then signing the ciphertext.
+\end{itemize}
+
+\textbf{Certificates.} S/MIME uses \textbf{X.509 version 3} certificates issued by certification authorities. Its key management is a hybrid of a strict CA hierarchy and PGP's web of trust: each client is configured with a list of trusted root certificates and certificate revocation lists, and a user agent must generate key pairs, request certificates from a CA, and store and retrieve certificates of its correspondents.
+
+\subsection{PGP versus S/MIME \new}
+\likely{``Differentiate PGP and S/MIME'' (3--4 marks).}
+\begin{center}\small
+\begin{tabularx}{\textwidth}{@{}l X X@{}}
+\toprule
+ & PGP & S/MIME\\
+\midrule
+Origin & one author (Zimmermann), free software; OpenPGP standard & RSA Data Security / IETF standard, built into mail clients\\
+Trust model & web of trust: users sign each other's keys & hierarchical CAs with X.509v3 certificates\\
+Certificate format & PGP's own key certificates & X.509v3\\
+Message format & PGP's own binary format & MIME with PKCS\#7 / CMS content types\\
+Binary-to-text encoding & radix-64 with CRC & base64 (MIME transfer encoding)\\
+Compression & ZIP, built in & optional (compressed-data type)\\
+Readable without the software & no & yes for clear-signed messages\\
+Typical users & individuals & organisations and industry\\
+\bottomrule
+\end{tabularx}
+\end{center}
+Both use the same cryptographic pattern: hash-and-sign with the sender's private key, then hybrid encryption with a one-time session key wrapped in the recipient's public key.

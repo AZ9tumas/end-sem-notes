@@ -1,0 +1,335 @@
+% Teacher's assignment topics (Lectures 10-14 "Tutorial" slides + assignment list): AKS, factoring algorithms, attacks on RSA,
+% OAEP, hash families, WhatsApp/Signal E2EE, internet banking and UPI. Sources: Forouzan ch. 9-10, 12; Stallings ch. 2, 9, 11;
+% AKS paper "PRIMES is in P"; RFC 8017 (OAEP); FIPS 180-4, FIPS 202; WhatsApp security whitepaper; Signal X3DH/Double Ratchet specs.
+% Every number recomputed by script (scratchpad/w25/aks.py, fact.py, rsa_att.py, rsa2.py, oaep.py, hashes.py, x3dh.py, qnums.py).
+\section{Assignment Topics: Primality, Factoring, RSA Attacks, OAEP, Hash Families, Real-World Protocols}\label{sec:assign}
+\usetikzlibrary{decorations.pathreplacing}
+
+The lecture slides on primes, RSA and hashing mark several topics as ``Tutorial'' and leave them to the assignments: the AKS primality test, the factorization algorithms (Pollard $p - 1$, Pollard rho, quadratic sieve, number field sieve), the attacks on RSA, OAEP padding, and the hash functions other than SHA-512 and Whirlpool. Two further assignment topics apply the course to systems the student uses daily: WhatsApp's end-to-end encryption and the security of internet banking and UPI. The sections below extend \S\ref{sec:primes} (Miller--Rabin, trial division, Fermat factoring), \S\ref{sec:rsa} (RSA and its attack list) and \S\ref{sec:integrity} (Merkle--Damg\aa rd, SHA-512, Whirlpool) without repeating them. The assignment's central question for RSA, ``verify whether any attack can be launched successfully, and if not, justify why'', is answered attack by attack in \S\ref{sec:rsaattacks}.
+
+\begin{center}\small
+\begin{tabular}{@{}lll@{}}
+\toprule
+Assignment topic & What is usually asked & Section\\
+\midrule
+AKS primality test & theorem, pseudo code, complexity, why not used & \ref{sec:aks}\\
+Factorization methods & Pollard $p - 1$, rho, QS, NFS; complexities; numericals & \ref{sec:factoring}\\
+Attacks on RSA & each attack with a demonstration; can it succeed? & \ref{sec:rsaattacks}\\
+OAEP & structure, diagram, why it fixes textbook RSA & \ref{sec:oaep}\\
+Other hash algorithms & MD4/MD5, SHA-0/1, SHA-2 family, SHA-3, others & \ref{sec:hashfamily}\\
+Attacks on digital signatures & forgery types, attacks & \ref{sec:dsig} (separate chapter)\\
+WhatsApp E2EE & X3DH, Double Ratchet, groups, safety numbers & \ref{sec:whatsapp}\\
+Internet banking and UPI & controls, UPI PIN path, frauds, ``which app is safer'' & \ref{sec:upi}\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+%=====================================================================
+\section{The AKS Primality Test}\label{sec:aks}
+
+\subsection{The problem and the theorem behind AKS \new}
+\likely{``State the identity on which AKS is based and prove it for prime $n$'' (3--4 marks).}
+
+Trial division decides primality correctly but needs up to $\sqrt n = 2^{b/2}$ divisions for a $b$-bit $n$, which is exponential in the input size. Miller--Rabin (\S\ref{sec:primes}) is fast but probabilistic: its ``prime'' answer can be wrong with probability up to $4^{-t}$. Whether primality can be decided \emph{deterministically in polynomial time} (in the number of bits $b = \log_2 n$) was an open question until 2002, when Manindra Agrawal and his students Neeraj Kayal and Nitin Saxena (IIT Kanpur) answered yes. Their algorithm, \textbf{AKS}, rests on a polynomial version of Fermat's little theorem.
+
+\begin{mustknow}[: the AKS identity]
+Let $n \ge 2$ and let $a$ be an integer with $\gcd(a, n) = 1$. Then
+\[
+n \text{ is prime} \iff (X + a)^n \equiv X^n + a \pmod n
+\]
+as polynomials in $X$, i.e.\ every coefficient of $(X + a)^n - (X^n + a)$ is divisible by $n$.
+\end{mustknow}
+
+\textbf{Proof.} By the binomial theorem,
+\[
+(X + a)^n - (X^n + a) = \sum_{i=1}^{n-1} \binom{n}{i} a^{n-i} X^i \;+\; (a^n - a).
+\]
+\emph{If $n$ is prime}, every middle coefficient vanishes modulo $n$: for $0 < i < n$, $\binom{n}{i} = \dfrac{n!}{i!\,(n-i)!}$, the numerator contains the prime factor $n$, and the denominator is a product of numbers smaller than $n$, none of which contains the prime $n$; so $n \mid \binom{n}{i}$. The constant term vanishes because $a^n \equiv a \pmod n$ by Fermat's little theorem. Hence the identity holds.
+
+\emph{If $n$ is composite}, let $q$ be a prime factor of $n$ and $q^k$ the highest power of $q$ dividing $n$. Then
+\[
+\binom{n}{q} = \frac{n(n-1)\cdots(n-q+1)}{q!}.
+\]
+In the numerator only the factor $n$ is divisible by $q$ (the other $q - 1$ factors are $n - 1, \dots, n - q + 1$, which are not multiples of $q$), so the numerator contains exactly $q^k$; the denominator $q!$ contains exactly one $q$. Therefore $q^{k-1}$ is the exact power of $q$ in $\binom{n}{q}$, so $q^k \nmid \binom{n}{q}$ and $n \nmid \binom{n}{q}$. Since $\gcd(a, n) = 1$, $a^{n-q}$ is coprime to $q$, so the coefficient $\binom{n}{q} a^{n-q}$ of $X^q$ is not $\equiv 0 \pmod{q^k}$, and the identity fails. This proves both directions.
+
+\textbf{Small check.} For $n = 5$ the row $\binom{5}{i}$ is $1, 5, 10, 10, 5, 1$, and all inner entries are multiples of 5, so $(X + 1)^5 \equiv X^5 + 1 \pmod 5$. For $n = 6$ the row is $1, 6, 15, 20, 15, 6, 1$, which modulo 6 is $1, 0, 3, 2, 3, 0, 1$, so $(X + 1)^6 \equiv X^6 + 3X^4 + 2X^3 + 3X^2 + 1 \not\equiv X^6 + 1 \pmod 6$; the surviving coefficients sit at $X^2, X^3, X^4$, as the proof predicts for $q = 2, 3$ (and their mirror images).
+
+\textbf{Why the identity alone is not an efficient test.} The polynomial $(X + a)^n$ has $n + 1$ coefficients, so even writing it down takes time proportional to $n$, which is exponential in $b$. AKS therefore checks the identity in a much smaller ring: it reduces both sides modulo $X^r - 1$ for a small $r$ (polynomial in $b$), keeping only $r$ coefficients. A prime $n$ still passes, since a true congruence stays true after reduction. A composite $n$ might now pass for a particular $a$, and the work of the AKS paper is to show that, with the right $r$, a composite cannot pass for \emph{all} $a$ up to a small bound.
+
+\subsection{The AKS algorithm (pseudo code) \hot\new}
+\likely{``Write the pseudo code of AKS and explain each step; state its complexity'' (5--6 marks).}
+
+\begin{keybox}[title={AKS$(n)$, $n > 1$; all logarithms are base 2}]
+\begin{enumerate}[leftmargin=*,align=left,itemsep=1pt,label=\textbf{Step \arabic*.}]
+  \item If $n = a^b$ for integers $a > 1$ and $b > 1$, output \textbf{COMPOSITE}.
+  \item Find the smallest $r$ such that $\operatorname{ord}_r(n) > (\log_2 n)^2$.
+  \item If $1 < \gcd(a, n) < n$ for some $a \le r$, output \textbf{COMPOSITE}.
+  \item If $n \le r$, output \textbf{PRIME}.
+  \item For $a = 1$ to $\big\lfloor \sqrt{\phi(r)}\, \log_2 n \big\rfloor$: if $(X + a)^n \not\equiv X^n + a \pmod{X^r - 1,\ n}$, output \textbf{COMPOSITE}.
+  \item Output \textbf{PRIME}.
+\end{enumerate}
+\end{keybox}
+Here $\operatorname{ord}_r(n)$ is the multiplicative order of $n$ modulo $r$ (the least $k$ with $n^k \equiv 1 \pmod r$, defined when $\gcd(n, r) = 1$; see \S\ref{sec:fermat}), and ``mod $(X^r - 1, n)$'' means that powers of $X$ are reduced with $X^r = 1$ (so $X^{i}$ becomes $X^{i \bmod r}$) and coefficients are reduced modulo $n$.
+
+\textbf{Step 1 (perfect powers).} The correctness proof of step 5 needs $n$ to be divisible by a prime $p$ without being a power of $p$; powers such as $343 = 7^3$ are therefore removed first. The test is cheap: for each $b \le \log_2 n$, compute the integer $b$-th root of $n$ by binary search and check whether its $b$-th power equals $n$.
+
+\textbf{Step 2 (choosing $r$).} Try $r = 2, 3, 4, \dots$ and compute $\operatorname{ord}_r(n)$ (skip $r$ with $\gcd(r, n) > 1$). The order condition is what makes the final counting argument work: it guarantees that the powers $n, n^2, n^3, \dots$ produce more than $(\log_2 n)^2$ distinct residues modulo $r$. A lemma in the paper shows that such an $r$ exists with $r \le \max\{3, \lceil \log_2^5 n\rceil\}$, so the search is polynomial and the polynomials in step 5 have polynomially many coefficients.
+
+\textbf{Step 3 (small factors).} Compute $\gcd(a, n)$ for $a = 2, \dots, r$. A value strictly between 1 and $n$ is a proper factor, so $n$ is composite. After this step every prime factor of $n$ exceeds $r$.
+
+\textbf{Step 4 (small $n$).} If $n \le r$, step 3 has examined every $a < n$ and found no common factor, so $n$ is prime. This step decides only small inputs; for larger $n$, $r$ is much smaller than $n$.
+
+\textbf{Step 5 (the polynomial test).} Each congruence is checked in the ring of polynomials of degree less than $r$ with coefficients modulo $n$, by square-and-multiply on polynomials: $(X + a)^n$ needs about $2\log_2 n$ polynomial multiplications, each followed by reduction modulo $X^r - 1$ and modulo $n$. A prime always passes (theorem above). The heart of the AKS paper is the converse: if all $\lfloor\sqrt{\phi(r)}\log_2 n\rfloor$ checks pass, then for a prime factor $p$ of $n$ both $n$ and $p$ are ``introspective'' (they satisfy $f(X)^m \equiv f(X^m)$ for every product $f$ of the polynomials $X + a$ modulo $p$), and counting the resulting polynomials in two ways gives a lower bound larger than an upper bound unless $n$ is a power of $p$. Step 1 excluded proper powers, so $n = p$ is prime.
+
+\begin{worked}[: AKS on $n = 31$]
+\textbf{Q.} Run the AKS algorithm on $n = 31$. Find $r$, the loop bound of step 5, and show the step-5 check for $a = 1$.
+
+\textbf{Step 1.} $b \le \log_2 31 = 4.954$, so $b \in \{2, 3, 4\}$: $5^2 = 25 < 31 < 36 = 6^2$; $3^3 = 27 < 31 < 64 = 4^3$; $2^4 = 16 < 31 < 81 = 3^4$. Not a perfect power.
+
+\textbf{Step 2.} $(\log_2 31)^2 = 4.954^2 = 24.54$, so we need $\operatorname{ord}_r(31) \ge 25$. Since $\operatorname{ord}_r(31) \le \phi(r) \le r - 1$, only $r \ge 26$ can work: $\phi(26) = 12$, $\phi(27) = 18$, $\phi(28) = 12$ are too small. For $r = 29$: $31 \equiv 2 \pmod{29}$, and $2^2 = 4$, $2^4 = 16$, $2^7 = 128 \equiv 12$, $2^{14} \equiv 12^2 = 144 \equiv 28 \equiv -1$, so no proper divisor of 28 is the order and $\operatorname{ord}_{29}(31) = 28 > 24.54$. Hence $\mathbf{r = 29}$.
+
+\textbf{Step 3.} $\gcd(a, 31) = 1$ for $a = 2, \dots, 29$. Pass. \quad \textbf{Step 4.} $31 > 29$, so continue.
+
+\textbf{Step 5.} $\phi(29) = 28$; bound $= \lfloor \sqrt{28} \times 4.954 \rfloor = \lfloor 5.2915 \times 4.9542 \rfloor = \lfloor 26.22 \rfloor = \mathbf{26}$. Modulo $X^{29} - 1$, $X^{31} = X^{29} X^2 \equiv X^2$, so each check reads $(X + a)^{31} \equiv X^2 + a \pmod{X^{29} - 1, 31}$. For $a = 1$, reduce $(X + 1)^{31} = \sum_i \binom{31}{i} X^i$ with $X^{29} \to 1$, $X^{30} \to X$, $X^{31} \to X^2$:
+\begin{center}\small
+\begin{tabular}{@{}llll@{}}
+\toprule
+Coefficient of & Contributions & Sum & mod 31\\
+\midrule
+$X^0$ & $\binom{31}{0} + \binom{31}{29} = 1 + 465$ & 466 & 1\\
+$X^1$ & $\binom{31}{1} + \binom{31}{30} = 31 + 31$ & 62 & 0\\
+$X^2$ & $\binom{31}{2} + \binom{31}{31} = 465 + 1$ & 466 & 1\\
+$X^3, \dots, X^{28}$ & $\binom{31}{i}$, $3 \le i \le 28$ & multiples of 31 & 0\\
+\bottomrule
+\end{tabular}
+\end{center}
+So $(X + 1)^{31} \equiv X^2 + 1$ \checkmark. A script confirms that all 26 checks $a = 1, \dots, 26$ pass. \textbf{Step 6: 31 is PRIME.}
+
+\emph{Contrast.} For $n = 171371 = 409 \times 419$ the script finds $r = 313$; step 3 passes because both prime factors exceed 313, $n > r$, and step 5 fails already at $a = 1$, so AKS outputs COMPOSITE without ever finding a factor.
+\end{worked}
+
+\subsection{Complexity, and why Miller--Rabin is used instead \new}
+\likely{``State the complexity of AKS; why is it not used to generate RSA primes?'' (2--3 marks).}
+
+Step 5 dominates. It has about $\sqrt r \log_2 n$ iterations; each computes $(X + a)^n$ with $O(\log n)$ multiplications of polynomials of degree below $r$ whose coefficients have $\log_2 n$ bits, and with fast multiplication one such product costs $\tilde O(r \log n)$ bit operations. In total this is $\tilde O(r^{3/2} \log^3 n)$, and with $r = O(\log^5 n)$ it is $\tilde O(\log^{10.5} n)$. ($\tilde O$ hides factors that are powers of $\log\log n$.) The first version of the paper (2002) stated the cruder bound $\tilde O(\log^{12} n)$, which is the figure usually quoted. \textbf{Lenstra and Pomerance} (2005) modified the polynomial used in step 5 and brought the running time down to $\tilde O(\log^{6} n)$. Every version is polynomial in the number of bits, which is the theoretical breakthrough: \imp{PRIMES is in P}.
+
+\textbf{Why it is not used in practice.} Even $\log^6 n$ is large: for a 1024-bit $n$ it is $1024^6 = 2^{60}$ bit operations before the hidden constants and $\log\log$ factors. One round of Miller--Rabin is one modular exponentiation, about $1024^3 = 2^{30}$ bit operations with schoolbook arithmetic, and 40 random bases leave an error probability below $4^{-40} \approx 10^{-24}$, far smaller than the chance of a hardware fault during the computation. Key generation tests hundreds of candidates per prime (\S\ref{sec:primes}), so only the fast probabilistic test is affordable. When a proof of primality is wanted, elliptic-curve primality proving (ECPP) is also faster than AKS in practice and outputs a certificate that can be checked quickly.
+
+\begin{center}\small
+\begin{tabular}{@{}llll@{}}
+\toprule
+Test & Type & Cost for a $b$-bit $n$ & Used for\\
+\midrule
+Trial division & deterministic & $O(\sqrt n) = O(2^{b/2})$ & small $n$; first filter\\
+Fermat test & probabilistic & $O(t\,b^3)$ & fooled by Carmichael numbers\\
+Miller--Rabin & probabilistic, error $\le 4^{-t}$ & $O(t\,b^3)$ & RSA key generation\\
+AKS (2002 analysis) & deterministic & $\tilde O(b^{12})$ & theory: PRIMES is in P\\
+AKS (Lenstra--Pomerance) & deterministic & $\tilde O(b^{6})$ & theory\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+%=====================================================================
+\section{Factorization Algorithms}\label{sec:factoring}
+
+\subsection{Measuring the cost: input size and $L$-notation \new}
+\likely{``Arrange trial division, Pollard rho, QS and NFS by complexity'' (2--3 marks).}
+
+RSA is broken as soon as $n = pq$ is factored, since then $\phi(n) = (p-1)(q-1)$ and $d = e^{-1} \bmod \phi(n)$ follow at once (\S\ref{sec:rsa}). The cost of a factoring algorithm is measured against the \emph{size} of the input, $b = \log_2 n$ bits (or $\ln n$), not against $n$ itself. An algorithm costing $O(\sqrt n) = O(2^{b/2})$ is \emph{exponential}; one costing $O(b^k)$ would be \emph{polynomial}. The best known methods lie in between, and the standard way to express this is the \textbf{$L$-notation}
+\[
+L_n[\alpha, c] = \exp\!\Big( (c + o(1))\, (\ln n)^{\alpha} (\ln\ln n)^{1-\alpha} \Big), \qquad 0 \le \alpha \le 1 .
+\]
+For $\alpha = 0$ this is $(\ln n)^{c}$, polynomial; for $\alpha = 1$ it is $n^{c}$, exponential. Values $0 < \alpha < 1$ are called \textbf{sub-exponential}, and the smaller $\alpha$, the faster the algorithm for large $n$. The quadratic sieve runs in $L_n[1/2, 1]$ and the number field sieve in $L_n[1/3, 1.923]$. Trial division and Fermat's method were covered in \S\ref{sec:primes}; this section adds their cost analysis and the four ``tutorial'' methods.
+
+\subsection{Trial division and Fermat's method: when each is fast}
+\textbf{Trial division} divides by $2, 3, 5, \dots$ up to $\sqrt n$ and costs up to $\sqrt n$ divisions: for a 2048-bit RSA modulus that is $2^{1024}$ divisions. It finds a small factor $f$ after about $f$ divisions, so it is the right first step for random numbers but useless for RSA moduli whose factors both have 1024 bits.
+
+\textbf{Fermat's method} searches $x = \lceil\sqrt n\rceil, \lceil\sqrt n\rceil + 1, \dots$ until $x^2 - n = y^2$ is a square, and then $n = (x - y)(x + y)$. With $n = pq$ and $p > q$ it stops at $x = (p + q)/2$, so the number of steps is about
+\[
+\frac{p + q}{2} - \sqrt{pq} = \frac{(\sqrt p - \sqrt q)^2}{2} = \frac{(p - q)^2}{2(\sqrt p + \sqrt q)^2} \approx \frac{(p - q)^2}{8\sqrt n}.
+\]
+If $|p - q|$ is below $n^{1/4}$, a single step suffices; if $p$ and $q$ are random 1024-bit primes, $|p - q|$ is typically about $2^{1023}$ and the count is about $2^{2046}/2^{1027} = 2^{1019}$ steps. This is why the RSA recommendation says ``$p$ and $q$ must not be close'' and why standards such as FIPS 186 require $|p - q| > 2^{(b/2) - 100}$.
+
+\begin{worked}[: Fermat factorization (new)]
+\textbf{Q.} Factor $n = 6077$ by Fermat's method.
+
+$\sqrt{6077} = 77.96$, so start at $x = 78$.
+\begin{center}\small
+\begin{tabular}{@{}cccl@{}}
+\toprule
+$x$ & $x^2$ & $w = x^2 - 6077$ & square?\\
+\midrule
+78 & 6084 & 7 & no\\
+79 & 6241 & 164 & no\\
+80 & 6400 & 323 & no ($17 \times 19$)\\
+81 & 6561 & 484 & \textbf{yes}, $22^2$\\
+\bottomrule
+\end{tabular}
+\end{center}
+$n = (81 - 22)(81 + 22) = \mathbf{59 \times 103}$. Check: $59 \times 103 = 6077$ \checkmark; the formula predicts $(103 - 59)^2/(8\sqrt{6077}) = 1936/623.7 \approx 3.1$ steps beyond the start, and we needed 3.
+\end{worked}
+
+\subsection{Pollard's $p - 1$ method \hot\new}
+\likely{``Factor $n$ using Pollard $p - 1$ with bound $B$'' (4--5 marks), and ``why must $p - 1$ have a large prime factor?''}
+
+\textbf{Idea.} Fermat's little theorem says $a^{p-1} \equiv 1 \pmod p$ for a prime $p \nmid a$, and therefore $a^{M} \equiv 1 \pmod p$ for \emph{every} multiple $M$ of $p - 1$. Eve does not know $p$, but if $p - 1$ is \textbf{$B$-smooth}, meaning all its prime-power factors are at most $B$, then $p - 1$ divides $M = B!$ (or $\operatorname{lcm}(1, \dots, B)$). Then $p \mid a^{B!} - 1$, and since $p \mid n$ as well,
+\[
+p \;\mid\; \gcd(a^{B!} - 1,\ n).
+\]
+The other prime $q$ divides this gcd only if $q - 1$ is also $B$-smooth (or by luck), so usually the gcd is exactly $p$. All the arithmetic is done modulo $n$, so the numbers stay small.
+
+\begin{keybox}[title={Pollard $p - 1$ (Forouzan's form)}]
+Input $n$ and a bound $B$. Set $a \leftarrow 2$. For $e = 2, 3, \dots, B$: $a \leftarrow a^{e} \bmod n$ (so after step $e$, $a = 2^{e!} \bmod n$). Then $d \leftarrow \gcd(a - 1, n)$.
+If $1 < d < n$, output the factor $d$; otherwise the method \textbf{fails} for this $B$.
+\end{keybox}
+
+\textbf{When it fails.} If $d = 1$, no prime factor $p$ has $p - 1 \mid B!$, so $B$ was too small; increase $B$. If $d = n$, every prime factor was caught at the same time; decrease $B$ (or check the gcd after every step, which finds the first $e$ at which one factor appears). The cost is about $B \log B$ modular multiplications, so the method is practical only when some $p - 1$ is smooth for a modest $B$. For RSA primes chosen at random, $p - 1$ almost always has a prime factor of hundreds of bits, and $B$ would have to be that large.
+
+\begin{worked}[: Pollard $p - 1$ on $n = 1403$ with $B = 5$]
+\textbf{Q.} Use Pollard's $p - 1$ method with $B = 5$ to find a factor of $n = 1403$. Explain why it succeeds, and what happens with $B = 3$ and $B = 11$.
+
+$a_1 = 2$ and $a_e = a_{e-1}^{\,e} \bmod 1403$, so $a_e = 2^{e!} \bmod 1403$:
+\begin{center}\small
+\begin{tabular}{@{}clcc@{}}
+\toprule
+$e$ & $a_e = a_{e-1}^{\,e} \bmod 1403$ & $a_e$ & $\gcd(a_e - 1, 1403)$\\
+\midrule
+2 & $2^2$ & 4 & 1\\
+3 & $4^3 = 64$ & 64 & 1\\
+4 & $64^4 \bmod 1403$ & 142 & 1\\
+5 & $142^5 \bmod 1403$ ($= 2^{120}$) & 794 & \textbf{61}\\
+\bottomrule
+\end{tabular}
+\end{center}
+$d = \gcd(793, 1403) = 61$, so $\mathbf{1403 = 61 \times 23}$. \emph{Why}: $61 - 1 = 60 = 2^2 \cdot 3 \cdot 5$ divides $5! = 120$, so $2^{120} \equiv 1 \pmod{61}$; but $23 - 1 = 22 = 2 \cdot 11$ does not divide 120, so $2^{120} \not\equiv 1 \pmod{23}$ and 23 stays out of the gcd.\\
+\emph{Failures}: with $B = 3$, $3! = 6$ is a multiple of neither 60 nor 22, and the gcd is 1. With $B = 11$, both 60 and 22 divide $11!$, so $2^{11!} \equiv 1$ modulo both primes and the gcd is $n = 1403$ itself.\\
+\emph{Second example}: $n = 299 = 13 \times 23$ gives $\gcd(2^{24} - 1, 299) = 13$ at $B = 4$ (since $12 \mid 24$), but $B = 11$ again yields $\gcd = 299$. Forouzan's example $n = 57247159$ with $B = 8$ gives $421$, because $420 = 2^2 \cdot 3 \cdot 5 \cdot 7$; the cofactor is $135979$, with $135978 = 2 \cdot 3 \cdot 131 \cdot 173$ not 8-smooth.
+\end{worked}
+
+\textbf{Implication for RSA.} The recommendation ``both $p - 1$ and $q - 1$ should have at least one large prime factor'' (\S\ref{sec:rsa}) is exactly the defence against this method. A prime with this property (and similar conditions on $p + 1$, against Williams' $p + 1$ method) is called a \emph{strong prime}. For random primes of 1024 bits the probability that $p - 1$ is smooth enough to be caught is negligible, so modern standards accept random primes; the more general \emph{elliptic curve method} (ECM) replaces the group $\mathbb{Z}_p^*$ of fixed order $p - 1$ by random elliptic-curve groups of varying order, removing the dependence on the shape of $p - 1$, but it still only finds factors of up to about 60--80 digits.
+
+\subsection{Pollard's rho method \hot\new}
+\likely{``Factor 8051 (or a similar $n$) using Pollard rho with $f(x) = x^2 + 1$, $x_0 = 2$; why $O(n^{1/4})$?'' (4--5 marks).}
+
+\textbf{Idea.} Let $p$ be the unknown smallest prime factor of $n$. Iterate a simple polynomial map $x_{i+1} = f(x_i) = x_i^2 + 1 \bmod n$ starting from $x_0 = 2$. Because $f$ is a polynomial, reducing modulo $p$ commutes with it: the residues $x_i \bmod p$ follow the same rule $x_{i+1} \equiv x_i^2 + 1 \pmod p$ inside the much smaller set $\mathbb{Z}_p$. A sequence in a finite set in which each term determines the next must eventually repeat and then cycle forever; drawn out, a tail leading into a loop looks like the Greek letter $\rho$. A repetition $x_i \equiv x_j \pmod p$ means $p \mid x_i - x_j$, so
+\[
+\gcd(|x_i - x_j|,\ n) \text{ is a multiple of } p,
+\]
+and it is usually $p$ itself (it equals $n$ only if the sequence repeats modulo $q$ at exactly the same step).
+
+\textbf{Why about $\sqrt p$ steps (birthday argument).} The residues $x_i \bmod p$ behave like random elements of $\mathbb{Z}_p$. By birthday Problem 3 (\S\ref{sec:integrity}), among $k$ random values from $p$ possibilities two coincide with probability $1 - e^{-k^2/2p}$, so a repetition is expected after about $\sqrt{\pi p/2} \approx 1.25\sqrt p$ terms. Modulo $n$ the sequence would need about $\sqrt n$ terms to repeat, so the gcd detects the much earlier repetition modulo $p$. Since $p \le \sqrt n$, the method costs $O(\sqrt p) \le O(n^{1/4})$ steps, the square root of trial division's $O(\sqrt n)$.
+
+\textbf{Floyd's cycle detection.} Storing all $x_i$ and comparing every pair would cost memory and $k^2$ gcds. Floyd's method moves a ``tortoise'' $x \leftarrow f(x)$ and a ``hare'' $y \leftarrow f(f(y))$, so that after $i$ steps $x = x_i$ and $y = x_{2i}$, and computes one gcd per step. If the sequence modulo $p$ has a tail of length $\mu$ and a cycle of length $\lambda$, then $x_i \equiv x_{2i} \pmod p$ as soon as $i \ge \mu$ and $\lambda \mid i$, which happens for some $i \le \mu + \lambda$. The method therefore needs constant memory and $O(\sqrt p)$ steps of three evaluations of $f$ and one gcd each.
+
+\begin{keybox}[title={Pollard rho with Floyd cycle detection}]
+$x \leftarrow 2$, $y \leftarrow 2$, $d \leftarrow 1$. While $d = 1$: $x \leftarrow f(x)$, $y \leftarrow f(f(y))$, $d \leftarrow \gcd(|x - y|, n)$, with $f(x) = x^2 + 1 \bmod n$.\\
+If $d = n$, \textbf{fail} (restart with $f(x) = x^2 + c$ for another $c \neq 0, -2$); otherwise output the factor $d$.
+\end{keybox}
+
+\begin{worked}[: Pollard rho on $n = 8051$]
+\textbf{Q.} Use Pollard's rho method with $f(x) = x^2 + 1$ and $x_0 = y_0 = 2$ to factor $n = 8051$.
+\begin{center}\small
+\begin{tabular}{@{}cllcc@{}}
+\toprule
+$i$ & $x_i = f(x_{i-1})$ & $y_i = f(f(y_{i-1})) = x_{2i}$ & $|x_i - y_i|$ & $\gcd(|x_i - y_i|, 8051)$\\
+\midrule
+1 & $2^2 + 1 = 5$ & $f(5) = 26$ & 21 & 1\\
+2 & $5^2 + 1 = 26$ & $f(677) = 677^2 + 1 \bmod 8051 = 7474$ & 7448 & 1\\
+3 & $26^2 + 1 = 677$ & $f(2839) = 871$ \;($x_5 = 2839$, $x_6 = 871$) & 194 & \textbf{97}\\
+\bottomrule
+\end{tabular}
+\end{center}
+(The hare passes through $x_3 = 677$, $x_4 = 7474$, $x_5 = 2839$, $x_6 = 871$.) $d = \gcd(194, 8051) = 97$, so $\mathbf{8051 = 97 \times 83}$. Check: $97 \times 83 = 8051$ \checkmark.\\
+\emph{Why at step 3}: modulo 97 the sequence is $2, 5, 26, 95, 5, 26, 95, \dots$ (tail $\mu = 1$, cycle $\lambda = 3$), so $x_3 \equiv x_6 \equiv 95 \pmod{97}$ ($677 = 6 \cdot 97 + 95$, $871 = 8 \cdot 97 + 95$). Modulo 83 it is $2, 5, 26, 13, 4, 17, 41, \dots$, still without repetition, so 83 is not in the gcd.
+\end{worked}
+
+\begin{center}
+\begin{tikzpicture}[font=\small, >=Stealth, nd/.style={draw, circle, minimum size=0.75cm, inner sep=0pt}]
+\node[nd] (a) at (0,0) {2};
+\node[nd] (b) at (0,1.3) {5};
+\node[nd] (c) at (1.2,2.3) {26};
+\node[nd] (d) at (-1.2,2.3) {95};
+\draw[->, thick] (a) -- (b); \draw[->, thick] (b) -- (c); \draw[->, thick] (c) -- (d); \draw[->, thick] (d) -- (b);
+\node[align=left, font=\footnotesize] at (4.4,1.2) {$x_i \bmod 97$ for $n = 8051$:\\ tail $x_0 = 2$, then the cycle\\ $5 \to 26 \to 95 \to 5$ (length 3).\\ Floyd: $x_3 \equiv x_6 \pmod{97}$.};
+\end{tikzpicture}
+\end{center}
+A larger run of the same procedure: $n = 455459$ splits as $613 \times 743$ at step 9 (gcd 743).
+
+\subsection{The quadratic sieve \new}
+\likely{``Explain the idea of the quadratic sieve (factor base, smooth numbers, linear algebra mod 2)'' (4 marks), possibly with $n = 1649$.}
+
+\textbf{Idea: congruent squares.} Fermat's method looks for $x^2 - n = y^2$ exactly. The quadratic sieve (QS, Pomerance 1981) only needs
+\[
+x^2 \equiv y^2 \pmod n \quad\text{with}\quad x \not\equiv \pm y \pmod n .
+\]
+Then $n \mid (x - y)(x + y)$ but $n$ divides neither factor, so $\gcd(x - y, n)$ is a proper factor. For $n = pq$, a random pair with $x^2 \equiv y^2$ has $x \equiv \pm y$ modulo each prime independently, so a useful pair appears with probability $1/2$.
+
+\textbf{Building the square from smooth numbers.} Take $x$ near $\sqrt n$ and compute $Q(x) = x^2 - n$. Since $Q(x) \approx 2\sqrt n\,(x - \sqrt n)$ is small, it has a good chance of being \textbf{smooth}, i.e.\ of factoring completely over a fixed set of small primes, the \textbf{factor base}. Only primes $p$ for which $n$ is a quadratic residue modulo $p$ can ever divide $Q(x)$, since $p \mid x^2 - n$ means $x^2 \equiv n \pmod p$; the factor base keeps just those. Each smooth $Q(x)$ is a \textbf{relation} $x^2 \equiv Q(x) \pmod n$, recorded by the vector of its prime exponents \emph{modulo 2}. A product of relations is a square on the right-hand side exactly when the exponent vectors add up to zero mod 2, so a suitable subset is found by \textbf{Gaussian elimination over GF(2)}; with more relations than primes in the factor base a dependency must exist. Multiplying the chosen relations gives $X^2 \equiv Y^2 \pmod n$.
+
+\textbf{Why ``sieve''.} Testing each $Q(x)$ by trial division would be slow. Instead, for each factor-base prime $p$ one solves $x^2 \equiv n \pmod p$ once; then $p \mid Q(x)$ exactly for $x$ in two residue classes modulo $p$, so the multiples can be marked along an interval of $x$ values, exactly like the sieve of Eratosthenes, using additions of $\log p$ instead of divisions. This makes collecting relations fast, and the method runs in $L_n[1/2, 1]$. It was the fastest method for numbers up to about 100 digits (RSA-129 was factored with a QS variant in 1994).
+
+\begin{worked}[: congruent squares for $n = 1649$]
+\textbf{Q.} Factor $n = 1649$ with the quadratic-sieve idea, using $x = 41, 42, \dots$ ($\lceil\sqrt{1649}\rceil = 41$).
+
+Quadratic residues: $1649 \equiv 2 \pmod 3$ (a non-residue), $\equiv 4 \pmod 5$ and $\equiv 4 \pmod 7$ (residues), so the factor base up to 7 is $\{2, 5, 7\}$.
+\begin{center}\small
+\begin{tabular}{@{}cclcc@{}}
+\toprule
+$x$ & $Q(x) = x^2 - 1649$ & factorization & smooth over $\{2,5,7\}$? & exponents mod 2\\
+\midrule
+41 & 32 & $2^5$ & yes & $(1, 0, 0)$\\
+42 & 115 & $5 \cdot 23$ & no & \\
+43 & 200 & $2^3 \cdot 5^2$ & yes & $(1, 0, 0)$\\
+44 & 287 & $7 \cdot 41$ & no & \\
+47 & 560 & $2^4 \cdot 5 \cdot 7$ & yes & $(0, 1, 1)$\\
+\bottomrule
+\end{tabular}
+\end{center}
+The vectors of $x = 41$ and $x = 43$ add to $(0, 0, 0)$, so their product is a square: $41^2 \cdot 43^2 \equiv 32 \cdot 200 = 6400 = 2^8 \cdot 5^2 = 80^2$.\\
+$X = 41 \cdot 43 \bmod 1649 = 1763 - 1649 = 114$, \;$Y = 80$, and $114^2 \equiv 80^2 \pmod{1649}$ with $114 \not\equiv \pm 80$.\\
+$\gcd(114 - 80, 1649) = \gcd(34, 1649) = 17$ and $\gcd(114 + 80, 1649) = \gcd(194, 1649) = 97$, so $\mathbf{1649 = 17 \times 97}$ \checkmark.
+\end{worked}
+A larger textbook run: for $n = 87463$ the factor base is $\{2, 3, 13, 17, 19, 29\}$, and $Q(296) = 153 = 3^2 \cdot 17$ and $Q(316) = 12393 = 3^6 \cdot 17$ combine to $(296 \cdot 316)^2 \equiv (3^4 \cdot 17)^2$, i.e.\ $6073^2 \equiv 1377^2$, giving $\gcd(6073 - 1377, 87463) = 587$ and $87463 = 149 \times 587$.
+
+\subsection{The number field sieve \new}
+\likely{``Name the fastest factoring algorithm and its complexity; what is the current record?'' (2 marks).}
+
+The \textbf{number field sieve} (NFS; proposed by Pollard in 1988 and developed by A.\ K.\ and H.\ W.\ Lenstra, Manasse, Pomerance and others in 1990--93) also produces congruent squares, but the numbers it needs to be smooth are much smaller than the $\approx\sqrt n$ values of QS. It chooses a polynomial $f$ of small degree $d$ (typically 5 or 6 for RSA sizes) and an integer $m$ with $f(m) \equiv 0 \pmod n$, and works simultaneously in the integers and in the ring $\mathbb{Z}[\alpha]$ of the algebraic number field generated by a root $\alpha$ of $f$. It sieves for pairs $(a, b)$ such that $a - bm$ is smooth over ordinary primes and $a - b\alpha$ is smooth over ``prime ideals'' of the number field. Linear algebra mod 2 again selects a subset whose product is a square on both sides, and the ring map $\alpha \mapsto m$ carries the two squares into $\mathbb{Z}_n$ as $X^2 \equiv Y^2 \pmod n$. Since the values to be smooth are about $n^{1/d}$ instead of $\sqrt n$, smooth values are far more common, and the running time becomes
+\[
+L_n\big[1/3,\ (64/9)^{1/3}\big] = L_n[1/3,\ 1.923].
+\]
+NFS is the fastest known classical algorithm for numbers without special form and holds all RSA factoring records. RSA-768 (232 digits) was factored in 2009, and \textbf{RSA-250 (250 digits, 829 bits)} in 2020 with the CADO-NFS software, using about 2700 core-years. No 1024-bit RSA modulus has been publicly factored by these methods.
+
+\subsection{Comparison and implications for RSA key sizes \new}
+\likely{``Compare the factoring methods (complexity, when each works); what key length is safe today?'' (3--4 marks).}
+
+\begin{center}\small
+\begin{tabular}{@{}llll@{}}
+\toprule
+Method & Complexity & Depends on & Works well when\\
+\midrule
+Trial division & $O(\sqrt n) = L_n[1, 1/2]$ & smallest factor $p$ ($\sim p$ steps) & $n$ has a small factor\\
+Fermat & $\approx (p - q)^2/(8\sqrt n)$ steps & gap $|p - q|$ & $p \approx q$\\
+Pollard $p - 1$ & $\approx B \log B$ mult.\ & largest prime of $p - 1$ & $p - 1$ is $B$-smooth\\
+Pollard rho & $O(\sqrt p) \le O(n^{1/4})$ & smallest factor $p$ & $p$ up to $\sim 20$ digits\\
+ECM & $L_p[1/2, \sqrt 2]$ & smallest factor $p$ & $p$ up to $\sim 70$ digits\\
+Quadratic sieve & $L_n[1/2, 1]$ & size of $n$ only & $n$ up to $\sim 100$ digits\\
+Number field sieve & $L_n[1/3, 1.923]$ & size of $n$ only & large $n$ (RSA moduli)\\
+\bottomrule
+\end{tabular}
+\end{center}
+The first five methods exploit a weakness of one factor (small, close to the other, or with smooth $p - 1$); a correctly generated RSA modulus has none, so only the general-purpose sieves apply, and their cost depends only on the size of $n$. Evaluating the formulas without the $o(1)$ term gives rough work estimates in bit-security terms (they overstate a little; the accepted equivalences in the last column are NIST's):
+\begin{center}\small
+\begin{tabular}{@{}rccccc@{}}
+\toprule
+Size of $n$ & Trial division & Pollard rho & QS $L[1/2, 1]$ & NFS $L[1/3, 1.923]$ & Accepted security\\
+\midrule
+512 bits & $2^{256}$ & $2^{128}$ & $\approx 2^{66}$ & $\approx 2^{64}$ & broken (1999)\\
+1024 bits & $2^{512}$ & $2^{256}$ & $\approx 2^{99}$ & $\approx 2^{87}$ & 80 bits (deprecated)\\
+2048 bits & $2^{1024}$ & $2^{512}$ & $\approx 2^{146}$ & $\approx 2^{117}$ & 112 bits\\
+3072 bits & $2^{1536}$ & $2^{768}$ & $\approx 2^{184}$ & $\approx 2^{139}$ & 128 bits\\
+\bottomrule
+\end{tabular}
+\end{center}
+\textbf{Consequences.} The 1024-bit minimum of the lecture slides (\S\ref{sec:rsa}) is now considered too small for new keys; 2048 bits is the current minimum and 3072 bits matches AES-128. Since NFS is sub-exponential, doubling the key length far less than squares the work, which is why RSA keys grow quickly for each extra bit of security (15360 bits for 256-bit security), and why elliptic-curve keys (256 bits for 128-bit security) are preferred where size matters. Shor's algorithm would factor $n$ in polynomial time on a large quantum computer, which is the reason for the current migration to post-quantum algorithms.
+

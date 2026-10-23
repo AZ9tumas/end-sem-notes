@@ -1,0 +1,376 @@
+% Syllabus Unit I topic not on this year's slides: block cipher modes of operation. Sources: Stallings (CNS) ch. 6-7,
+% Forouzan ch. 8, NIST SP 800-38A. Every toy-cipher value recomputed by scratchpad/w24/modes.py, practice.py, cts.py.
+\section{Block Cipher Modes of Operation}\label{sec:modes}
+\tikzset{
+  moE/.style={draw, fill=acc!8, minimum width=0.95cm, minimum height=0.62cm, font=\small, inner sep=1pt},
+  moX/.style={draw, circle, inner sep=0pt, minimum size=4.2mm, font=\footnotesize},
+  moL/.style={font=\footnotesize, inner sep=1pt},
+  moA/.style={-{Stealth[length=1.6mm]}}
+}
+
+A block cipher such as DES (\S\ref{sec:des}) or AES (\S\ref{sec:aes}) is defined for exactly one $n$-bit block: $C = E_K(P)$ with $|P| = n$ (64 or 128 bits). Real messages are kilobytes to gigabytes long, have arbitrary length, and sometimes arrive one character at a time. A \textbf{mode of operation} is the rule that says how the block cipher is applied to such a message: how the message is cut into blocks, how successive blocks are linked, and what extra input (an initialisation vector or a counter) is used. NIST (SP 800-38A) standardises five confidentiality modes, ECB, CBC, CFB, OFB and CTR, and they are the content of this section.
+
+\textbf{Notation.} The plaintext is split into blocks $P_1, P_2, \dots, P_N$ and the ciphertext is $C_1, \dots, C_N$; $E_K$ and $D_K$ are encryption and decryption of one block under key $K$; $\oplus$ is bitwise XOR. An \textbf{initialisation vector} (IV) is an extra $n$-bit block, known to both parties and normally sent in the clear with the ciphertext, that makes encryptions of the same message differ. A \textbf{nonce} (number used once) is a value that must never repeat under the same key.
+
+\subsection{What a mode must achieve \new}
+\likely{``Why are modes of operation needed? Classify them into block and stream modes'' (2--3 marks).}
+
+Applying the cipher block by block is not enough, for three reasons. First, the same plaintext block always gives the same ciphertext block under one key, so any repetition in the message (headers, blank areas of an image, a field that recurs in every record) shows up in the ciphertext. Second, some applications cannot wait for a full block or cannot afford padding: a terminal sends one 8-bit character at a time, and a disk sector or a database field must keep its length. Third, the modes behave very differently when a ciphertext bit is damaged in transit, when blocks must be processed in parallel, or when a single block in the middle of a file must be read without decrypting everything before it.
+
+The five modes fall into two families. In the \textbf{block modes} (ECB, CBC) the plaintext itself passes through $E_K$, so the message must be padded to a multiple of $n$ bits (\S\ref{sec:modern}) and the receiver needs $D_K$. In the \textbf{stream modes} (CFB, OFB, CTR) the block cipher is used only to produce a pseudorandom \textbf{key stream}, which is XORed with the plaintext exactly as in a stream cipher. These modes need no padding, the ciphertext is as long as the plaintext, and both sides use only $E_K$, because the receiver regenerates the same key stream and XORs it away.
+
+\subsection{Electronic codebook (ECB) mode \new}
+\likely{``Explain ECB with a diagram; why is it insecure for long messages?'' (3 marks).}
+
+In ECB each block is encrypted independently with the same key:
+\[
+C_i = E_K(P_i), \qquad P_i = D_K(C_i), \qquad i = 1, \dots, N .
+\]
+For a fixed key the mode is a huge lookup table that assigns one ciphertext block to every one of the $2^n$ plaintext blocks, hence the name codebook.
+
+\begin{center}
+\begin{tikzpicture}[font=\small]
+\foreach \i/\x in {1/0, 2/2.6, 3/5.2} {
+  \node[moL] (p\i) at (\x,1.15) {$P_\i$};
+  \node[moE] (e\i) at (\x,0) {$E$};
+  \node[moL] (c\i) at (\x,-1.15) {$C_\i$};
+  \node[moL] (k\i) at (\x-0.95,0) {$K$};
+  \draw[moA] (p\i) -- (e\i); \draw[moA] (e\i) -- (c\i); \draw[moA] (k\i) -- (e\i);
+}
+\node[moL, align=left, anchor=west] at (6.3,0) {decryption: same picture with\\$C_i$ on top, $D$ in the box, $P_i$ below};
+\end{tikzpicture}
+\end{center}
+
+\textbf{Security.} Since equal plaintext blocks give equal ciphertext blocks, ECB leaks the pattern of the message: an encrypted bitmap image still shows the outline of the picture, because every run of identical pixel blocks becomes a run of identical ciphertext blocks. The blocks are also independent of their position, so Eve can delete, repeat or reorder whole ciphertext blocks without detection; if each record of a payroll file fills one block, she can copy the ciphertext block holding her colleague's salary into her own record (a \textbf{block replay} or substitution attack).
+
+\textbf{Advantages.} ECB is the simplest mode. Encryption and decryption of different blocks are independent, so both can be done in parallel and any block can be decrypted on its own (random access). A transmission error in $C_i$ garbles only $P_i$. \textbf{Disadvantages.} It leaks equality of blocks, it allows block substitution, and it needs padding. ECB is therefore used only for data shorter than one block that is random anyway, such as a session key encrypted under a master key.
+
+\subsection{Cipher block chaining (CBC) mode \hot\new}
+\likely{``Draw and explain CBC encryption and decryption; how does an error propagate?'' (5 marks).}
+
+\textbf{Idea.} To make equal plaintext blocks encrypt differently, CBC mixes each plaintext block with the \emph{previous ciphertext block} before encrypting it. Since the previous ciphertext block depends on everything before it, $C_i$ depends on $P_1, \dots, P_i$, and the first block is mixed with the IV:
+\[
+C_0 = \mathrm{IV}, \qquad C_i = E_K(P_i \oplus C_{i-1}), \qquad P_i = D_K(C_i) \oplus C_{i-1} .
+\]
+\textbf{Why decryption works.} Applying $D_K$ to $C_i$ undoes the encryption: $D_K(C_i) = D_K\big(E_K(P_i \oplus C_{i-1})\big) = P_i \oplus C_{i-1}$. The receiver already holds $C_{i-1}$ (it is the previous ciphertext block, or the IV for $i = 1$), so XORing it in again cancels it and leaves $P_i$.
+
+\begin{center}
+\begin{tikzpicture}[font=\small]
+\node[moL, font=\footnotesize\bfseries] at (2.5,2.25) {Encryption};
+\node[moL] (iv) at (-1.35,1.1) {IV};
+\foreach \i/\x in {1/0, 2/2.5, 3/5.0} {
+  \node[moL] (p\i) at (\x,1.9) {$P_\i$};
+  \node[moX] (x\i) at (\x,1.1) {$+$};
+  \node[moE] (e\i) at (\x,0.15) {$E$};
+  \node[moL] (c\i) at (\x,-1.05) {$C_\i$};
+  \node[moL] (k\i) at (\x-0.85,0.15) {$K$};
+  \draw[moA] (p\i) -- (x\i); \draw[moA] (x\i) -- (e\i); \draw[moA] (e\i) -- (c\i); \draw[moA] (k\i) -- (e\i);
+}
+\draw[moA] (iv) -- (x1);
+\draw[moA] (0,-0.5) -- (1.25,-0.5) |- (x2.west);
+\draw[moA] (2.5,-0.5) -- (3.75,-0.5) |- (x3.west);
+\begin{scope}[xshift=8.75cm]
+\node[moL, font=\footnotesize\bfseries] at (2.5,2.25) {Decryption};
+\node[moL] (iv) at (-1.35,-0.15) {IV};
+\foreach \i/\x in {1/0, 2/2.5, 3/5.0} {
+  \node[moL] (c\i) at (\x,1.9) {$C_\i$};
+  \node[moE] (d\i) at (\x,0.8) {$D$};
+  \node[moX] (x\i) at (\x,-0.15) {$+$};
+  \node[moL] (p\i) at (\x,-1.05) {$P_\i$};
+  \node[moL] (k\i) at (\x-0.85,0.8) {$K$};
+  \draw[moA] (c\i) -- (d\i); \draw[moA] (d\i) -- (x\i); \draw[moA] (x\i) -- (p\i); \draw[moA] (k\i) -- (d\i);
+}
+\draw[moA] (iv) -- (x1);
+\draw[moA] (0,1.45) -- (1.25,1.45) |- (x2.west);
+\draw[moA] (2.5,1.45) -- (3.75,1.45) |- (x3.west);
+\end{scope}
+\end{tikzpicture}
+\end{center}
+
+\textbf{The IV.} The IV must be known to the receiver, so it is sent with the ciphertext (it is not secret), but it must be \textbf{unpredictable}, i.e.\ chosen at random for every message. If the same IV were reused, two messages that start with the same block would have the same $C_1$, which leaks that they agree. A predictable IV is worse, because it allows a chosen-plaintext check of a guess: suppose an old message had $C_1 = E_K(\mathrm{IV} \oplus P_1)$ and Eve wants to test whether $P_1 = G$. If she knows the IV$'$ of the next message and can get it to start with $P'_1 = \mathrm{IV}' \oplus \mathrm{IV} \oplus G$, then
+\[
+C'_1 = E_K(\mathrm{IV}' \oplus P'_1) = E_K(\mathrm{IV} \oplus G),
+\]
+which equals the old $C_1$ exactly when $G = P_1$ (this is the BEAST attack on TLS 1.0, whose IV was the last ciphertext block of the previous record). The IV must also arrive \textbf{unmodified}: since $P_1 = D_K(C_1) \oplus \mathrm{IV}$, flipping bit $j$ of the IV flips bit $j$ of $P_1$ and nothing else, so an attacker who can change the IV can change chosen bits of the first block. Stallings therefore recommends protecting the IV, for example by sending it ECB-encrypted or under the message's MAC.
+
+\textbf{Error propagation (derivation).} Suppose one bit of $C_i$ is flipped in transit, giving $C'_i$.
+\begin{itemize}
+  \item $P'_i = D_K(C'_i) \oplus C_{i-1}$: the decryption of a changed block is unrelated to $D_K(C_i)$, so the whole block $P_i$ is \textbf{garbled} (about half its bits wrong).
+  \item $P'_{i+1} = D_K(C_{i+1}) \oplus C'_i = P_{i+1} \oplus (C_i \oplus C'_i)$: block $i + 1$ has \textbf{exactly the same bit flipped} as the ciphertext.
+  \item $P_{i+2} = D_K(C_{i+2}) \oplus C_{i+1}$ uses neither $C_i$ nor $C'_i$, so it and all later blocks are \textbf{correct}.
+\end{itemize}
+CBC is therefore self-recovering after two blocks. The predictable flip in $P_{i+1}$ is a real weakness: Eve can flip a chosen bit of one block at the price of garbling the block before it, so CBC gives no integrity by itself. An error in a \emph{plaintext} block $P_i$ at the sender is different: it changes $C_i$ and through the chain every later ciphertext block, but the receiver's decryption undoes the chain and recovers exactly the transmitted plaintext, so only $P_i$ (which was wrong at the source) is wrong at the end.
+
+\textbf{Advantages.} Identical plaintext blocks give different ciphertext blocks, so patterns are hidden; the last block depends on the whole message, which is the basis of CBC-MAC. Decryption is parallel and allows random access, because $P_i$ needs only $C_i$ and $C_{i-1}$, which are both in the received ciphertext. \textbf{Disadvantages.} Encryption is strictly sequential (each block waits for the previous ciphertext); the message must be padded; an attacker can make controlled bit flips; and the IV must be random and protected. CBC is the standard mode for bulk encryption in older protocols (IPSec ESP, TLS up to 1.2, PGP-style systems with 3DES or AES).
+
+\subsection{Cipher feedback (CFB) mode \new}
+\likely{``Explain $s$-bit CFB with a shift-register diagram; why does decryption use $E$?'' (4 marks).}
+
+\textbf{Problem and idea.} A terminal or a serial line produces data in small units, say $s = 8$ bits, and each unit should be sent as soon as it is typed, without waiting for a full block and without padding. CFB turns the block cipher into a \textbf{self-synchronising stream cipher} (\S\ref{sec:modern}): the cipher encrypts a shift register, $s$ bits of its output are XORed with the next $s$-bit plaintext segment, and the resulting ciphertext segment is fed back into the register.
+
+\textbf{Mechanism.} An $n$-bit shift register $SR$ starts as the IV. For each $s$-bit segment:
+\[
+O_i = E_K(SR_i), \qquad C_i = P_i \oplus \mathrm{MSB}_s(O_i), \qquad SR_{i+1} = \mathrm{LSB}_{n-s}(SR_i) \,\|\, C_i ,
+\]
+where $\mathrm{MSB}_s$ takes the leftmost $s$ bits, the remaining $n - s$ output bits are discarded, and the register is shifted left by $s$ bits with $C_i$ entering on the right. Decryption runs the same register and the same $E_K$:
+\[
+P_i = C_i \oplus \mathrm{MSB}_s\big(E_K(SR_i)\big).
+\]
+\textbf{Why decryption uses $E_K$, not $D_K$.} The receiver must cancel the mask $\mathrm{MSB}_s(E_K(SR_i))$, not invert a block encryption. Its register holds the same IV and then the same ciphertext segments as the sender's, since it is filled with received ciphertext, so it computes the same mask with $E_K$, and $C_i \oplus \text{mask} = P_i \oplus \text{mask} \oplus \text{mask} = P_i$. With $s = n$ (full-block CFB) the register is simply the previous ciphertext block: $C_i = P_i \oplus E_K(C_{i-1})$, $C_0 = \mathrm{IV}$.
+
+\begin{center}
+\begin{tikzpicture}[font=\small]
+\foreach \i/\x/\reg in {1/0/{IV ($n$ bits)}, 2/5.2/{$n - s$ bits $\|\ C_1$}} {
+  \node[draw, minimum width=2.6cm, minimum height=0.5cm, font=\footnotesize] (r\i) at (\x,2.0) {\reg};
+  \node[moE] (e\i) at (\x,1.0) {$E$};
+  \node[moL] (k\i) at (\x-1.0,1.0) {$K$};
+  \node[draw, minimum width=2.6cm, minimum height=0.45cm, font=\scriptsize] (s\i) at (\x,0.05) {select $s$ $\mid$ discard $n - s$};
+  \node[moX] (x\i) at (\x-0.7,-0.85) {$+$};
+  \node[moL] (p\i) at (\x-1.9,-0.85) {$P_\i$ ($s$ bits)};
+  \node[moL] (c\i) at (\x-0.7,-1.7) {$C_\i$};
+  \draw[moA] (r\i) -- (e\i); \draw[moA] (k\i) -- (e\i); \draw[moA] (e\i) -- (s\i);
+  \draw[moA] ([xshift=-0.7cm]s\i.south) -- (x\i); \draw[moA] (p\i) -- (x\i); \draw[moA] (x\i) -- (c\i);
+}
+\draw[moA] (-0.7,-1.3) -- (2.4,-1.3) -- (2.4,2.65) -- (6.1,2.65) -- (6.1,2.25);
+\node[moL, align=left, anchor=west] at (7.0,0.6) {decryption: identical,\\$C_i$ enters the XOR and\\the register, $P_i$ comes out;\\the box is still $E$};
+\end{tikzpicture}
+\end{center}
+
+\textbf{Error propagation (derivation).} A flipped bit in $C_i$ affects decryption in two ways. Directly, $P_i = C_i \oplus \text{mask}$, so the \textbf{same bit} of $P_i$ is flipped. Indirectly, $C'_i$ enters the receiver's shift register and stays there while it is shifted from the right end to the left end, which takes $n/s$ further segments; during that time the register differs from the sender's, $E_K$ of it is unrelated to the correct mask, and those $n/s$ segments are \textbf{garbled}. After that $C'_i$ has been shifted out and decryption is correct again. In total one bit error damages $1 + n/s$ segments; for full-block CFB that is one bit of $P_i$ plus the whole of $P_{i+1}$. The same window explains self-synchronisation: if a whole segment is lost or inserted, the receiver's register is correct again after $n/s$ segments.
+
+\textbf{IV and cost.} The IV need not be secret but must be unpredictable and must not be reused: with the same IV the first mask repeats, so $C_1 \oplus C'_1 = P_1 \oplus P'_1$ for two messages. Each segment costs one full block encryption, so with $s = 8$ and AES ($n = 128$) CFB is 16 times slower than CBC. Encryption is sequential, since $SR_{i+1}$ needs $C_i$; decryption can be parallel, since all ciphertext segments, and hence all register contents, are known at the start.
+
+\textbf{Advantages.} CFB needs no padding, sends each $s$-bit unit immediately, and recovers by itself from errors and lost segments. \textbf{Disadvantages.} It is slow for small $s$, an error spreads over $n/s$ further segments, and a bit flip in $C_i$ gives a controlled flip in $P_i$.
+
+\subsection{Output feedback (OFB) mode \new}
+\likely{``Differentiate CFB and OFB; why must the OFB IV never be reused?'' (3--4 marks).}
+
+\textbf{Idea.} OFB feeds back the \emph{output} of the cipher instead of the ciphertext. The key stream then depends only on the key and the IV, not on the message, which makes OFB a \textbf{synchronous stream cipher}: the key stream can be computed before the message exists, and a transmission error cannot spread. In the full-block form standardised by NIST,
+\[
+O_0 = \mathrm{IV}, \qquad O_i = E_K(O_{i-1}), \qquad C_i = P_i \oplus O_i, \qquad P_i = C_i \oplus O_i .
+\]
+Decryption generates the same $O_1, O_2, \dots$ from the same IV and key and XORs them away; again only $E_K$ is used. If the last block is short, only the leading bits of the last $O_N$ are used, so no padding is needed.
+
+\begin{center}
+\begin{tikzpicture}[font=\small]
+\node[moL] (iv) at (0,1.15) {IV (nonce)};
+\foreach \i/\x in {1/0, 2/2.6, 3/5.2} {
+  \node[moE] (e\i) at (\x,0) {$E$};
+  \node[moL] (k\i) at (\x-0.85,0) {$K$};
+  \node[moX] (x\i) at (\x,-1.25) {$+$};
+  \node[moL] (p\i) at (\x-0.9,-1.25) {$P_\i$};
+  \node[moL] (c\i) at (\x,-2.05) {$C_\i$};
+  \draw[moA] (k\i) -- (e\i); \draw[moA] (e\i) -- node[moL, left, pos=0.3]{$O_\i$} (x\i); \draw[moA] (p\i) -- (x\i); \draw[moA] (x\i) -- (c\i);
+}
+\draw[moA] (iv) -- (e1);
+\draw[moA] (0,-0.62) -- (1.3,-0.62) -- (1.3,0.8) -- (2.6,0.8) -- (e2.north);
+\draw[moA] (2.6,-0.62) -- (3.9,-0.62) -- (3.9,0.8) -- (5.2,0.8) -- (e3.north);
+\node[moL, align=left, anchor=west] at (6.2,-0.6) {decryption: same key stream $O_i$,\\$C_i$ in, $P_i = C_i \oplus O_i$ out};
+\end{tikzpicture}
+\end{center}
+
+\textbf{Error propagation.} Since $P'_i = C'_i \oplus O_i$ and the key stream does not depend on the ciphertext, a flipped bit in $C_i$ flips only the same bit of $P_i$; nothing else is affected. This makes OFB attractive for noisy channels (satellite links, digitised voice and video), where a few wrong bits are tolerable but a garbled block is not. The price is twofold. The mode is fully \textbf{malleable}: Eve can flip any chosen plaintext bit by flipping the ciphertext bit, so a MAC is needed (\S\ref{sec:integrity}). And as in every synchronous stream cipher, a \emph{lost} or inserted bit shifts the key stream against the ciphertext and garbles everything after it until the parties resynchronise.
+
+\textbf{Never reuse the IV.} If two messages $P$ and $P'$ are encrypted with the same key and IV, they use the same key stream $O_i$, and Eve, who sees both ciphertexts, computes
+\[
+C_i \oplus C'_i = (P_i \oplus O_i) \oplus (P'_i \oplus O_i) = P_i \oplus P'_i .
+\]
+The key stream cancels, so she obtains the XOR of the two plaintexts without knowing the key, exactly the ``two-time pad'' failure of a one-time pad used twice (\S\ref{sec:otp}). If she knows or guesses one plaintext, she gets the other: $P'_i = C_i \oplus C'_i \oplus P_i$. The OFB IV is therefore a \textbf{nonce}: it need not be secret or random, but it must be unique for each message under a key.
+
+\textbf{Key-stream cycles.} Since $O_i = E_K(O_{i-1})$ iterates one fixed permutation of the $2^n$ blocks, the key stream eventually returns to the IV and repeats. For a random permutation the cycle through a given IV has expected length about $2^{n-1}$, which is harmless for $n = 64$ or 128, but a short cycle would be a disaster: in the toy cipher of the worked example, $0000 \to 0100 \to 1111 \to 0000$ is a cycle of length 3, so the IV $0000$ would repeat the key stream after three blocks. The older $s$-bit form of OFB (feeding back only $s < n$ bits) has much shorter expected cycles, about $2^{n/2}$, which is why only full-block feedback is recommended.
+
+\textbf{Advantages.} No error propagation, no padding, and the key stream can be precomputed. \textbf{Disadvantages.} No parallelism or random access (block $i$ needs $O_1, \dots, O_{i-1}$ first), malleability, loss of synchronisation on lost bits, and catastrophic failure on IV reuse.
+
+\subsection{Counter (CTR) mode \hot\new}
+\likely{``Explain CTR mode and list its advantages'' (4 marks); CTR versus OFB.}
+
+\textbf{Idea.} CTR keeps the stream-cipher structure of OFB but removes the chain from the key stream: block $i$ of the key stream is the encryption of a \textbf{counter block} $T_i$ that is different for every block and every message. Usually $T_i$ is a per-message nonce concatenated with a block counter that starts at 1 (or 0) and is incremented for each block:
+\[
+T_i = \text{nonce} \,\|\, i, \qquad C_i = P_i \oplus E_K(T_i), \qquad P_i = C_i \oplus E_K(T_i).
+\]
+Decryption is the same computation, because XORing with the same mask twice cancels it. A short last block uses only the leading bits of $E_K(T_N)$, so there is no padding.
+
+\begin{center}
+\begin{tikzpicture}[font=\small]
+\foreach \i/\x/\t in {1/0/{nonce$\|$1}, 2/2.7/{nonce$\|$2}, 3/5.4/{nonce$\|$3}} {
+  \node[moL] (t\i) at (\x,1.05) {\t};
+  \node[moE] (e\i) at (\x,0) {$E$};
+  \node[moL] (k\i) at (\x-0.85,0) {$K$};
+  \node[moX] (x\i) at (\x,-1.15) {$+$};
+  \node[moL] (p\i) at (\x-0.9,-1.15) {$P_\i$};
+  \node[moL] (c\i) at (\x,-1.95) {$C_\i$};
+  \draw[moA] (t\i) -- (e\i); \draw[moA] (k\i) -- (e\i); \draw[moA] (e\i) -- (x\i); \draw[moA] (p\i) -- (x\i); \draw[moA] (x\i) -- (c\i);
+}
+\node[moL, align=left, anchor=west] at (6.4,-0.5) {decryption: same counters,\\$P_i = C_i \oplus E_K(T_i)$};
+\end{tikzpicture}
+\end{center}
+
+\textbf{Advantages} (Stallings lists six).
+\begin{itemize}
+  \item \textbf{Hardware efficiency}: the blocks are independent, so many can be encrypted or decrypted in parallel; the throughput is limited only by the amount of parallel hardware.
+  \item \textbf{Software efficiency}: the independence also suits pipelined and multi-core processors.
+  \item \textbf{Preprocessing}: $E_K(T_i)$ does not depend on the data, so the key stream can be computed in advance and encryption reduces to one XOR per block when the data arrive.
+  \item \textbf{Random access}: block $i$ is decrypted from $C_i$ and $T_i$ alone, without touching blocks $1, \dots, i-1$, which suits files and disks.
+  \item \textbf{Provable security}: CTR is at least as secure as the other modes, under the same assumption on the block cipher.
+  \item \textbf{Simplicity}: only $E_K$ is ever used, so $D_K$ need not be implemented.
+\end{itemize}
+
+\textbf{Requirement.} A counter block must \textbf{never be used twice with the same key}, in the same message or in different messages. If it were, the same mask would be XORed onto two plaintext blocks and $C_i \oplus C'_i = P_i \oplus P'_i$ would leak, exactly as for a reused OFB IV. This is why the nonce part changes for every message and the counter part is long enough never to wrap around within one message. Errors behave as in OFB: a flipped ciphertext bit flips only the same plaintext bit, and the mode is malleable, so CTR is normally combined with a MAC; AES-GCM, the default cipher of TLS 1.3, is CTR encryption plus a polynomial MAC.
+
+\subsection{IV and nonce rules, and why block size matters \hot\new}
+\likely{``What happens if the IV is reused in OFB/CTR? Show that $C \oplus C'$ leaks $P \oplus P'$'' (3 marks).}
+
+The modes differ in what they demand of the IV, and every requirement comes from one of the attacks above.
+\begin{center}\small
+\begin{tabularx}{\textwidth}{@{}l l X@{}}
+\toprule
+Mode & Requirement on IV / counter & What goes wrong if it is violated\\
+\midrule
+ECB & none (no IV) & equal blocks always visible\\
+CBC & random, unpredictable; protected against change & reuse shows equal first blocks; predictable IV allows guess checking (BEAST); a changed IV flips chosen bits of $P_1$\\
+CFB & unpredictable, not reused & reuse gives $C_1 \oplus C'_1 = P_1 \oplus P'_1$\\
+OFB & nonce: unique per message & reuse gives the same key stream: $C \oplus C' = P \oplus P'$ for every block\\
+CTR & every counter block unique under the key & a repeated counter block gives $C_i \oplus C'_j = P_i \oplus P'_j$\\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\textbf{Block size and the birthday bound.} Even with perfect IVs, CBC leaks once two ciphertext blocks happen to be equal. If $C_i = C_j$, then $E_K(P_i \oplus C_{i-1}) = E_K(P_j \oplus C_{j-1})$; since $E_K$ is a permutation, $P_i \oplus C_{i-1} = P_j \oplus C_{j-1}$, i.e.\ $P_i \oplus P_j = C_{i-1} \oplus C_{j-1}$, which Eve can compute. The ciphertext blocks behave like random $n$-bit values, so by the birthday problem (\S\ref{sec:integrity}) such a collision is likely after about $1.18 \times 2^{n/2}$ blocks. For a 64-bit cipher (DES, 3DES) that is about $2^{32}$ blocks $= 32$ GB under one key, which is reached in practice (the Sweet32 attack on 3DES in TLS, 2016); for AES ($n = 128$) it is $2^{64}$ blocks, far beyond any session. Keys for 64-bit ciphers must therefore be changed long before $2^{32}$ blocks.
+
+\subsection{Error propagation, parallelism and padding compared \hot\new}
+\likely{``A bit error occurs in $C_i$. Which plaintext blocks are affected in ECB, CBC, CFB, OFB and CTR?'' (5 marks).}
+
+\begin{mustknow}[: the five modes]
+\begin{tabular}{@{}l l l@{}}
+ECB & $C_i = E_K(P_i)$ & $P_i = D_K(C_i)$\\
+CBC & $C_i = E_K(P_i \oplus C_{i-1})$, \;$C_0 = \mathrm{IV}$ & $P_i = D_K(C_i) \oplus C_{i-1}$\\
+CFB & $C_i = P_i \oplus \mathrm{MSB}_s(E_K(SR_i))$, \;$SR_{i+1} = \mathrm{LSB}_{n-s}(SR_i) \| C_i$ & $P_i = C_i \oplus \mathrm{MSB}_s(E_K(SR_i))$\\
+OFB & $O_i = E_K(O_{i-1})$, \;$O_0 = \mathrm{IV}$, \;$C_i = P_i \oplus O_i$ & $P_i = C_i \oplus O_i$\\
+CTR & $C_i = P_i \oplus E_K(T_i)$, \;$T_i = \text{nonce} \| i$ & $P_i = C_i \oplus E_K(T_i)$
+\end{tabular}\\[2pt]
+One flipped bit in $C_i$ damages: ECB: block $i$; CBC: block $i$ garbled $+$ same bit of block $i+1$; CFB: same bit of segment $i$ $+$ the next $n/s$ segments garbled; OFB, CTR: only the same bit of block $i$.
+\end{mustknow}
+
+\begin{center}\small
+\begin{tabularx}{\textwidth}{@{}l l l l l X@{}}
+\toprule
+Mode & Type & Uses $D_K$? & Parallel enc./dec. & Padding & Typical use\\
+\midrule
+ECB & block & yes & yes / yes & yes & single random blocks (keys)\\
+CBC & block & yes & no / yes & yes & bulk data, CBC-MAC\\
+CFB & stream, self-synchronising & no & no / yes & no & character streams, terminals\\
+OFB & stream, synchronous & no & no / no (precomputable) & no & noisy channels (satellite, audio)\\
+CTR & stream, synchronous & no & yes / yes & no & high-speed links, disks, AES-GCM\\
+\bottomrule
+\end{tabularx}
+\end{center}
+Random access to block $i$ is possible in ECB, CBC (from $C_{i-1}, C_i$), CFB (from the preceding $n/s$ segments) and CTR, but not in OFB, which must run the chain from the IV.
+
+\subsection{Worked example: the five modes on a toy 4-bit cipher \hot\new}
+\likely{``Using the given 4-bit block cipher, encrypt $P$ in ECB, CBC, CFB, OFB and CTR mode'' (5--8 marks).}
+
+The toy cipher has a 4-bit block and a 4-bit key: $E_K(x) = S(x \oplus K)$, where $S$ is row 0 of DES S-box S1, a permutation of the sixteen 4-bit values. With $K = 0001$ the whole cipher is the table below (hex digits; e.g.\ $E_K(\ttx{A}) = S(1010 \oplus 0001) = S(1011) = 1100 = \ttx{C}$).
+\begin{center}\small\setlength{\tabcolsep}{3.4pt}
+\begin{tabular}{@{}l*{16}{c}@{}}
+\toprule
+$x$ & 0&1&2&3&4&5&6&7&8&9&A&B&C&D&E&F\\
+\midrule
+$S(x)$ & E&4&D&1&2&F&B&8&3&A&6&C&5&9&0&7\\
+$E_K(x) = S(x \oplus 1)$ & 4&E&1&D&F&2&8&B&A&3&C&6&9&5&7&0\\
+$D_K(y)$, inverse of $E_K$ & F&2&5&9&0&D&B&E&6&C&8&7&A&3&1&4\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\begin{worked}[: same plaintext, five modes]
+\textbf{Q.} Using the toy cipher with $K = 0001$, encrypt $P = 1010\ 1010\ 0011$ (three 4-bit blocks) in ECB, CBC, full-block CFB, OFB and CTR mode, with $\mathrm{IV} = 0110$; in CTR the counter blocks are $T_1 = \mathrm{IV}$, $T_i = T_{i-1} + 1 \bmod 16$. Decrypt the CBC ciphertext to check it, and say what each ciphertext reveals.
+
+\textbf{A.} Every $E_K$ value is read from the table.
+\begin{center}\small
+\begin{tabular}{@{}c|cc|cccc|ccc@{}}
+\toprule
+ & \multicolumn{2}{c|}{ECB} & \multicolumn{4}{c|}{CBC} & \multicolumn{3}{c}{CFB (input $C_{i-1}$)}\\
+$i$ & $P_i$ & $C_i = E_K(P_i)$ & $C_{i-1}$ & $P_i \oplus C_{i-1}$ & $C_i$ & check $D_K(C_i) \oplus C_{i-1}$ & $E_K(C_{i-1})$ & $P_i$ & $C_i$\\
+\midrule
+1 & 1010 & 1100 & 0110 (IV) & 1100 & 1001 & $1100 \oplus 0110 = 1010$ & $E_K(0110) = 1000$ & 1010 & 0010\\
+2 & 1010 & 1100 & 1001 & 0011 & 1101 & $0011 \oplus 1001 = 1010$ & $E_K(0010) = 0001$ & 1010 & 1011\\
+3 & 0011 & 1101 & 1101 & 1110 & 0111 & $1110 \oplus 1101 = 0011$ & $E_K(1011) = 0110$ & 0011 & 0101\\
+\bottomrule
+\end{tabular}
+
+\vspace{4pt}
+\begin{tabular}{@{}c|ccc|ccc@{}}
+\toprule
+ & \multicolumn{3}{c|}{OFB} & \multicolumn{3}{c}{CTR}\\
+$i$ & $O_i = E_K(O_{i-1})$ & $P_i$ & $C_i = P_i \oplus O_i$ & $T_i$ & $E_K(T_i)$ & $C_i = P_i \oplus E_K(T_i)$\\
+\midrule
+1 & $E_K(0110) = 1000$ & 1010 & 0010 & 0110 & 1000 & 0010\\
+2 & $E_K(1000) = 1010$ & 1010 & 0000 & 0111 & 1011 & 0001\\
+3 & $E_K(1010) = 1100$ & 0011 & 1111 & 1000 & 1010 & 1001\\
+\bottomrule
+\end{tabular}
+\end{center}
+\textbf{Results:} ECB $\mathbf{1100\ 1100\ 1101}$; CBC $\mathbf{1001\ 1101\ 0111}$; CFB $\mathbf{0010\ 1011\ 0101}$; OFB $\mathbf{0010\ 0000\ 1111}$; CTR $\mathbf{0010\ 0001\ 1001}$.\\
+\emph{Observations.} (1) ECB gives $C_1 = C_2 = 1100$, so Eve sees that $P_1 = P_2$ without knowing the key; every other mode hides the repetition. (2) CFB, OFB and CTR all start with $C_1 = P_1 \oplus E_K(\mathrm{IV}) = 0010$, because all three use $E_K(\mathrm{IV})$ as the first mask; they differ from block 2 on, where the next cipher input is $C_1$, $O_1$ and $T_2$ respectively. (3) OFB's $C_2 = 0000$ only means that $O_2$ happened to equal $P_2$.\\
+\emph{Check:} the CBC decryption column returns $1010, 1010, 0011 = P$.
+\end{worked}
+
+\begin{worked}[: error propagation on the toy cipher]
+\textbf{Q.} In each of the five ciphertexts above, the leftmost bit of $C_2$ is flipped in transit. Decrypt and state which plaintext bits are wrong.
+
+\textbf{A.} The changed block is $C'_2 = C_2 \oplus 1000$.
+\begin{center}\small
+\begin{tabular}{@{}l l l l c@{}}
+\toprule
+Mode & $C'_2$ & Decryption of the affected blocks & Received $P$ & Wrong bits ($\oplus P$)\\
+\midrule
+ECB & 0100 & $P'_2 = D_K(0100) = 0000$ & 1010 \textbf{0000} 0011 & 0000 1010 0000\\
+CBC & 0101 & $P'_2 = D_K(0101) \oplus C_1 = 1101 \oplus 1001 = 0100$; & 1010 \textbf{0100} \textbf{1011} & 0000 1110 1000\\
+ & & $P'_3 = D_K(C_3) \oplus C'_2 = 1110 \oplus 0101 = 1011$ & & \\
+CFB & 0011 & $P'_2 = C'_2 \oplus E_K(C_1) = 0011 \oplus 0001 = 0010$; & 1010 \textbf{0010} \textbf{1000} & 0000 1000 1011\\
+ & & $P'_3 = C_3 \oplus E_K(C'_2) = 0101 \oplus 1101 = 1000$ & & \\
+OFB & 1000 & $P'_2 = C'_2 \oplus O_2 = 1000 \oplus 1010 = 0010$ & 1010 \textbf{0010} 0011 & 0000 1000 0000\\
+CTR & 1001 & $P'_2 = C'_2 \oplus E_K(T_2) = 1001 \oplus 1011 = 0010$ & 1010 \textbf{0010} 0011 & 0000 1000 0000\\
+\bottomrule
+\end{tabular}
+\end{center}
+ECB garbles block 2 only; CBC garbles block 2 and flips exactly the leftmost bit of block 3; full-block CFB flips exactly the leftmost bit of block 2 and garbles block 3; OFB and CTR flip only the leftmost bit of block 2. Block 1 is correct in every mode.\\
+\emph{Check:} this matches the derived rules (CBC: $i$ garbled, $i+1$ same bit; CFB: same bit, then $n/s = 1$ block garbled).
+\end{worked}
+
+\begin{worked}[: counter reuse in CTR]
+\textbf{Q.} By mistake the second message $Q = 1111\ 0000\ 0101$ is encrypted in CTR mode with the same key and the same counter blocks $0110, 0111, 1000$. What can Eve learn from the two ciphertexts?
+
+\textbf{A.} The masks are again $1000, 1011, 1010$, so $C' = Q \oplus$ masks $= 0111\ 1011\ 1111$. Eve XORs the two ciphertexts block by block: $0010 \oplus 0111 = 0101$, $0001 \oplus 1011 = 1010$, $1001 \oplus 1111 = 0110$. This is exactly $P \oplus Q = 0101\ 1010\ 0110$, obtained without the key. If she knows $P$ (a standard header, say), she recovers $Q = C \oplus C' \oplus P$ completely.\\
+\emph{Check:} $1010 \oplus 1111 = 0101$, $1010 \oplus 0000 = 1010$, $0011 \oplus 0101 = 0110$ \checkmark.
+\end{worked}
+
+\subsection{Ciphertext stealing}
+Padding makes the ECB or CBC ciphertext longer than the plaintext, which is unacceptable when the ciphertext has to fit in the same space, for example a disk sector or a fixed-length database field. \textbf{Ciphertext stealing} avoids padding by ``stealing'' the missing bits of the last block from the ciphertext of the block before it. Let $P_N$ have $m < n$ bits, and let $\mathrm{head}_m$ and $\mathrm{tail}_{n-m}$ denote the first $m$ and the last $n - m$ bits. CBC with ciphertext stealing (Forouzan) processes blocks $1, \dots, N-2$ normally and then computes
+\[
+X = E_K(P_{N-1} \oplus C_{N-2}), \qquad C_N = \mathrm{head}_m(X), \qquad Y = (P_N \,\|\, 0^{n-m}) \oplus X, \qquad C_{N-1} = E_K(Y).
+\]
+The sender transmits $C_1, \dots, C_{N-1}$ and the $m$-bit $C_N$, so the ciphertext is exactly as long as the plaintext. The receiver computes $Y = D_K(C_{N-1})$. The last $n - m$ bits of $Y$ equal those of $X$ (they were XORed with zeros), so $X = C_N \,\|\, \mathrm{tail}_{n-m}(Y)$ can be rebuilt; then $P_N = \mathrm{head}_m(Y) \oplus C_N$ and $P_{N-1} = D_K(X) \oplus C_{N-2}$. The tail of $X$ that is never transmitted travels inside $C_{N-1}$; that is the ``stolen'' ciphertext. The method needs at least two blocks (checked by script on random inputs).
+
+\subsection{Multiple encryption: double and triple DES}
+Section~\ref{sec:des} derives the meet-in-the-middle attack and the triple-DES variants in full; only the results are collected here. Double DES, $C = E_{K_2}(E_{K_1}(P))$, has a 112-bit key, but the attacker encrypts a known $P$ under all $2^{56}$ keys $K_1$, stores the middle values, decrypts $C$ under all $2^{56}$ keys $K_2$ and looks for a match, so the work is $2^{56} + 2^{56} = 2^{57}$ DES operations instead of $2^{112}$. The memory is the real obstacle: $2^{56}$ entries of a 64-bit middle value and a 56-bit key are $2^{56} \times 15$ bytes $\approx 1.08 \times 10^{18}$ bytes, about one exabyte. Triple DES with two keys, $C = E_{K_1}(D_{K_2}(E_{K_1}(P)))$, has the middle stage as a \emph{decryption} so that $K_1 = K_2$ gives single DES and a 3DES device stays compatible with a DES device; any split of its three stages leaves a $2^{112}$ search on one side. Triple DES with three keys has a 168-bit key and meet-in-the-middle security of about $2^{112}$.
+\begin{center}\small
+\begin{tabular}{@{}lccc@{}}
+\toprule
+Scheme & Key bits & Brute force & Meet-in-the-middle\\
+\midrule
+DES & 56 & $2^{56}$ & ---\\
+Double DES & 112 & $2^{112}$ & $2^{57}$ time, $2^{56}$ blocks of memory\\
+3DES, two keys (EDE) & 112 & $2^{112}$ & no gain (still $\approx 2^{112}$)\\
+3DES, three keys & 168 & $2^{168}$ & $\approx 2^{112}$\\
+\bottomrule
+\end{tabular}
+\end{center}
+Triple DES is a block cipher in its own right (64-bit block), so it is used with one of the five modes, normally CBC (3DES-CBC in PGP, S/MIME and IPSec), and it inherits the 64-bit birthday limit above.
+
+\begin{fixbox}
+\begin{itemize}
+  \item No class slides cover this topic; the notes follow Stallings, Forouzan and NIST SP 800-38A. The books differ in notation, which matters when an exam question is copied from one of them. Forouzan writes $r$ for the CFB segment size that Stallings calls $s$, and describes OFB with an $r$-bit shift register like CFB; Stallings' newer editions and NIST use full-block OFB, $O_i = E_K(O_{i-1})$, as here. Forouzan initialises the CTR counter with the IV and increments it per block; Stallings writes a counter that starts from a nonce. Both describe the same modes.
+  \item A frequent exam mistake is to draw $D_K$ at the receiver in CFB, OFB or CTR. These modes use only $E_K$ at both ends, which is also why the block function in them need not even be invertible.
+\end{itemize}
+\end{fixbox}

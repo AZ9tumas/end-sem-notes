@@ -1,7 +1,9 @@
-% Videos: network security model, symmetric cipher model, types of crypto, security of schemes
-\section{Model for Network Security}
+% Sources: Neso videos (model for network security, network access security model, symmetric cipher model, types of
+% cryptography, security of encryption schemes; crypto/notes1.md), slides L1 (definitions), Stallings ch. 1--2,
+% Forouzan ch. 1 and 3. Brute-force times recomputed by script (scratchpad/r1/verify.py).
+\section{Model for Network Security}\label{sec:netmodel}
 
-Sender $S$ wants to send a message to receiver $R$ over an insecure channel (the Internet). An \textbf{opponent} can sniff the channel.
+Two parties, a sender $S$ and a receiver $R$, want to exchange messages over an insecure communication facility such as the Internet. The parties are called \textbf{principals}. Computer networking is concerned with getting the message from $S$ to $R$; network security is concerned with what can go wrong on the way, because the path passes through links and routers that neither principal controls. Anyone with access to the path, called the \textbf{opponent} (eavesdropper, sniffer, attacker), can read, copy, change or block what is sent. The model below shows the general pattern that every protection scheme in this course follows.
 
 \begin{center}
 \begin{tikzpicture}[node distance=6mm]
@@ -26,28 +28,32 @@ Sender $S$ wants to send a message to receiver $R$ over an insecure channel (the
 \end{tikzpicture}
 \end{center}
 
-\begin{itemize}
-  \item \textbf{T (security-related transformation)} takes two inputs: the message and \textbf{secret info} (a key). Output: a secure message (ciphertext). $R$ applies the reverse $T$ with its secret info.
-  \item It is called $T$, not $E$, because encryption is only one option. \textbf{Steganography} (hiding data inside an image, audio, etc.) is another.
-  \item The opponent can intercept the secure message but cannot read it.
-  \item Security rests on the \textbf{key} (its secrecy and bit length) and algorithm strength, not on hiding the algorithm. Small key space $\Rightarrow$ brute force works.
-  \item \textbf{Trusted Third Party (TTP)}: distributes keys, issues certificates, settles disputes. Example: a Certificate Authority signing a bank's SSL certificate. (Details come later in the course.)
-\end{itemize}
+\textbf{The transformation and the secret.} Instead of sending the plaintext message, $S$ passes it through a \textbf{security-related transformation} $T$. The transformation has two inputs: the message and a piece of \textbf{secret information} (normally a \textbf{key}, a string of bits that selects one particular transformation out of a whole family). Its output is the \textbf{secure message}, for example a ciphertext. At the other end $R$ applies the complementary transformation with its own copy of the secret information and gets the original message back. Stallings sums up the model in one sentence: \imp{every technique for providing security has two components, a security-related transformation of the information to be sent and some secret information shared by the two principals.}
+
+\textbf{Why $T$ and not $E$.} The box is labelled $T$ rather than $E$ (encryption) because encryption is only one kind of transformation. \textbf{Steganography}, which hides the message inside an innocent-looking carrier such as an image or an audio file so that its very existence is concealed, is another; appending an authentication code or a signature to the message is a third. The model covers all of them.
+
+\textbf{What the opponent can do.} The opponent sits on the channel and can intercept the secure message, but since it was transformed with a secret he does not have, he cannot recover the content. Security therefore does \emph{not} come from hiding how $T$ works: the algorithms are public and standardised. It comes from two things: the strength of the algorithm, and the secrecy and length of the key. If the key can take only a few values, the opponent simply tries all of them (a brute-force attack, \S\ref{sec:bruteforce}); every extra key bit doubles his work.
+
+\textbf{The trusted third party.} A \textbf{trusted third party} (TTP) is an entity that both principals trust and that the opponent cannot impersonate. It may be needed to \emph{distribute} the secret information to $S$ and $R$ while keeping it from the opponent (a key distribution centre), to \emph{certify} public keys, or to \emph{arbitrate} disputes between the principals about whether a message was really sent or received. A familiar example is the certificate authority (CA) that signs a bank's SSL/TLS certificate: when a customer opens the bank's website, the browser trusts the bank's public key only because a CA it already trusts vouches for it. The details come in key management (\S\ref{sec:keymgmt}).
 
 \subsection{Four tasks in designing a security service}
-\begin{keybox}
+Each component of the model turns into one design task. A transformation is needed, so an algorithm must be designed; the algorithm needs secret information, so keys must be generated; both principals need the same (or matching) secret information, so it must be distributed; and the principals must use all of this in the same way, so a protocol must be fixed.
+
+\begin{mustknow}[: the four tasks (Stallings)]
 \begin{enumerate}[leftmargin=1.5em]
-  \item \textbf{Design an algorithm} for $T$ (encrypt at $S$, decrypt at $R$) that the opponent cannot defeat.
-  \item \textbf{Generate the secret information} (large keys, so brute force is infeasible).
-  \item \textbf{Develop methods to distribute and share} the secret info (get keys to $S$ and $R$ safely).
-  \item \textbf{Specify a protocol}: the rules both parties follow to use the algorithm and keys (e.g., SSL/TLS, IPsec).
+  \item \textbf{Design an algorithm} for performing the security-related transformation (encryption at $S$, decryption at $R$), such that an opponent cannot defeat its purpose.
+  \item \textbf{Generate the secret information} to be used with the algorithm: keys large and random enough that guessing or exhaustive search is infeasible.
+  \item \textbf{Develop methods for the distribution and sharing} of the secret information, so that $S$ and $R$ obtain it without the opponent learning it.
+  \item \textbf{Specify a protocol} to be used by the two principals that makes use of the algorithm and the secret information to achieve a particular security service (e.g.\ SSL/TLS, IPsec).
 \end{enumerate}
-\end{keybox}
 Memory aid: \emph{Algorithm $\to$ Key $\to$ Distribute $\to$ Protocol}.
+\end{mustknow}
 
-\section{Network Access Security Model}
+Task 1 is where cryptographic design happens (the ciphers of the coming chapters). Task 2 is harder than it looks, because a key produced by a predictable process (a timestamp, a weak random-number generator) shrinks the effective key space no matter how long the key is. Task 3 is the \emph{key distribution problem}: in symmetric cryptography both principals need the same key, and sending it over the channel it is meant to protect defeats the purpose; it is solved by a TTP, by public-key methods or by Diffie--Hellman. Task 4 exists because a strong algorithm with good keys can still be used insecurely: the protocol fixes the message formats, the order of messages and the checks each party performs, which is what SSL/TLS and IPsec standardise.
 
-Protects a \emph{system} from unwanted access, rather than protecting a message in transit.
+\section{Network Access Security Model}\label{sec:accessmodel}
+
+The first model protects a \emph{message in transit}. A second class of threats targets an \emph{information system} itself: an opponent tries to get into a computer system through the network, to read or change the data stored there or to disrupt its service. Stallings divides such threats into \textbf{information access threats}, which intercept or modify data on behalf of users who should not have access to it, and \textbf{service threats}, which exploit flaws in services to stop legitimate users from using them.
 
 \begin{center}
 \begin{tikzpicture}[node distance=8mm]
@@ -61,20 +67,41 @@ Protects a \emph{system} from unwanted access, rather than protecting a message 
 \end{tikzpicture}
 \end{center}
 
-\begin{itemize}
-  \item \textbf{Opponent}: a human hacker or malicious software.
-  \item \textbf{Gatekeeper}: first line of defence, like a guard at a gate. Filters traffic and blocks intruders (firewall, login checks).
-  \item \textbf{Internal security controls}: second line, inside the system, catching what slips past the gate (antivirus, OS permissions).
-  \item Insiders (e.g., employees) can also attack, but this model focuses on outside threats.
-\end{itemize}
+The \textbf{opponent} may be a human (a hacker who breaks in for the challenge, a criminal after money, a disgruntled ex-employee) or software (viruses, worms, Trojan horses), which may arrive over the network or on a USB stick. It reaches the system through the \textbf{access channel}, normally the Internet. The \textbf{information system} contains the assets to be protected: computing resources (processor, memory, I/O), data, running processes and installed software.
 
-\section{Cryptography}
+Defence is placed in two layers. The \textbf{gatekeeper function} is the first line, like a guard at a gate: it examines everything that comes in through the access channel and admits only what is allowed. Firewalls, packet filters, password-based login procedures and screening logic that rejects worms and viruses all belong here. Since no gate is perfect and some attacks start inside, the second line consists of \textbf{internal security controls}, which run inside the system and watch its activity and stored information to detect and contain whatever got past the gate: antivirus software, file-integrity checkers, intrusion detection and operating-system access permissions.
 
-\begin{keybox}[title=Definition]
-The art or science of transforming an \textbf{intelligible} message (plaintext) into an \textbf{unintelligible} one (ciphertext), and then \textbf{retransforming} it back to the original form.
-\end{keybox}
+\textbf{Insiders.} An employee who misuses legitimate access never passes the gatekeeper, so only the internal controls can catch him. Insider attacks can do great damage, but the model is drawn mainly for the outside opponent, who must come through the access channel.
+
+\begin{center}\small
+\begin{tabularx}{\textwidth}{@{}l X X@{}}
+\toprule
+ & Model for network security & Network access security model\\
+\midrule
+Protects & a message while it travels from $S$ to $R$ & an information system and the resources inside it\\
+Opponent & on the channel, between the principals & outside the system, trying to get in (or an insider)\\
+Defence & security-related transformation with secret information (encryption, MAC, signature) & gatekeeper (firewall, login) plus internal security controls (antivirus, IDS)\\
+Extra party & trusted third party for keys and disputes & none required\\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\section{Cryptography}\label{sec:cryptobasics}
+
+The Concise Oxford English Dictionary defines cryptography as ``the art of writing or solving codes''. The definition used in this course (Stallings, quoted in the lecture) is more precise:
+\begin{center}
+\imp{Cryptography is the art or science encompassing the principles and methods of transforming an intelligible}\\
+\imp{message into one that is unintelligible, and then retransforming that message back to its original form.}
+\end{center}
+\textbf{Intelligible} means readable by anyone; \textbf{unintelligible} means meaningless to anyone who does not hold the key; \textbf{retransforming} means the process must be reversible by the intended receiver. The word ``art'' reflects that classical ciphers were designed by ingenuity; modern cryptography is a science built on mathematics and complexity theory.
+
+\textbf{Terminology.} The original message is the \textbf{plaintext} (clear text) and the coded message is the \textbf{ciphertext}. Converting plaintext to ciphertext is \textbf{enciphering} or \textbf{encryption}; recovering the plaintext is \textbf{deciphering} or \textbf{decryption}. The scheme used is a \textbf{cryptographic system} or \textbf{cipher}, and the \textbf{key} is the input to the cryptographic algorithm that selects the particular transformation. The slides contrast \textbf{cryptography}, the science of creating coded messages, with \textbf{cryptanalysis}, the art of breaking them, i.e.\ recovering the plaintext or the key without being told the key. The two together form \textbf{cryptology}.
+
+\textbf{Scope today.} Cryptography now covers much more than secret writing: mechanisms for ensuring integrity, techniques for exchanging secret keys, protocols for authenticating users, electronic auctions and elections, and digital cash. Forouzan groups the tools into three mechanisms: \textbf{symmetric-key encipherment}, \textbf{asymmetric-key encipherment} and \textbf{hashing}.
 
 \subsection{Symmetric cipher model}
+A symmetric (conventional, single-key) cipher has five ingredients (Stallings): the \textbf{plaintext}; the \textbf{encryption algorithm}, which performs substitutions and transformations on the plaintext; the \textbf{secret key}, also an input to the encryption algorithm, which determines the exact substitutions and transformations; the \textbf{ciphertext}, which depends on both the plaintext and the key, so that two different keys give two different ciphertexts for the same message; and the \textbf{decryption algorithm}, which is the encryption algorithm run in reverse with the same key.
+
 \begin{center}
 \begin{tikzpicture}[node distance=7mm]
   \node[box,fill=cyan!10] (p1) {Plaintext $P$};
@@ -86,20 +113,23 @@ The art or science of transforming an \textbf{intelligible} message (plaintext) 
   \node[box,above=5mm of d,fill=yellow!40] (k2) {Key $K$};
   \draw[arr] (p1)--(e); \draw[arr] (k1)--(e); \draw[arr] (e)--(c);
   \draw[arr] (c)--node[above,font=\scriptsize]{transmitted}(d); \draw[arr] (k2)--(d); \draw[arr] (d)--(p2);
-  \draw[darr,bend left=15,orange!80!black] (k1.north) to node[above,font=\scriptsize]{same key} (k2.north);
+  \draw[darr,bend left=15,orange!80!black] (k1.north) to node[above,font=\scriptsize]{same key, shared over a secure channel} (k2.north);
+  \coordinate (mid) at ($(c.east)!0.5!(d.west)$);
+  \node[box,below=9mm of mid,fill=red!10,font=\footnotesize] (eve) {Cryptanalyst (Eve): sees $C$, tries to find $P$ or $K$};
+  \draw[arr,dashed,red!70!black] (mid) -- (eve.north);
 \end{tikzpicture}
 \end{center}
 \[
 C = E(K, P) \qquad\qquad P = D(K, C) = D\big(K, E(K,P)\big)
 \]
-\begin{itemize}
-  \item Encryption needs \textbf{two} inputs ($P$ and $K$); decryption needs $C$ and $K$.
-  \item $E$ and $D$ are \textbf{public}. Only $K$ is secret (Kerckhoffs's principle).
-  \item If $K$ leaks, \emph{all} past and future messages between $S$ and $R$ can be read.
-  \item Toy example: $K = 100$ at both ends. Real keys are huge (128, 256, 2048 bits), so guessing is infeasible.
-\end{itemize}
+Both algorithms take \textbf{two} inputs: encryption takes $P$ and $K$, decryption takes $C$ and $K$. The equation on the right is the correctness requirement: $D$ with key $K$ must be the inverse of $E$ with key $K$, so that applying one after the other returns the original input.
+
+\textbf{Requirements for secure use.} Stallings states two. First, the encryption algorithm must be strong: an opponent who knows the algorithm and holds many ciphertexts, even together with their plaintexts, must be unable to decrypt other ciphertexts or to find the key. Second, sender and receiver must have obtained their copies of the key in a secure fashion and must keep it secure. The algorithms $E$ and $D$ are \textbf{public}; only $K$ is secret (Kerckhoff's principle, \S\ref{sec:attacks}). This is what makes symmetric encryption practical: since the algorithm need not be hidden, manufacturers can build cheap chips implementing it, and the only thing that must be protected is the key.
+
+\textbf{The key is everything.} If the opponent recovers one plaintext, he has read one message. If he recovers the key, he can read \emph{every} past and future message encrypted under it, which is why cryptanalysts aim at the key. In the lecture's toy example both ends use $K = 100$; such a key would be found instantly. Real symmetric keys are 128 or 256 bits long (2048 bits is the size of an RSA modulus, a different kind of key), so exhaustive search is out of reach (\S\ref{sec:schemes}).
 
 \subsection{Types of cryptography}
+Cryptosystems are classified by the number of keys. In \textbf{symmetric-key} (private-key, secret-key, conventional) cryptography one secret key, known only to $S$ and $R$, is used both to encrypt and to decrypt. In \textbf{asymmetric-key} (public-key) cryptography each user has a \textbf{key pair}: one key encrypts and a different but mathematically related key decrypts. One key of the pair is published (the \textbf{public key}) and the other is kept by its owner (the \textbf{private key}). The lecture's toy question, ``can we encrypt with 100 and decrypt with 500?'', has the answer \emph{yes}, provided the two numbers satisfy a mathematical relationship that makes decryption undo encryption, and provided the private key cannot be computed from the public one in practice (RSA, \S\ref{sec:rsa}, is the standard example).
 \begin{center}
 \small
 \begin{tabularx}{\textwidth}{@{}l X X@{}}
@@ -110,35 +140,60 @@ Keys & One shared key & Key pair: public + private \\
 Use & Same key encrypts and decrypts & One key encrypts, the other (mathematically related) decrypts \\
 Secrecy & Key known only to $S$ and $R$ & Public key published; private key kept by owner \\
 Toy example & Encrypt 100, decrypt 100 & Encrypt 100, decrypt 500 \\
+Based on & substitution and permutation of symbols & number theory (factoring, discrete logarithms) \\
+Speed and use & fast; bulk data & slow; key exchange, signatures \\
 \bottomrule
 \end{tabularx}
 \end{center}
-Asymmetric works because the two keys satisfy a mathematical relationship, and the private key cannot practically be computed from the public one. (Which key does what is covered in a later lecture.)
+
+\textbf{Three dimensions (Stallings).} A cryptographic system is characterised along three independent dimensions. (1) The \textbf{type of operation} used to turn plaintext into ciphertext: \emph{substitution}, in which each element is mapped to another element, and \emph{transposition}, in which elements are rearranged; no information may be lost, so that the operations can be undone, and most real systems, called \emph{product systems}, use several stages of both. (2) The \textbf{number of keys}: one for symmetric, two for asymmetric. (3) The \textbf{way the plaintext is processed}: a \emph{block cipher} processes one block of elements at a time and produces an output block for each input block, while a \emph{stream cipher} processes the input continuously, one element at a time (\S\ref{sec:modern}).
 
 \section{Security of Encryption Schemes}\label{sec:schemes}
 
-\begin{keybox}[title=Unconditionally secure]
-The ciphertext does \textbf{not contain enough information to uniquely determine the plaintext}, no matter how much ciphertext is available. Holds even against infinite computing power. Example: one-time pad.
-\end{keybox}
+Calling a cipher ``secure'' needs a definition: secure against an opponent with how much ciphertext, how much computing power and how much time? Two standards are used.
 
-\begin{keybox}[title=Computationally secure (either condition)]
-\begin{enumerate}[leftmargin=1.5em]
-  \item \textbf{Cost} of breaking the cipher $>$ \textbf{value} of the encrypted information.
-  \item \textbf{Time} to break the cipher $>$ \textbf{useful lifetime} of the information.
-\end{enumerate}
-\end{keybox}
-\begin{itemize}
-  \item Cost: spending \$1{,}000{,}000 to steal a \$1{,}000 message is pointless.
-  \item Time: a quote valid for 10 minutes that takes 50 years to crack is useless when cracked.
-  \item Real ciphers (AES, RSA) are computationally secure; unconditional security needs a key as long as the message, which is impractical.
-\end{itemize}
+\textbf{Unconditional security.} \imp{An encryption scheme is unconditionally secure if the ciphertext generated by the scheme does not contain enough information to determine uniquely the corresponding plaintext, no matter how much ciphertext is available.} The guarantee holds against an opponent with unlimited time and computing power, because the obstacle is not the amount of work but the absence of information: every candidate plaintext remains possible and equally likely after the ciphertext is seen. Shannon (1949) called this \textbf{perfect secrecy}.
 
-\begin{examtip}
-\begin{itemize}
-  \item Draw the network security model with all labels: $S$, $R$, $T$, secret info, secure message, opponent, TTP.
-  \item Know the four tasks in order.
-  \item ``Why $T$ and not $E$?'' $\Rightarrow$ steganography is also a transformation.
-  \item Symmetric = same key; asymmetric = different but related keys.
-  \item Quote both conditions of computational security word for word.
-\end{itemize}
-\end{examtip}
+A one-letter example shows how this is possible. Encrypt a single letter $p$ with a shift cipher, $C = (p + k) \bmod 26$, where the key $k$ is chosen uniformly at random from $0, \dots, 25$ and used only for this letter. For any ciphertext letter $c$ and \emph{any} candidate plaintext $p$ there is exactly one key that maps $p$ to $c$, namely $k = (c - p) \bmod 26$. Each candidate therefore has the same probability $1/26$ of producing the observed $c$, so seeing $c$ tells the opponent nothing about $p$, and trying all 26 keys just lists all 26 letters. Extending this to a long message with a fresh random key for every letter gives the \textbf{one-time pad} (\S\ref{sec:otp}), the only practical unconditionally secure cipher. The price is visible in the argument: the key must be truly random, as long as the message, and never reused, which makes key distribution as hard as sending the message itself.
+
+\textbf{Computational security.} Practical ciphers reuse a short key for long messages, so the ciphertext \emph{does} determine the plaintext in principle; the opponent's problem is only the amount of work. Such a scheme is called computationally secure if it meets either of two criteria:
+\begin{mustknow}[: the two definitions]
+\textbf{Unconditionally secure}: the ciphertext does not contain enough information to determine the plaintext uniquely, no matter how much ciphertext is available (holds even against unlimited computing power; example: one-time pad).\\[2pt]
+\textbf{Computationally secure}: either (1) the \textbf{cost} of breaking the cipher exceeds the \textbf{value} of the encrypted information, or (2) the \textbf{time} required to break the cipher exceeds the \textbf{useful lifetime} of the information.
+\end{mustknow}
+The cost criterion says that breaking is pointless when it is unprofitable: spending \$1{,}000{,}000 of computing to steal a \$1{,}000 transfer is a loss. The time criterion says that breaking is pointless when it is too late: a price quote valid for 10 minutes that takes 50 years to crack is worthless when cracked. Almost all ciphers in use (AES, RSA) are only computationally secure, since unconditional security needs a key as long as all the data ever sent.
+
+\textbf{Estimating the work: brute force.} The one attack that works against every cipher is \textbf{exhaustive key search}: try every key until the output is meaningful plaintext. If there are $N$ keys and the correct one is equally likely to be any of them, the attacker finds it after $1, 2, \dots, N$ trials with equal probability, so the expected number of trials is $(1 + 2 + \cdots + N)/N = (N+1)/2 \approx N/2$. A $b$-bit key gives $N = 2^b$, so each extra bit doubles the work. The table gives the average search time, computed by script, at $10^9$ decryptions per second (one fast processor) and $10^{13}$ per second (a large parallel machine).
+\begin{center}\small
+\begin{tabular}{@{}lrrr@{}}
+\toprule
+Key & Number of keys $N$ & Time at $10^9$/s & Time at $10^{13}$/s\\
+\midrule
+Shift cipher (Caesar family) & 25 & $1.3 \times 10^{-8}$ s & $1.3 \times 10^{-12}$ s\\
+56 bits (DES) & $2^{56} \approx 7.2 \times 10^{16}$ & 1.14 years & 1.0 hour\\
+128 bits (AES) & $2^{128} \approx 3.4 \times 10^{38}$ & $5.4 \times 10^{21}$ years & $5.4 \times 10^{17}$ years\\
+168 bits (triple DES) & $2^{168} \approx 3.7 \times 10^{50}$ & $5.9 \times 10^{33}$ years & $5.9 \times 10^{29}$ years\\
+256 bits (AES) & $2^{256} \approx 1.2 \times 10^{77}$ & $1.8 \times 10^{60}$ years & $1.8 \times 10^{56}$ years\\
+26-letter permutation (monoalphabetic) & $26! \approx 4.0 \times 10^{26}$ & $6.4 \times 10^{9}$ years & $6.4 \times 10^{5}$ years\\
+\bottomrule
+\end{tabular}
+\end{center}
+The universe is about $1.4 \times 10^{10}$ years old, so a 128-bit key meets the time criterion for any information whatsoever, while a 56-bit key no longer does. Two cautions follow. Brute force also needs the attacker to \emph{recognise} the correct plaintext; this is easy for English text but harder if the plaintext was compressed or is random binary data. And a large key space is necessary but not sufficient: the monoalphabetic cipher has $26!$ keys yet falls in minutes to frequency analysis, which never tries keys at all. Computational security is therefore never proved; a cipher is accepted as computationally secure when the best \emph{known} attack is still too expensive.
+
+\begin{center}\small
+\begin{tabularx}{\textwidth}{@{}l X X@{}}
+\toprule
+ & Unconditionally secure & Computationally secure\\
+\midrule
+Opponent assumed & unlimited time and computing power & realistic resources and time\\
+Why it cannot be broken & ciphertext carries no information about the plaintext & breaking costs more or takes longer than the information is worth\\
+Key requirement & random, as long as the message, used once & short key (128--256 bits) reused for many messages\\
+Proof & information-theoretic (Shannon) & none; based on the best known attack\\
+Example & one-time pad & AES, RSA, DES (in its time)\\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\begin{trap}[: what ``secure'' does and does not mean]
+The Caesar cipher is neither: it is broken in seconds (\S\ref{sec:bruteforce}). Computationally secure does not mean ``unbreakable''; it means ``not worth breaking'' or ``not breakable in time'', and it can be lost when computers get faster (DES) or a better attack is found. Write both criteria of computational security, joined by \emph{either}, and use the words cost/value and time/useful lifetime.
+\end{trap}
