@@ -1,0 +1,88 @@
+% Question bank for Lecture 18 (DNA, quantum cryptography, steganography, watermarking).
+% Every number recomputed by script (scratchpad/w23/verify.py, quantum.py, qverify.py).
+\section{Other Cryptographic Techniques}\label{q:othertech}
+\noindent{\small Notes: \S\ref{sec:othertech}.}
+
+\subsection*{Check your understanding}
+\begin{enumerate}[leftmargin=1.6em,itemsep=3pt]
+  \item \textbf{Why is DNA attractive for cryptography?} One chemical step acts on trillions of strands at once (massive parallelism), DNA stores about 1 bit per nm$^3$, roughly $10^{12}$ times denser than conventional media (about 456 exabytes per gram at 2 bits per nucleotide), hybridisation needs almost no energy, and security can rest on a biological difficulty such as not knowing the primer needed to find and amplify a hidden strand.
+  \item \textbf{State the base-pairing rule and its binary meaning.} A pairs with T (two hydrogen bonds) and C pairs with G (three), and the two strands are antiparallel ($5'\to3'$ against $3'\to5'$). With A $= 00$, C $= 01$, G $= 10$, T $= 11$, the Watson--Crick complement of a strand is exactly the bitwise NOT of its binary code, since $00 \leftrightarrow 11$ and $01 \leftrightarrow 10$.
+  \item \textbf{Why are only 8 of the $4! = 24$ binary encodings of A, C, G, T complementary?} Complementary bases must receive complementary 2-bit values, so \{A, T\} gets one of the pairs \{00, 11\} or \{01, 10\} and \{C, G\} the other (2 ways), each pair can be ordered in 2 ways inside \{A, T\} and 2 ways inside \{C, G\}: $2 \times 2 \times 2 = 8$.
+  \item \textbf{What does the slide's complementary rule do, and does it add security?} A$\to$C$\to$G$\to$T$\to$A adds 1 modulo 4 to each 2-bit group; it is a fixed public bijection with no key, so by Kerckhoffs's principle Eve undoes it herself. All the security of the algorithm comes from the XOR with the key: perfect with a true one-time pad, trivial with a one-byte key from 1 to 256.
+  \item \textbf{What did Adleman's 1994 experiment show, and why is it not a practical computer?} He solved a 7-vertex Hamiltonian path problem by encoding vertices and edges as DNA strands, letting hybridisation and ligation build all paths at once, and filtering with PCR (correct ends), gel electrophoresis (length 140 bases) and affinity separation (every vertex present). The search was parallel, but the laboratory steps took about a week and the amount of DNA grows exponentially with the graph size.
+  \item \textbf{What are the main limitations of DNA cryptography?} Expensive laboratory equipment, slow operations (hours to days), error-prone synthesis, hybridisation and sequencing, no formal security model, and digital ``pseudo-DNA'' schemes are only as strong as the classical cipher inside them.
+  \item \textbf{What is a qubit, and what happens when it is measured?} A qubit is a two-level quantum system, in QKD a single photon, whose state $\alpha\lvert 0\rangle + \beta\lvert 1\rangle$ with $|\alpha|^2 + |\beta|^2 = 1$ can be a superposition. Measuring it gives 0 with probability $|\alpha|^2$ and 1 with probability $|\beta|^2$ and leaves it in the observed state, so measurement disturbs it; a photon measured in a basis at $45^\circ$ to its polarisation gives a random result.
+  \item \textbf{State the no-cloning theorem and its role in QKD.} An unknown quantum state cannot be copied: a copier $U$ for two states $\lvert\psi\rangle, \lvert\varphi\rangle$ would force $\langle\varphi|\psi\rangle = \langle\varphi|\psi\rangle^2$, so it works only for identical or orthogonal states. Eve therefore cannot copy a photon and measure the copy later; she must measure the original and, if she uses the wrong basis, disturb it. It also forbids amplifying photons on long links.
+  \item \textbf{Why does an intercept--resend eavesdropper cause 25\% errors in the BB84 sifted key?} For a sifted bit Eve uses the wrong basis with probability $1/2$; she then resends a photon at $45^\circ$ to Alice's basis, and Bob, measuring in Alice's basis, is wrong with probability $1/2$. Error rate $= \frac12 \times \frac12 = \frac14$ (and $f/4$ if she attacks a fraction $f$ of the photons).
+  \item \textbf{Why must BB84's public channel be authenticated, though not secret?} The public messages reveal only bases, positions and test bits, which do not give away the key, so secrecy is unnecessary. But if Eve could alter them she would run BB84 separately with Alice and with Bob (man in the middle) and no error would appear; hence a pre-shared key or signature is needed, which makes QKD a key-expansion method.
+  \item \textbf{Differentiate the impact of Shor's and Grover's algorithms.} Shor's algorithm factors and computes discrete logarithms (also on elliptic curves) in polynomial time, so RSA, Diffie--Hellman, ElGamal, DSA and ECC are broken outright. Grover's algorithm searches $N$ items in about $\frac{\pi}{4}\sqrt N$ steps, so a $k$-bit key gives only $k/2$ bits of security; symmetric ciphers survive by doubling the key length (AES-256).
+  \item \textbf{What is post-quantum cryptography and how does it differ from quantum cryptography?} PQC is classical software whose security rests on problems believed hard even for quantum computers: lattices (ML-KEM/Kyber, FIPS 203; ML-DSA/Dilithium, FIPS 204), hash-based signatures (SLH-DSA/SPHINCS$^+$, FIPS 205) and codes (McEliece, HQC). Quantum cryptography (QKD) uses physics, needs special hardware and dedicated links, and provides only key exchange.
+  \item \textbf{Why is QKD hard over long distances?} Fibre loses about 0.2 dB per km, so only $10^{-0.02L}$ of the photons survive $L$ km (1\% at 100 km, $10^{-10}$ at 500 km), and the signal cannot be amplified because amplification would clone unknown quantum states; long links need trusted relay nodes or satellites.
+  \item \textbf{Differentiate cryptography, steganography and watermarking.} Cryptography hides the meaning of a message (ciphertext is visibly secret; attacked by cryptanalysis). Steganography hides the existence of a message inside a cover for secret communication; it needs undetectability and capacity and is defeated by detection (steganalysis). Watermarking embeds information about the cover itself (owner, buyer) for copyright and authentication; it may be visible and needs robustness, and is defeated only by removal or forgery.
+  \item \textbf{Differentiate robust, fragile and semi-fragile watermarks.} A robust watermark survives compression, filtering and attacks and serves copyright and fingerprinting; a fragile watermark breaks at any modification and so proves tampering; a semi-fragile one survives benign processing such as JPEG compression but breaks under content changes, which suits photo authentication.
+  \item \textbf{Why is LSB steganography imperceptible but fragile and detectable?} Each value changes by at most 1 in 255 (PSNR $\ge 48.1$ dB, about 51 dB for random bits), so nothing is visible; but compression or resizing rewrites the low bits, and since LSB replacement only moves values within pairs $\{2i, 2i+1\}$, the histogram counts of each pair become equal, which the chi-square attack detects.
+\end{enumerate}
+
+\subsection*{Practice problems}
+\begin{enumerate}[leftmargin=1.6em,itemsep=4pt]
+  \item Using the DNA cryptography algorithm of the lecture (A $= 00$, C $= 01$, G $= 10$, T $= 11$; complementary rule A$\to$C, C$\to$G, G$\to$T, T$\to$A; XOR with a one-time-pad key; result written as DNA bases), encrypt the plaintext ``GO'' with the key ``AB'' and decrypt the result. \hfill (5 marks)\\
+  \textbf{Solution.} Steps 1--4 (ASCII, binary, DNA, rule, binary):\\
+  \ttx{G} $= 71 = $ \ttx{01000111} $\to$ \ttx{CACT} $\to$ \ttx{GCGA} $\to$ \ttx{10011000};\quad \ttx{O} $= 79 = $ \ttx{01001111} $\to$ \ttx{CATT} $\to$ \ttx{GCAA} $\to$ \ttx{10010000}.\\
+  Key: \ttx{A} $= 65 = $ \ttx{01000001}, \ttx{B} $= 66 = $ \ttx{01000010}.\\
+  XOR: \ttx{10011000} $\oplus$ \ttx{01000001} $= $ \ttx{11011001} $\to$ \ttx{TCGC};\quad \ttx{10010000} $\oplus$ \ttx{01000010} $= $ \ttx{11010010} $\to$ \ttx{TCAG}.\\
+  Ciphertext: \textbf{\ttx{TCGCTCAG}}.\\
+  Decryption: \ttx{TCGC} $\to$ \ttx{11011001} $\oplus$ \ttx{01000001} $= $ \ttx{10011000} $\to$ \ttx{GCGA} $\to$ (inverse rule) \ttx{CACT} $\to$ \ttx{01000111} $= 71 = $ \ttx{G}; \ttx{TCAG} $\to$ \ttx{11010010} $\oplus$ \ttx{01000010} $= $ \ttx{10010000} $\to$ \ttx{GCAA} $\to$ \ttx{CATT} $\to$ \ttx{01001111} $= 79 = $ \ttx{O}. Recovered \textbf{GO}.\\
+  \emph{Check}: XOR is its own inverse and the inverse rule (C$\to$A, G$\to$C, T$\to$G, A$\to$T) undoes the forward rule base by base.
+
+  \item With the same algorithm, decrypt the DNA ciphertext \ttx{TCGATAGC} using the one-time-pad key ``KY''. \hfill (4 marks)\\
+  \textbf{Solution.} Key bytes: \ttx{K} $= 75 = $ \ttx{01001011}, \ttx{Y} $= 89 = $ \ttx{01011001}.\\
+  \ttx{TCGA} $\to$ \ttx{11011000}; $\oplus$ \ttx{01001011} $= $ \ttx{10010011} $\to$ \ttx{GCAT} $\to$ inverse rule \ttx{CATG} $\to$ \ttx{01001110} $= 78 = $ \ttx{N}.\\
+  \ttx{TAGC} $\to$ \ttx{11001001}; $\oplus$ \ttx{01011001} $= $ \ttx{10010000} $\to$ \ttx{GCAA} $\to$ \ttx{CATT} $\to$ \ttx{01001111} $= 79 = $ \ttx{O}.\\
+  Plaintext: \textbf{NO}. \emph{Check}: re-encrypting \ttx{N}: \ttx{CATG} $\to$ \ttx{GCAT} $=$ \ttx{10010011}, $\oplus$ \ttx{01001011} $=$ \ttx{11011000} $=$ \ttx{TCGA} \checkmark.
+
+  \item (a) Encode the word ``Hi'' as a DNA strand using A $= 00$, C $= 01$, G $= 10$, T $= 11$. (b) Write its Watson--Crick complement and its reverse complement, and show that the complement equals the bitwise NOT of the binary code. (c) How many 4-base words exist, and why are 4 bases enough for one ASCII character? \hfill (4 marks)\\
+  \textbf{Solution.} (a) \ttx{H} $= 72 = $ \ttx{01 00 10 00} $=$ \ttx{CAGA}; \ttx{i} $= 105 = $ \ttx{01 10 10 01} $=$ \ttx{CGGC}. Strand: \textbf{\ttx{5'-CAGACGGC-3'}}.\\
+  (b) Complement (A$\leftrightarrow$T, C$\leftrightarrow$G): \ttx{3'-GTCTGCCG-5'}; reverse complement (read $5'\to3'$): \textbf{\ttx{5'-GCCGTCTG-3'}}. The binary code is \ttx{0100100001101001}; its NOT is \ttx{1011011110010110} $=$ \ttx{GTCTGCCG}, the complement.\\
+  (c) $4^4 = 256 = 2^8$ words, exactly one per 8-bit value, since each base carries 2 bits.
+
+  \item In BB84, Alice sends 12 photons with bits \ttx{100111001011} and bases $\times\,+\,+\,\times\,\times\,+\,\times\,\times\,+\,+\,\times\,+$. Bob measures with bases $+\,+\,+\,\times\,+\,\times\,\times\,\times\,+\,\times\,+\,+$. (a) Give the polarisation of each photon. (b) Which positions are kept after sifting, and what is the sifted key? (c) How many bits would you expect to keep on average? \hfill (5 marks)\\
+  \textbf{Solution.} (a) Bit 0/1 is $0^\circ$/$90^\circ$ in $+$ and $45^\circ$/$135^\circ$ in $\times$: $135^\circ, 0^\circ, 0^\circ, 135^\circ, 135^\circ, 90^\circ, 45^\circ, 45^\circ, 90^\circ, 0^\circ, 135^\circ, 90^\circ$.\\
+  (b) Bases agree at positions \textbf{2, 3, 4, 7, 8, 9, 12} (at 1, 5, 6, 10, 11 they differ and Bob's results are random). Bob's results there equal Alice's bits: sifted key \textbf{\ttx{0010011}} (7 bits).\\
+  (c) Each basis pair agrees with probability $1/2$, so $12/2 = 6$ on average; 7 is a normal fluctuation.\\
+  \emph{Check}: Bob announces only his bases and Alice only the matching positions, so no bit value is revealed during sifting.
+
+  \item Eve performs an intercept--resend attack on 40\% of the photons in a BB84 session. (a) What QBER does this cause? (b) Alice and Bob compare 50 sifted bits; how many errors do they expect, and what is the probability that they see none? (c) Compare with Eve attacking every photon. \hfill (4 marks)\\
+  \textbf{Solution.} (a) A sifted bit has an error only if Eve attacked it (probability $f$), chose the wrong basis ($\frac12$) and Bob's result flipped ($\frac12$): QBER $= f/4 = 0.4/4 = \mathbf{0.10} = 10\%$.\\
+  (b) Expected errors $= 50 \times 0.1 = \mathbf{5}$; $\Pr[\text{no error}] = 0.9^{50} = \mathbf{0.00515}$.\\
+  (c) With $f = 1$: QBER $= 25\%$, $\Pr[\text{no error in 50}] = 0.75^{50} = 5.66 \times 10^{-7}$.\\
+  \emph{Check}: a 10\% QBER is below the roughly 11\% abort threshold, so the key may still be usable, but privacy amplification must shorten it a lot to remove Eve's information.
+
+  \item A $512 \times 512$ 24-bit colour image is used as a cover for LSB steganography. (a) What is the capacity in bytes with one LSB per colour component, and with two? (b) How many pixels are needed to hide a 2 KB file at one LSB per component? (c) Why is the change invisible? \hfill (4 marks)\\
+  \textbf{Solution.} (a) $512 \times 512 = 262\,144$ pixels $\times$ 3 bits $= 786\,432$ bits $= \mathbf{98\,304}$ \textbf{bytes} (96 KiB); with 2 LSBs, $\mathbf{196\,608}$ bytes.\\
+  (b) $2048 \times 8 = 16\,384$ bits $/ 3 = 5461.3$, so \textbf{5462 pixels}.\\
+  (c) Each component changes by at most 1, so $\mathrm{MSE} \le 1$ and $\mathrm{PSNR} = 10\log_{10}(255^2/\mathrm{MSE}) \ge 48.1$ dB (about 51.1 dB for random message bits, since only half the LSBs change).
+
+  \item Decrypt the Caesar ciphertext ``esp aszezy nlyyze mp nwzypo'', given that the plaintext begins with ``the''. \hfill (3 marks)\\
+  \textbf{Solution.} $k = \mathrm{e} - \mathrm{t} = 4 - 19 = -15 \equiv 11 \pmod{26}$ (check: $\mathrm{s} - \mathrm{h} = 18 - 7 = 11$, $\mathrm{p} - \mathrm{e} = 15 - 4 = 11$). Shifting every letter back by 11: \textbf{``the photon cannot be cloned''}.\\
+  \emph{Check}: re-encrypting ``be'' with $+11$ gives ``mp''.
+
+  \item Show how Shor's algorithm factors $N = 35$ using $a = 2$, assuming the quantum computer returns the order of $a$. \hfill (4 marks)\\
+  \textbf{Solution.} Powers of 2 modulo 35: $2, 4, 8, 16, 32, 29, 23, 11, 22, 9, 18, 1$, so the order is $r = 12$ (even). $a^{r/2} = 2^6 = 64 \equiv 29 \not\equiv -1 \pmod{35}$. Since $(2^6 - 1)(2^6 + 1) \equiv 0 \pmod{35}$, $\gcd(29 - 1, 35) = \gcd(28, 35) = \mathbf{7}$ and $\gcd(29 + 1, 35) = \gcd(30, 35) = \mathbf{5}$.\\
+  \emph{Check}: $5 \times 7 = 35$.
+
+  \item A quantum computer performs $10^9$ Grover iterations per second. Estimate the time to recover (a) a 56-bit DES key and (b) a 128-bit AES key with Grover's algorithm. What key length restores 128-bit security? \hfill (3 marks)\\
+  \textbf{Solution.} Grover needs about $\frac{\pi}{4}\sqrt{2^k}$ iterations.\\
+  (a) $\frac{\pi}{4} 2^{28} = 2.11 \times 10^8$ iterations $\Rightarrow$ \textbf{0.21 s}.\\
+  (b) $\frac{\pi}{4} 2^{64} = 1.45 \times 10^{19}$ iterations $\Rightarrow 1.45 \times 10^{10}$ s $\approx$ \textbf{459 years} (still infeasible, but only a 64-bit margin).\\
+  A 256-bit key (AES-256) gives $2^{128}$ Grover iterations, i.e.\ 128-bit security.
+
+  \item (a) A PCR reaction starts with 100 template strands. How many copies exist after 25 cycles? (b) Using 2 bits per nucleotide and 330 g/mol per nucleotide, how many grams of DNA would store one zettabyte ($10^{21}$ bytes)? \hfill (3 marks)\\
+  \textbf{Solution.} (a) Each cycle doubles the number: $100 \times 2^{25} = \mathbf{3.36 \times 10^9}$ copies.\\
+  (b) One gram holds $(6.022 \times 10^{23}/330) \times 2 = 3.65 \times 10^{21}$ bits $= 4.56 \times 10^{20}$ bytes, so $10^{21}/4.56 \times 10^{20} \approx \mathbf{2.2}$ \textbf{grams}.
+
+  \item Explain the BB84 quantum key distribution protocol with a diagram. How does it detect an eavesdropper? \hfill (6 marks)\\
+  \textbf{Model answer outline.} (1) Two channels: quantum (photons) and public authenticated classical. (2) Table of the two bases: $+$ ($0^\circ = 0$, $90^\circ = 1$), $\times$ ($45^\circ = 0$, $135^\circ = 1$). (3) Steps: Alice's random bits and bases; Bob's random bases; sifting (Bob announces bases, Alice confirms matches, about half kept); error estimation on a sample (QBER); error correction; privacy amplification. (4) Message-sequence diagram Alice $\to$ Bob (photons), Bob $\to$ Alice (bases), Alice $\to$ Bob (matching positions), sample comparison. (5) A 6--10 photon example table. (6) Detection: measurement disturbs and photons cannot be cloned; intercept--resend gives QBER $= \frac12 \cdot \frac12 = 25\%$, detected in $m$ test bits with probability $1 - (3/4)^m$. (Notes \S\ref{sec:othertech}, BB84 subsections.)
+
+  \item What is digital watermarking? Explain the embedding and detection process, the types of watermark, and four applications. Differentiate it from steganography. \hfill (6 marks)\\
+  \textbf{Model answer outline.} (1) Definition: information about the media embedded so that the media looks unchanged; protects the cover, not the message. (2) Block diagram: cover $+$ watermark $+$ key $\to$ embedding $\to$ marked media $\to$ channel/attacks $\to$ detection with key (and original if non-blind) $\to$ watermark present / ID. (3) Properties: imperceptibility, robustness, capacity, security, low false positives, and their trade-off. (4) Types: visible/invisible; robust/fragile/semi-fragile; blind/non-blind; spatial/frequency domain. (5) Applications: owner identification, copy protection (copy-protect bit), photographers' proofs, broadcast monitoring, data authentication, fingerprinting. (6) Table versus steganography: goal, what is valuable, relation to the cover, visibility, requirement (robustness vs undetectability), payload, what counts as a successful attack.
+\end{enumerate}

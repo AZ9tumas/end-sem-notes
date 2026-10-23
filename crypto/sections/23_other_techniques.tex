@@ -1,0 +1,692 @@
+% College Lecture 18 "Other Cryptography Techniques" (34 slides; slides cite K. S. Mohamed, New Frontiers in Cryptography):
+% DNA cryptography, quantum cryptography, steganography, watermarking. Textbook additions: Adleman (1994), BB84/E91,
+% Shor/Grover, NIST PQC (FIPS 203-205), Katzenbeisser-Petitcolas taxonomy of steganography, Cox et al. watermarking.
+% Every number recomputed by script (scratchpad/w23/verify.py, quantum.py, table.py).
+\section{Other Cryptographic Techniques: DNA, Quantum, Information Hiding}\label{sec:othertech}
+\providecommand{\otket}[1]{\lvert #1\rangle}
+\providecommand{\otdup}[1]{\cellcolor{warn!15}#1}
+\providecommand{\otsym}[1]{\ttx{#1}}
+\usetikzlibrary{decorations.pathmorphing}
+\likely{Last lecture of the course and never examined before: expect one ``explain'' question (BB84 with a table, or DNA encryption steps, or steganography vs watermarking vs cryptography) worth 4--6 marks, and short notes on the others.}
+
+Every cipher so far rests on a \emph{mathematical} assumption: that a key search is too long (DES, AES) or that factoring or discrete logarithms are hard (RSA, ElGamal, ECC). Lecture 18 surveys three directions that leave this pattern. \textbf{DNA cryptography} uses molecules as the storage and computing medium; \textbf{quantum cryptography} replaces the hardness assumption by a law of physics; and \textbf{information hiding} (steganography and watermarking) protects a message by hiding that it exists at all, or by binding it invisibly to a cover object.
+
+% =====================================================================
+\subsection{DNA cryptography: why use DNA at all \new}
+\likely{``What is DNA cryptography? List the advantages of DNA computing over conventional computing'' (3 marks).}
+
+\textbf{DNA cryptography} is the use of DNA (deoxyribonucleic acid) either as the \emph{carrier} of encrypted information or as the \emph{computing medium} for a cryptographic operation. It combines cryptology with modern biotechnology, and the slides call it a ``promising and rapidly emerging field'' that ``may bring forward a new hope for unbreakable algorithms''. The reason for interest is that a test tube of DNA behaves very differently from a silicon processor, in three ways listed on slide 3.
+
+\textbf{Speed through parallelism.} A conventional processor executes one instruction stream; the slide puts it at about $10^8$ instructions per second, while combining DNA strands is predicted to reach about $10^9$ operations per second. The real source of speed is not the rate of a single reaction (each reaction takes minutes or hours) but \textbf{massive parallelism}: a small tube holds trillions of DNA strands, and one chemical step acts on all of them at the same time. A problem that needs a search over many candidates can therefore try all candidates at once, one candidate per molecule.
+
+\textbf{Storage density.} DNA stores information at about 1 bit per nm$^3$, whereas conventional media need about $10^{12}$ nm$^3$ per bit, so DNA is about $10^{12}$ times denser. The same conclusion follows from the mass of DNA: each nucleotide carries 2 bits (four possible bases) and weighs about 330 g/mol, so one gram of single-stranded DNA holds
+\[
+\frac{6.022 \times 10^{23}}{330} \times 2 \approx 3.65 \times 10^{21} \text{ bits} \approx 4.56 \times 10^{20} \text{ bytes} \approx 456 \text{ exabytes}.
+\]
+
+\textbf{Power.} The slide claims DNA computing ``does not require power'' while the computation takes place, because the chemical reactions that build and pair DNA run on their own chemical energy. This is true of the hybridisation step itself, but the surrounding laboratory steps (heating cycles for PCR, electrophoresis) do use power.
+
+\textbf{New hard problems.} The security of a DNA scheme can rest on a biological rather than a mathematical difficulty: for example, a secret short DNA sequence (a \emph{primer}) is needed to copy and read a message strand hidden among billions of decoy strands, and without it Eve does not know which molecule to amplify. Three kinds of scheme exist in the literature: \textbf{DNA one-time pads} (Gehani, LaBean and Reif), in which the pad is a library of random DNA strands; \textbf{DNA steganography} (Clelland, Risca and Bancroft, 1999), which hid the message ``JUNE6 INVASION: NORMANDY'' in a DNA strand mixed into human DNA and printed it as a microdot; and \textbf{pseudo-DNA cryptography}, which uses only the DNA \emph{encoding rules} on an ordinary computer. The algorithm on slides 7--11 is of the third kind.
+
+% =====================================================================
+\subsection{DNA structure and complementary base pairing \new}
+\likely{``Explain the structure of DNA and the complementary rule'' (2 marks).}
+
+A DNA molecule is a chain of \textbf{nucleotides}. Each nucleotide has three parts: a phosphate group, a deoxyribose sugar, and one of four nitrogenous \textbf{bases}: \textbf{adenine (A), cytosine (C), guanine (G) and thymine (T)}. The phosphate of one nucleotide bonds to the sugar of the next, so the sugar--phosphate chain forms the \textbf{backbone} of a strand, and the bases stick out from it. The sequence of bases along the strand is the information; the backbone is the same everywhere.
+
+The backbone has a direction. Its two ends are chemically different and are called the \textbf{5$'$ end} and the \textbf{3$'$ end} (after the numbering of the carbon atoms of the sugar), and a sequence is always written from 5$'$ to 3$'$. A DNA molecule normally consists of two strands wound around each other in a \textbf{double helix} (Watson and Crick, 1953). The two strands run in opposite directions (they are \emph{antiparallel}), and they are held together by hydrogen bonds between facing bases.
+
+\textbf{Complementary base pairing.} The bases only pair in two ways: \imp{A pairs with T (two hydrogen bonds) and C pairs with G (three hydrogen bonds).} A and G are larger two-ring bases (purines) and C and T are one-ring bases (pyrimidines), so every pair is one large plus one small base and the helix has a constant width. As a result, one strand completely determines the other, which is called its \textbf{complement}. Since the partner runs the other way, the partner read 5$'\to$3$'$ is the \textbf{reverse complement}.
+
+\begin{center}
+\begin{tikzpicture}[font=\small, b/.style={draw, fill=acc!8, minimum width=0.62cm, minimum height=0.55cm, inner sep=0pt, font=\small\ttfamily}]
+\foreach \t/\u [count=\i] in {A/T, C/G, G/C, T/A, T/A, G/C} {
+  \node[b] (t\i) at (\i*0.9, 1.2) {\t};
+  \node[b, fill=gold!15] (u\i) at (\i*0.9, 0) {\u};
+}
+\foreach \i/\n in {1/2, 2/3, 3/3, 4/2, 5/2, 6/3} {
+  \ifnum\n=2 \draw[gray] ([xshift=-2pt]t\i.south) -- ([xshift=-2pt]u\i.north); \draw[gray] ([xshift=2pt]t\i.south) -- ([xshift=2pt]u\i.north);
+  \else \draw[gray] ([xshift=-3pt]t\i.south) -- ([xshift=-3pt]u\i.north); \draw[gray] (t\i.south) -- (u\i.north); \draw[gray] ([xshift=3pt]t\i.south) -- ([xshift=3pt]u\i.north); \fi
+}
+\node[left=2pt of t1] {5$'$}; \node[right=2pt of t6] {3$'$};
+\node[left=2pt of u1] {3$'$}; \node[right=2pt of u6] {5$'$};
+\draw[arr, acc] (1.0,1.75) -- (5.3,1.75); \draw[arr, orange] (5.3,-0.55) -- (1.0,-0.55);
+\node[right, align=left, font=\footnotesize] at (6.6,0.6) {top strand \ttx{5'-ACGTTG-3'}\\complement \ttx{3'-TGCAAC-5'}\\reverse complement \ttx{5'-CAACGT-3'}\\lines $=$ hydrogen bonds (A--T: 2, C--G: 3)};
+\end{tikzpicture}
+\end{center}
+
+% =====================================================================
+\subsection{Fundamentals of DNA computing \new}
+\likely{``Explain Adleman's experiment'' or ``list the basic operations of DNA computing'' (3--4 marks).}
+
+DNA computing replaces electronic operations on bits by laboratory operations on strands. The basic toolbox is the following.
+\begin{itemize}
+  \item \textbf{Synthesis.} Short single strands (\emph{oligonucleotides}, about 10--100 bases) of any chosen sequence are made chemically. This is how data are written.
+  \item \textbf{Denaturation and annealing (hybridisation).} Heating to about 95\,$^\circ$C breaks the hydrogen bonds and separates the two strands; on cooling, every single strand searches the tube and binds to its complement. This is the ``compare'' operation of DNA computing, done by all molecules in parallel.
+  \item \textbf{Ligation.} The enzyme ligase joins two strands lying end to end on a common complementary strand into one continuous backbone, so short pieces are concatenated into long ones.
+  \item \textbf{PCR (polymerase chain reaction).} Two short \emph{primers} mark the start and end of a target sequence; each heating--cooling cycle copies every strand that has both primer sites, so the number of copies doubles per cycle and $n$ cycles give $2^n$ copies ($2^{30} \approx 1.07 \times 10^9$ after 30 cycles). Only strands with the right ends are amplified, which acts as a filter.
+  \item \textbf{Gel electrophoresis.} DNA is negatively charged, so in an electric field it moves through a gel towards the positive electrode, and shorter strands move faster. This separates strands by length.
+  \item \textbf{Affinity separation and sequencing.} Strands containing a given subsequence are pulled out with complementary probes fixed to magnetic beads; finally the surviving strands are read base by base (sequenced).
+\end{itemize}
+
+\textbf{Adleman's experiment (1994).} Leonard Adleman (the ``A'' of RSA) solved a small instance of the \textbf{directed Hamiltonian path problem}: given a directed graph with 7 vertices and designated start and end vertices, is there a path that visits every vertex exactly once? The problem is NP-complete, and a computer solves it by trying candidate paths one by one. Adleman instead built all paths at once.
+\begin{enumerate}
+  \item Each vertex $i$ was encoded as a random 20-base strand $O_i$. Each edge $i \to j$ was encoded as a 20-base strand made of the last 10 bases of $O_i$ followed by the first 10 bases of $O_j$, so that the complement of $O_j$ can hold edge $i \to j$ and edge $j \to k$ side by side.
+  \item Many copies of all edge strands and all vertex complements were mixed with ligase. Hybridisation and ligation joined edges into long strands, each one a random path through the graph; trillions of random paths formed in one step.
+  \item PCR with primers for the start and end vertices amplified only the paths that begin and end correctly.
+  \item Gel electrophoresis kept only strands of length $7 \times 20 = 140$ bases, i.e.\ paths through exactly 7 vertices.
+  \item Affinity separation was run once per vertex, each time keeping only strands that contain that vertex. A strand that survives all 7 rounds visits every vertex, and since it has only 7 vertices' worth of length, it visits each exactly once.
+  \item If any DNA remained, it was amplified and sequenced: the answer is ``yes'' and the sequence is the path.
+\end{enumerate}
+The chemistry took about a week, which shows both sides of DNA computing: the search itself was fully parallel, but the input/output steps are slow manual laboratory work. Moreover, the number of molecules needed grows with the number of candidate paths, i.e.\ exponentially in the graph size, so a 70-vertex graph would need more DNA than is practical. Boneh, Dunworth and Lipton (1995) used the same ideas on paper to show how a DNA computer could test all $2^{56}$ DES keys in parallel.
+
+% =====================================================================
+\subsection{Encoding binary data and ASCII text as DNA \hot\new}
+\likely{``How many binary encodings of A, C, G, T exist and how many respect complementarity? Encode a word in DNA'' (3 marks).}
+
+Since there are four bases, each base carries $\log_2 4 = 2$ bits. The standard rule (slide 5) is
+\[
+\textbf{A} = 00, \qquad \textbf{C} = 01, \qquad \textbf{G} = 10, \qquad \textbf{T} = 11,
+\]
+so an 8-bit ASCII character becomes 4 bases. For example \ttx{H} $= 72 = $ \ttx{01 00 10 00} $=$ \ttx{CAGA}.
+
+\textbf{Why 24 encodings, of which only 8 are complementary.} The four 2-bit values can be assigned to the four bases in $4! = 24$ ways. The binary digits 0 and 1 are complements of each other, so \ttx{00}--\ttx{11} and \ttx{01}--\ttx{10} are the two complementary pairs of 2-bit values. An encoding respects the biology if complementary bases get complementary values, i.e.\ the pair \{A, T\} gets one complementary pair of values and \{C, G\} the other. There are 2 ways to choose which value pair goes to \{A, T\}, 2 ways to order it inside (A $=$ \ttx{00}, T $=$ \ttx{11} or the reverse), and 2 ways to order the other pair inside \{C, G\}: $2 \times 2 \times 2 = 8$ suitable encodings. The standard rule is one of them, and with it \textbf{the Watson--Crick complement of a strand is exactly the bitwise NOT of its binary code}: A $= 00 \leftrightarrow 11 = $ T and C $= 01 \leftrightarrow 10 = $ G.
+
+\begin{mustknow}[: DNA encoding]
+A $= 00$, C $= 01$, G $= 10$, T $= 11$; 2 bits per base, 4 bases per ASCII character. Base pairs A--T and C--G. $4! = 24$ encodings, $2 \times 2 \times 2 = 8$ complementary ones. Slide 9's ``complementary rule'' is A$\to$C$\to$G$\to$T$\to$A, i.e.\ \emph{add 1 mod 4} to each 2-bit group.
+\end{mustknow}
+
+\textbf{The slide's ASCII-to-DNA table (slide 6).} Slide 9 explains that a key selects one of many substitution tables mapping each printable ASCII character (codes 32--127) to a 4-base word; slide 6 shows one such table. It is \emph{not} the binary rule above (that rule would give \ttx{A} $\mapsto$ \ttx{CAAC}, whereas the table gives \ttx{TACT}): it is a keyed code book. Transcribed exactly:
+\begin{center}\small
+\setlength{\tabcolsep}{4.5pt}
+\begin{tabular}{@{}cl|cl|cl|cl|cl|cl@{}}
+\toprule
+S & DNA & S & DNA & S & DNA & S & DNA & S & DNA & S & DNA\\
+\midrule
+sp & \ttx{ACAT} & \otsym{0} & \ttx{CAAA} & \otsym{@} & \ttx{CCAC} & \otsym{P} & \ttx{TTCA} & \otsym{\textasciigrave} & \otdup{\ttx{TCCG}} & \otsym{p} & \ttx{GACA}\\
+\otsym{!} & \ttx{AGGT} & \otsym{1} & \ttx{CACC} & \otsym{A} & \otdup{\ttx{TACT}} & \otsym{Q} & \ttx{TTTA} & \otsym{a} & \ttx{GAGC} & \otsym{q} & \otdup{\ttx{GACT}}\\
+\otsym{"} & \ttx{AAAG} & \otsym{2} & \otdup{\ttx{CCGT}} & \otsym{B} & \otdup{\ttx{TCCT}} & \otsym{R} & \ttx{TAGA} & \otsym{b} & \ttx{GTGC} & \otsym{r} & \ttx{GGAT}\\
+\otsym{\#} & \ttx{AGAC} & \otsym{3} & \ttx{CGAG} & \otsym{C} & \ttx{TACG} & \otsym{S} & \otdup{\ttx{TGAG}} & \otsym{c} & \ttx{GACG} & \otsym{s} & \otdup{\ttx{GGTG}}\\
+\otsym{\$} & \otdup{\ttx{AAGC}} & \otsym{4} & \ttx{CCTT} & \otsym{D} & \ttx{TGCC} & \otsym{T} & \ttx{TAAA} & \otsym{d} & \ttx{GTAA} & \otsym{t} & \ttx{GCTT}\\
+\otsym{\%} & \ttx{AACT} & \otsym{5} & \otdup{\ttx{CCGT}} & \otsym{E} & \ttx{TCTA} & \otsym{U} & \ttx{TGAC} & \otsym{e} & \ttx{GTAC} & \otsym{u} & \ttx{GACC}\\
+\otsym{\&} & \ttx{AGAA} & \otsym{6} & \ttx{CTGT} & \otsym{F} & \otdup{\ttx{TAGT}} & \otsym{V} & \otdup{\ttx{TGAG}} & \otsym{f} & \ttx{GCCT} & \otsym{v} & \otdup{\ttx{GACT}}\\
+\otsym{\textquotesingle} & \ttx{AATC} & \otsym{7} & \ttx{CTCT} & \otsym{G} & \ttx{TTAA} & \otsym{W} & \ttx{TAAC} & \otsym{g} & \ttx{GCTA} & \otsym{w} & \ttx{GCCC}\\
+\otsym{(} & \ttx{ATTG} & \otsym{8} & \otdup{\ttx{CCGT}} & \otsym{H} & \ttx{TGGC} & \otsym{X} & \otdup{\ttx{TCCT}} & \otsym{h} & \otdup{\ttx{GAGT}} & \otsym{x} & \ttx{GATC}\\
+\otsym{)} & \ttx{AATT} & \otsym{9} & \ttx{CTCA} & \otsym{I} & \otdup{\ttx{TGTT}} & \otsym{Y} & \ttx{TGAA} & \otsym{i} & \otdup{\ttx{GATG}} & \otsym{y} & \ttx{GTCG}\\
+\otsym{*} & \ttx{AATG} & \otsym{:} & \ttx{CTAG} & \otsym{J} & \ttx{TTCC} & \otsym{Z} & \otdup{\ttx{TAAG}} & \otsym{j} & \ttx{GATT} & \otsym{z} & \otdup{\ttx{GTGA}}\\
+\otsym{+} & \ttx{AAGA} & \otsym{;} & \ttx{CCGC} & \otsym{K} & \otdup{\ttx{TACT}} & \otsym{[} & \ttx{TCAT} & \otsym{k} & \ttx{GGGC} & \otsym{\{} & \ttx{GGCT}\\
+\otsym{,} & \ttx{AGAG} & \otsym{<} & \ttx{CACA} & \otsym{L} & \ttx{TATG} & \otsym{\textbackslash} & \otdup{\ttx{TAAG}} & \otsym{l} & \ttx{GTTG} & \otsym{|} & \otdup{\ttx{GGTG}}\\
+\otsym{-} & \otdup{\ttx{AAGC}} & \otsym{=} & \ttx{CATA} & \otsym{M} & \otdup{\ttx{TAGT}} & \otsym{]} & \ttx{TCCA} & \otsym{m} & \otdup{\ttx{GTGA}} & \otsym{\}} & \ttx{GAAC}\\
+\otsym{.} & \ttx{ACAC} & \otsym{>} & \ttx{CTAC} & \otsym{N} & \ttx{TGTC} & \otsym{\textasciicircum} & \otdup{\ttx{TGTT}} & \otsym{n} & \otdup{\ttx{GACT}} & \otsym{\textasciitilde} & \otdup{\ttx{GATG}}\\
+\otsym{/} & \ttx{ACGT} & \otsym{?} & \ttx{CCAG} & \otsym{O} & \ttx{TATT} & \otsym{\_} & \otdup{\ttx{TCCG}} & \otsym{o} & \ttx{GCCG} & DEL & \otdup{\ttx{GAGT}}\\
+\bottomrule
+\end{tabular}
+\end{center}
+{\small Rows run down each column in ASCII order (codes 32--47, 48--63, \dots, 112--127); sp $=$ space, DEL $=$ code 127 (printed \ttx{\textbackslash x7f} on the slide). \textbf{Shaded cells share their 4-base word with another character}: only 80 of the 96 words are distinct (e.g.\ \ttx{TACT} is both \ttx{A} and \ttx{K}; \ttx{CCGT} is \ttx{2}, \ttx{5} and \ttx{8}), so the table as printed cannot be decoded uniquely; see the corrections box.}
+
+Using this table, \ttx{HI} $\mapsto$ \ttx{TGGC TGTT}. A code book like this is a monoalphabetic substitution on characters; on its own it would fall to frequency analysis, which is why the scheme combines it with a one-time-pad XOR.
+
+% =====================================================================
+\subsection{The DNA cryptography algorithm (slides 7--11) \hot\new}
+\likely{``Explain the DNA cryptography algorithm with its encryption and decryption flowcharts, and encrypt a short word'' (5--6 marks).}
+
+\textbf{Table-based set-up (slide 7).} The sender generates a DNA encoding table (a table like slide 6), and the receiver generates another table with the same technique. Instead of sending the whole table, each party sends a short \emph{clue} (the seed or key number from which the table is generated), so the other party can rebuild the table locally. The plaintext is divided into two equal halves, with random padding if its length is odd; one half is converted into a DNA sequence with the sender's table and the other half with the receiver's table. Here DNA is used purely as an information carrier for end-to-end communication.
+
+\textbf{The algorithm (slide 9).} The bit-level version, which is what is examined, runs as follows.
+\begin{enumerate}
+  \item Convert each plaintext character to its ASCII code and write it as an 8-bit binary number.
+  \item Represent the binary data in DNA form with A $= 00$, C $= 01$, G $= 10$, T $= 11$ (4 bases per character).
+  \item Apply the slide's complementary rule to every base: A $\to$ C, C $\to$ G, G $\to$ T, T $\to$ A.
+  \item Convert the resulting DNA sequence back to binary.
+  \item Generate the key and convert it to binary. On slide 9 it is a random number between 1 and 256 that also selects the ASCII-to-DNA table (key 1 gives one table, key 2 another, and so on); in the flowchart of slide 8 it is a \textbf{one-time-pad key} that is converted character by character to ASCII and then to 8-bit binary (with zero padding to full bytes).
+  \item XOR the key bits with the data bits.
+  \item Change the result to DNA bases (A $= 00$, \dots) to obtain the encrypted text (slide 8).
+\end{enumerate}
+Decryption is the reverse operation (slides 10--11): convert the received bases to binary with the lookup table, XOR with the same key, convert to DNA and undo the complementary rule (C $\to$ A, G $\to$ C, T $\to$ G, A $\to$ T), remove the zero padding, and convert each 8-bit group back to its ASCII character.
+
+\begin{center}
+\begin{tikzpicture}[font=\footnotesize, >=Stealth,
+  fb/.style={draw, rounded corners=3pt, align=center, text width=2.55cm, minimum height=0.75cm, inner sep=2pt},
+  kb/.style={fb, fill=warn!6}, xb/.style={draw, rounded corners=3pt, fill=acc!12, minimum width=1.1cm, minimum height=0.6cm, font=\small\bfseries}]
+% ---- encryption ----
+\node[font=\small\bfseries, text=good] at (1.6,1.0) {Encryption (slide 8)};
+\node[fb] (p1) at (0,0) {Input: characters, numerals, special characters};
+\node[fb, below=0.35cm of p1] (p2) {Conversion to ASCII values};
+\node[fb, below=0.35cm of p2] (p3) {Conversion to binary and zero padding};
+\node[kb] (k1) at (3.2,0) {Input: one-time pad key};
+\node[kb, below=0.35cm of k1] (k2) {Conversion to ASCII values};
+\node[kb, below=0.35cm of k2] (k3) {Conversion to binary and zero padding};
+\node[xb] (x) at (1.6,-3.75) {XOR};
+\node[fb, below=0.35cm of x] (d1) {Change to DNA bases format};
+\node[fb, below=0.35cm of d1, fill=magenta!8] (d2) {Encrypted text};
+\draw[arr] (p1) -- (p2); \draw[arr] (p2) -- (p3); \draw[arr] (k1) -- (k2); \draw[arr] (k2) -- (k3);
+\draw[arr] (p3.south) |- (x.west); \draw[arr] (k3.south) |- (x.east); \draw[arr] (x) -- (d1); \draw[arr] (d1) -- (d2);
+% ---- decryption ----
+\begin{scope}[xshift=8.4cm]
+\node[font=\small\bfseries, text=good] at (1.6,1.0) {Decryption (slide 10)};
+\node[fb, fill=magenta!8] (c1) at (0,0) {Input: encrypted text};
+\node[fb, below=0.35cm of c1] (c2) {Convert DNA bases to binary using lookup table};
+\node[kb] (j1) at (3.2,0) {Input: one-time pad key};
+\node[kb, below=0.35cm of j1] (j2) {Conversion to ASCII values};
+\node[kb, below=0.35cm of j2] (j3) {Conversion to binary and zero padding};
+\node[xb] (y) at (0,-2.45) {XOR};
+\node[fb, below=0.4cm of y] (e1) {Zero removal and conversion to ASCII bits};
+\node[fb, below=0.35cm of e1] (e2) {Convert ASCII value to character};
+\node[fb, below=0.35cm of e2, fill=good!10] (e3) {Decrypted message};
+\draw[arr] (c1) -- (c2); \draw[arr] (c2) -- (y); \draw[arr] (j1) -- (j2); \draw[arr] (j2) -- (j3);
+\draw[arr] (j3.west) -- ++(-0.45,0) |- (y.east); \draw[arr] (y) -- (e1); \draw[arr] (e1) -- (e2); \draw[arr] (e2) -- (e3);
+\end{scope}
+\end{tikzpicture}
+\end{center}
+The flowcharts omit the complementary-rule step of slide 9. Since that step is a fixed public substitution, including it changes the ciphertext but not the security; the worked example below follows slide 9 (with the rule) and slide 8 (one-time-pad key, final conversion to DNA).
+
+\textbf{Why decryption recovers the plaintext.} Write $x$ for the 8-bit code of a character, $\sigma$ for steps 2--4 and $k$ for the key byte. In binary, the rule A$\to$C$\to$G$\to$T$\to$A sends $00 \to 01 \to 10 \to 11 \to 00$, i.e.\ it \emph{adds 1 modulo 4 to each 2-bit group}; this is a bijection, and its inverse subtracts 1 modulo 4 (C$\to$A, G$\to$C, T$\to$G, A$\to$T). The ciphertext byte is $c = \sigma(x) \oplus k$. The receiver computes $c \oplus k = \sigma(x) \oplus k \oplus k = \sigma(x)$, since $k \oplus k = 0$, and then $\sigma^{-1}(\sigma(x)) = x$. Both steps are exactly invertible, so the plaintext is recovered bit for bit.
+
+\begin{worked}[: DNA encryption and decryption of ``HI'']
+\textbf{Q.} Using the DNA cryptography algorithm (A $= 00$, C $= 01$, G $= 10$, T $= 11$; complementary rule A$\to$C, C$\to$G, G$\to$T, T$\to$A) and the one-time-pad key ``OK'', encrypt the plaintext ``HI'' and show that decryption recovers it.
+
+\textbf{Encryption.} Steps 1--4 on the plaintext, then steps 5--7 with the key:
+\begin{center}\small
+\begin{tabular}{@{}cccccc@{}}
+\toprule
+Char & ASCII & Binary (step 1) & DNA (step 2) & Rule (step 3) & Binary $\sigma(x)$ (step 4)\\
+\midrule
+\ttx{H} & 72 & \ttx{01001000} & \ttx{CAGA} & \ttx{GCTC} & \ttx{10011101}\\
+\ttx{I} & 73 & \ttx{01001001} & \ttx{CAGC} & \ttx{GCTG} & \ttx{10011110}\\
+\bottomrule
+\end{tabular}
+
+\vspace{4pt}
+\begin{tabular}{@{}cccccc@{}}
+\toprule
+Key char & ASCII & Key bits $k$ & $\sigma(x)$ & $c = \sigma(x) \oplus k$ & DNA (step 7)\\
+\midrule
+\ttx{O} & 79 & \ttx{01001111} & \ttx{10011101} & \ttx{11010010} & \ttx{TCAG}\\
+\ttx{K} & 75 & \ttx{01001011} & \ttx{10011110} & \ttx{11010101} & \ttx{TCCC}\\
+\bottomrule
+\end{tabular}
+\end{center}
+Ciphertext: \textbf{\ttx{TCAGTCCC}}.
+
+\textbf{Decryption.} Bases to binary, XOR with the key, back to DNA, inverse rule (C$\to$A, G$\to$C, T$\to$G, A$\to$T), binary, ASCII:
+\begin{center}\small
+\begin{tabular}{@{}ccccccc@{}}
+\toprule
+DNA & Binary & $\oplus\,k$ & DNA & Inverse rule & Binary & Char\\
+\midrule
+\ttx{TCAG} & \ttx{11010010} & \ttx{10011101} & \ttx{GCTC} & \ttx{CAGA} & \ttx{01001000} $= 72$ & \ttx{H}\\
+\ttx{TCCC} & \ttx{11010101} & \ttx{10011110} & \ttx{GCTG} & \ttx{CAGC} & \ttx{01001001} $= 73$ & \ttx{I}\\
+\bottomrule
+\end{tabular}
+\end{center}
+Recovered plaintext: \textbf{HI}. \emph{Check}: each base of \ttx{GCTC} is one step after the base of \ttx{CAGA} in the cycle A$\to$C$\to$G$\to$T$\to$A, and $\ttx{10011101} \oplus \ttx{01001111} = \ttx{11010010}$ bit by bit.
+\end{worked}
+
+\textbf{Security analysis.} By Kerckhoffs's principle Eve knows the algorithm, so she can undo steps 2--4 and 7 herself: the DNA encoding and the complementary rule are public bijections with no key, and they add no secrecy. All the security therefore comes from the XOR with the key. If the key is a true one-time pad (random, as long as the message, never reused), $c$ is uniformly distributed whatever the plaintext, and the scheme has the perfect secrecy of the one-time pad (\S\ref{sec:otp}). If instead the key is a single number between 1 and 256 XORed into every byte, there are only 256 keys, so Eve tries them all; and one known plaintext character gives the key at once as $k = \sigma(x) \oplus c$. Slide 11's claim of a key space of about $10^{23}$ ($\approx 2^{76}$) is far larger than 256 and is not derived on the slides; even taken at face value it is below the $2^{128}$ expected of modern symmetric ciphers.
+
+\textbf{Advantages.} DNA offers enormous storage density (about $10^{12}$ times that of conventional media), massive parallelism for search-type problems, very low energy per operation, and long-term stability of stored molecules. Biological schemes (DNA one-time pads, DNA steganography) add a physical barrier: without the right primers Eve cannot even locate the message strand.
+
+\textbf{Limitations.} Laboratory DNA cryptography needs expensive equipment and trained staff; synthesis, PCR and sequencing are slow (hours to days per operation) and have non-negligible error rates (mismatched hybridisation, synthesis and sequencing errors), so error-correcting redundancy is needed. The parallelism does not change exponential problems into polynomial ones, it only gives a large constant factor bought with an exponential amount of DNA. Finally, there is no theoretical security model comparable to number-theoretic or information-theoretic proofs, and the purely digital ``pseudo-DNA'' schemes are only as strong as the classical cipher (here the XOR) inside them. For these reasons DNA cryptography is still a research area, not a practical replacement for AES or RSA.
+
+% =====================================================================
+\subsection{Quantum cryptography: security from physics \new}
+\likely{``What is quantum cryptography and how does it differ from classical cryptography?'' (2--3 marks).}
+
+Every public-key scheme in this course is secure only as long as a mathematical problem stays hard, and none of these problems has been proved hard; a better algorithm or a new kind of computer could break them, even years after the ciphertext was recorded. \textbf{Quantum cryptography} uses the laws of quantum physics instead, to build a cryptosystem that cannot be compromised \emph{without the knowledge of the sender or the receiver}. The word \emph{quantum} refers to the behaviour of the smallest particles of matter and energy, such as single photons. Richard Feynman proposed in 1982 a \emph{quantum computer}, a computer that uses the effects of quantum mechanics to its advantage; quantum cryptography is the related idea of using the same effects to protect communication.
+
+The practical form of quantum cryptography is \textbf{quantum key distribution (QKD)}. It does not encrypt the message itself; it lets two remote parties create a shared random key over a channel that Eve can attack, with the guarantee that any eavesdropping shows up as errors. The key is then used in a one-time pad or in AES. The difference from classical cryptography is therefore the \emph{basis of security}: physics (an eavesdropper must measure, and measuring disturbs) rather than mathematics (an eavesdropper must solve a hard problem).
+
+\subsection{Properties of quantum information \new}
+\likely{``State the properties of quantum information used in quantum cryptography; state and justify the no-cloning theorem'' (3--4 marks).}
+
+\textbf{Qubit and superposition.} In quantum cryptography information is carried by a \textbf{quantum bit (qubit)}, which in practice is a single photon. A classical bit is 0 or 1; a qubit can be in a \textbf{superposition} $\otket{\psi} = \alpha\otket{0} + \beta\otket{1}$ of the two basis states, where $\alpha, \beta$ are (complex) amplitudes with $|\alpha|^2 + |\beta|^2 = 1$. For a photon the basis states are polarisations: horizontal ($0^\circ$) is $\otket{0}$ and vertical ($90^\circ$) is $\otket{1}$, and a photon polarised at $45^\circ$ is the superposition $(\otket{0} + \otket{1})/\sqrt 2$.
+
+\textbf{Measurement disturbs the state} (the slide's ``Heisenberg uncertainty principle''). Measuring $\otket{\psi}$ in the basis $\{\otket{0}, \otket{1}\}$ gives 0 with probability $|\alpha|^2$ and 1 with probability $|\beta|^2$, and afterwards the qubit \emph{is} in the state that was observed: the original amplitudes are lost. Hence the polarisation of a photon is only known at the point when it is measured, and an eavesdropper who measures a photon changes it.
+
+\textbf{Photon polarisation} (the slide's second pillar). A photon polarised at angle $\theta$ that meets a polarising filter (or polarising beam splitter) set at angle $\varphi$ is found along the filter with probability $\cos^2(\theta - \varphi)$, and is then polarised along the filter. If the filter is parallel ($\theta - \varphi = 0^\circ$) the photon is detected with certainty; if perpendicular ($90^\circ$) it is certainly not; at $45^\circ$ each outcome has probability $\cos^2 45^\circ = 1/2$, so the result is a fair coin flip that carries no information about $\theta$. Two directions at $90^\circ$ form a \textbf{basis}; BB84 uses the \textbf{rectilinear} basis $+$ ($0^\circ$, $90^\circ$) and the \textbf{diagonal} basis $\times$ ($45^\circ$, $135^\circ$), which are at $45^\circ$ to each other.
+\begin{center}\small
+\begin{tabular}{@{}lccl@{}}
+\toprule
+Basis & Bit 0 & Bit 1 & Measured in the other basis\\
+\midrule
+Rectilinear $+$ & $0^\circ$ ($\rightarrow$) & $90^\circ$ ($\uparrow$) & random 0/1, probability $\tfrac12$ each\\
+Diagonal $\times$ & $45^\circ$ ($\nearrow$) & $135^\circ$ ($\nwarrow$) & random 0/1, probability $\tfrac12$ each\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\textbf{No-cloning theorem} (Wootters--Zurek, Dieks, 1982): \imp{an unknown quantum state cannot be copied.} Suppose a machine (a unitary operation $U$) could copy every state: $U(\otket{\psi}\otket{0}) = \otket{\psi}\otket{\psi}$ and $U(\otket{\varphi}\otket{0}) = \otket{\varphi}\otket{\varphi}$. Unitary operations preserve inner products, so taking the inner product of the two equations gives $\langle\varphi|\psi\rangle \cdot 1 = \langle\varphi|\psi\rangle^2$. Therefore $\langle\varphi|\psi\rangle$ is 0 or 1: the machine works only for states that are identical or orthogonal (i.e.\ for one known basis), never for all four BB84 states. Eve therefore cannot copy a photon, keep the copy, and forward the original untouched; she must measure, and measuring disturbs.
+
+\textbf{Entanglement.} Two photons can be prepared in a joint state such as $(\otket{00} + \otket{11})/\sqrt 2$, in which neither photon has its own polarisation but the two are perfectly correlated: if both are measured in the same basis, the results are random but always equal, however far apart the photons are. Entanglement carries no message by itself, but it can give two parties identical random bits, which is the basis of the E91 protocol.
+
+% =====================================================================
+\subsection{BB84 quantum key distribution \hot\new}
+\likely{``Explain the BB84 protocol with an example; how are eavesdroppers detected?'' (5--6 marks). Draw the table.}
+
+BB84 (Bennett and Brassard, 1984) lets Alice and Bob agree on a secret key using two channels: a \textbf{quantum channel} (optical fibre or free space) that carries single polarised photons and that Eve may attack in any way, and a \textbf{public classical channel} that Eve can read but not alter, i.e.\ it must be \emph{authenticated}.
+\begin{enumerate}
+  \item \textbf{Preparation.} Alice generates a random bit string $a_1, \dots, a_n$ and, independently, a random basis string $b_1, \dots, b_n \in \{+, \times\}$.
+  \item \textbf{Transmission.} For each $i$ she sends one photon polarised according to the table above: bit 0 as $0^\circ$ or $45^\circ$, bit 1 as $90^\circ$ or $135^\circ$, in basis $b_i$.
+  \item \textbf{Measurement.} Bob does not know $b_i$, so for each photon he chooses his own random basis $b'_i$ and measures, recording the result.
+  \item \textbf{Sifting.} Over the public channel Bob announces his bases $b'_i$ (\emph{not} his results). Alice replies with the positions where $b'_i = b_i$. Both discard all other positions. Where the bases match, Bob's result equals Alice's bit with certainty (filter parallel or perpendicular); where they differ, his result is a coin flip and useless. Since the bases agree with probability $1/2$, about $n/2$ bits survive: the \textbf{sifted key}.
+  \item \textbf{Error estimation.} Alice and Bob publicly compare a random sample of the sifted bits and compute the \textbf{quantum bit error rate} (QBER), the fraction that disagree. Without Eve and noise it is 0. If it exceeds a threshold (about 11\% for BB84), they abort, because Eve may know too much. The compared bits are discarded, since Eve has now seen them.
+  \item \textbf{Information reconciliation.} The remaining bits may still contain a few errors (noise or Eve). Alice and Bob correct them by exchanging parity information over the public channel.
+  \item \textbf{Privacy amplification.} Eve may know some bits or parities. Alice and Bob apply the same hash function to the corrected key and keep a shorter output, of which Eve's knowledge is negligible. The result is the final secret key.
+\end{enumerate}
+
+\begin{center}
+\begin{tikzpicture}[font=\footnotesize, >=Stealth]
+\node[draw, fill=acc!10, minimum width=1.6cm] (A) at (0,0.7) {Alice};
+\node[draw, fill=acc!10, minimum width=1.6cm] (B) at (12,0.7) {Bob};
+\node[draw, fill=warn!10, minimum width=1.2cm, align=center, font=\scriptsize] (E) at (6,0.7) {Eve (may attack\\the photons)};
+\draw[gray] (A) -- (0,-5.2); \draw[gray] (B) -- (12,-5.2); \draw[warn, dashed] (E) -- (6,-0.75);
+\draw[->, very thick, acc, decorate, decoration={snake, amplitude=1.2pt, segment length=6pt, post length=2mm}] (0,-0.9) -- (12,-0.9);
+\node[fill=white, inner sep=1pt] at (6,-0.5) {(1) quantum channel: one photon per bit, random bit $a_i$ in random basis $b_i$ ($\nearrow\ \uparrow\ \nwarrow\ \rightarrow \dots$)};
+\draw[arr] (12,-1.8) -- node[above, fill=white, inner sep=1pt] {(2) public: ``my bases were $+\ +\ \times\ +\ \times \dots$'' (results kept secret)} (0,-1.8);
+\draw[arr] (0,-2.6) -- node[above, fill=white, inner sep=1pt] {(3) public: ``bases matched at positions 1, 4, 5, 7, 8, 10; keep only these''} (12,-2.6);
+\draw[darr] (0,-3.4) -- node[above, fill=white, inner sep=1pt] {(4) public: reveal and compare a random sample of sifted bits $\Rightarrow$ QBER; abort if too high} (12,-3.4);
+\draw[darr] (0,-4.2) -- node[above, fill=white, inner sep=1pt] {(5) public: error correction (parities), then privacy amplification (hash)} (12,-4.2);
+\node[draw, fill=gold!20] at (0,-4.95) {final key}; \node[draw, fill=gold!20] at (12,-4.95) {final key};
+\end{tikzpicture}
+\end{center}
+Each public message matters. Message (2) reveals only bases, which say nothing about bit values because each basis carries both values equally often. Message (3) reveals positions, again not values. Message (4) is the eavesdropping test: it works because, as shown next, Eve cannot measure without causing errors. Message (5) removes the effect of noise and of whatever Eve learned. The public channel must be authenticated, otherwise Eve could sit in the middle and run BB84 separately with each party (a man-in-the-middle attack).
+
+\begin{worked}[: BB84 with 10 photons]
+\textbf{Q.} Alice sends 10 photons. Her bits are \ttx{0110100110} and her bases $+\,\times\,+\,+\,\times\,\times\,+\,\times\,+\,\times$. Bob measures with bases $+\,+\,\times\,+\,\times\,+\,+\,\times\,\times\,\times$. Show the polarisations, Bob's results, the sifted key, and the final key if positions 4 and 8 are used for the error check. (Where Bob's basis differs, his result is random; the values shown are one possible outcome.)
+
+\begin{center}\small
+\setlength{\tabcolsep}{4.5pt}
+\begin{tabular}{@{}lcccccccccc@{}}
+\toprule
+Photon $i$ & 1 & 2 & 3 & 4 & 5 & 6 & 7 & 8 & 9 & 10\\
+\midrule
+Alice's bit $a_i$ & 0 & 1 & 1 & 0 & 1 & 0 & 0 & 1 & 1 & 0\\
+Alice's basis $b_i$ & $+$ & $\times$ & $+$ & $+$ & $\times$ & $\times$ & $+$ & $\times$ & $+$ & $\times$\\
+Polarisation sent & $0^\circ$ & $135^\circ$ & $90^\circ$ & $0^\circ$ & $135^\circ$ & $45^\circ$ & $0^\circ$ & $135^\circ$ & $90^\circ$ & $45^\circ$\\
+Bob's basis $b'_i$ & $+$ & $+$ & $\times$ & $+$ & $\times$ & $+$ & $+$ & $\times$ & $\times$ & $\times$\\
+Bob's result & 0 & 0$^r$ & 1$^r$ & 0 & 1 & 1$^r$ & 0 & 1 & 0$^r$ & 0\\
+Bases match? & \checkmark & -- & -- & \checkmark & \checkmark & -- & \checkmark & \checkmark & -- & \checkmark\\
+Sifted key & 0 & & & 0 & 1 & & 0 & 1 & & 0\\
+\bottomrule
+\end{tabular}
+\end{center}
+($^r$ $=$ random result, basis mismatch.) Sifted key (positions 1, 4, 5, 7, 8, 10): \textbf{\ttx{001010}}, 6 of 10 bits, close to the expected $n/2 = 5$. Alice and Bob reveal positions 4 and 8: Alice has 0, 1 and Bob has 0, 1, so QBER $= 0/2$ and no eavesdropping is indicated. They discard those two and keep positions 1, 5, 7, 10: final key \textbf{\ttx{0100}} (before privacy amplification). \emph{Check}: at photon 3 Bob happened to get 1, equal to Alice's bit, but it is still discarded, because neither side can know a mismatched-basis result is right.
+\end{worked}
+
+\subsection{Why eavesdropping is detected: the intercept--resend attack \hot\new}
+\likely{``Show that an intercept--resend eavesdropper causes a 25\% error rate in the sifted key'' (3--4 marks).}
+
+The simplest attack is \textbf{intercept--resend}: Eve catches each photon, measures it in a basis of her own choice, and sends Bob a new photon prepared in the state she observed. She has to guess the basis, because the bases are announced only after Bob has measured, and she cannot copy the photon to measure later (no-cloning). Consider a bit that survives sifting, so Alice and Bob used the same basis.
+\begin{itemize}
+  \item With probability $1/2$ Eve guesses Alice's basis. She gets Alice's bit exactly, resends the same polarisation, and Bob (same basis as Alice) gets the correct bit. No error.
+  \item With probability $1/2$ Eve uses the wrong basis. Her result is random and she resends a photon at $45^\circ$ to Alice's basis. Bob measures in Alice's basis, so his result is a coin flip: wrong with probability $1/2$.
+\end{itemize}
+Therefore
+\[
+\Pr[\text{error in a sifted bit}] = \tfrac12 \times 0 + \tfrac12 \times \tfrac12 = \boxed{\tfrac14 = 25\%}.
+\]
+If Eve attacks only a fraction $f$ of the photons, the error rate is $f/4$ (e.g.\ $f = 0.2$ gives 5\%). In return Eve learns each sifted bit with probability $\frac12 \cdot 1 + \frac12 \cdot \frac12 = \frac34$ (right basis: certainly; wrong basis: a coin flip). Since each compared bit exposes her with probability $1/4$, the probability that $m$ compared bits all agree although she attacked every photon is $(3/4)^m$, and Alice and Bob detect her with probability $1 - (3/4)^m$.
+
+\begin{mustknow}[: BB84 numbers]
+Bases agree with probability $\tfrac12$ $\Rightarrow$ sifted key $\approx n/2$ bits. Full intercept--resend $\Rightarrow$ QBER $= \tfrac12 \cdot \tfrac12 = 25\%$ (fraction $f$: $f/4$). Eve escapes $m$ test bits with probability $(3/4)^m$.
+\end{mustknow}
+
+\begin{worked}[: detecting Eve]
+\textbf{Q.} Eve performs intercept--resend on every photon. (a) What QBER do Alice and Bob observe? (b) If they compare 20 sifted bits, what is the probability that Eve is not detected? (c) How many bits must they compare to make that probability less than $10^{-9}$? (d) In another run they compare 200 bits and find 47 mismatches; estimate the fraction of photons Eve attacked.
+
+\textbf{A.} (a) $25\%$, as derived above.\\
+(b) Each bit agrees with probability $3/4$: $(3/4)^{20} = \mathbf{0.00317}$, so Eve is caught with probability $0.9968$.\\
+(c) Need $(3/4)^m < 10^{-9}$, i.e.\ $m > 9 / \log_{10}(4/3) = 72.03$; indeed $(3/4)^{72} = 1.01 \times 10^{-9}$, so $m = \mathbf{73}$ bits.\\
+(d) QBER $= 47/200 = 0.235$; since QBER $= f/4$, $f \approx 4 \times 0.235 = \mathbf{0.94}$, about 94\% of the photons. The run is aborted.\\
+\emph{Check}: a simulation of $2 \times 10^5$ photons with Eve on all of them kept $49.95\%$ of the bits and gave QBER $= 0.2500$.
+\end{worked}
+
+\textbf{E91 (Ekert, 1991).} In the entanglement-based protocol a source sends one photon of each entangled pair to Alice and the other to Bob. Each measures in a randomly chosen basis; when their bases agree, the results are perfectly correlated and form the key. On the rounds with other basis combinations they test a \textbf{Bell inequality}: correlations stronger than any classical (pre-determined) system allows prove that the photons are still entangled and therefore that nobody has measured them on the way. An eavesdropper breaks the entanglement, the Bell test fails, and the parties abort. The advantage is that even the source need not be trusted.
+
+% =====================================================================
+\subsection{Quantum algorithms: Shor and Grover \hot\new}
+\likely{``Explain Shor's and Grover's algorithms and their impact on RSA, ECC and AES'' (3--5 marks).}
+
+The slides call Shor's and Grover's algorithms ``the two basic algorithms of quantum cryptography''. More precisely, they are quantum algorithms for \emph{cryptanalysis}: they run on a quantum computer and attack classical ciphers. QKD does not use them; they are the reason classical cryptography must change.
+
+\textbf{Grover's algorithm (1996)} finds, with high probability, the unique input to a black-box function that produces a particular output value. Classically, finding the one marked item among $N$ needs about $N/2$ evaluations on average ($N$ in the worst case), because each test rules out one candidate. Grover's algorithm needs only about $\frac{\pi}{4}\sqrt N$ evaluations: it starts from an equal superposition of all $N$ inputs and, in each iteration, increases the amplitude of the marked input a little, so that after about $\frac{\pi}{4}\sqrt N$ iterations a measurement returns it with high probability. It is known to be optimal: no quantum algorithm can search an unstructured space faster than order $\sqrt N$. For a cipher with a $k$-bit key, $N = 2^k$, so a key search costs about $2^{k/2}$: \imp{Grover halves the effective key length.} AES-128 drops to about $\frac{\pi}{4} 2^{64} \approx 1.45 \times 10^{19}$ evaluations (64-bit security), while AES-256 keeps $2^{128}$. The fix is simply to \textbf{double the key length}; symmetric cryptography survives.
+
+\textbf{Shor's algorithm (1994)} gives a dramatic improvement in factoring: given an integer $N$, it finds its prime factors in polynomial time (about $O(n^3)$ elementary quantum operations for an $n$-bit $N$), whereas the best classical algorithm, the general number field sieve, is sub-exponential, $\exp\!\big(1.923\,(\ln N)^{1/3}(\ln\ln N)^{2/3}\big)$. The same method computes discrete logarithms in $\mathbb{Z}_p^*$ and on elliptic curves. Hence it breaks RSA, Diffie--Hellman, ElGamal, DSA and all of ECC.
+
+\textbf{How Shor factors: reduction to order finding.} The quantum computer is used for one task only: given $a$ with $\gcd(a, N) = 1$, find the \textbf{order} $r$ of $a$ modulo $N$, the smallest $r > 0$ with $a^r \equiv 1 \pmod N$. It does so by preparing a superposition of all exponents $x$, computing $a^x \bmod N$ in superposition (a periodic function of $x$ with period $r$), and applying the quantum Fourier transform, which reveals the period. The rest is classical. If $r$ is even,
+\[
+a^r - 1 = (a^{r/2} - 1)(a^{r/2} + 1) \equiv 0 \pmod N ,
+\]
+so $N$ divides the product. $N$ does not divide $a^{r/2} - 1$ (otherwise $r/2$ would be a smaller order), and if also $a^{r/2} \not\equiv -1 \pmod N$, $N$ does not divide $a^{r/2} + 1$ either. Then each factor shares a proper divisor with $N$, and $\gcd(a^{r/2} \pm 1, N)$ are non-trivial factors. If $r$ is odd or $a^{r/2} \equiv -1$, a new random $a$ is tried; at least half of the choices work.
+
+\begin{worked}[: the classical part of Shor's algorithm]
+\textbf{Q.} Factor $N = 15$ with $a = 7$ as Shor's algorithm does, and show why $a = 5$ fails for $N = 21$.
+
+\textbf{A.} Powers of 7 modulo 15: $7^1 = 7$, $7^2 = 49 \equiv 4$, $7^3 \equiv 4 \times 7 = 28 \equiv 13$, $7^4 \equiv 13 \times 7 = 91 \equiv 1$. The order is $r = 4$ (this is the step the quantum computer performs). $r$ is even and $a^{r/2} = 7^2 \equiv 4 \not\equiv -1 \pmod{15}$. Then $\gcd(4 - 1, 15) = \mathbf{3}$ and $\gcd(4 + 1, 15) = \mathbf{5}$, and $15 = 3 \times 5$.\\
+For $N = 21$, $a = 5$: powers $5, 4, 20, 16, 17, 1$, so $r = 6$, but $5^3 \equiv 20 \equiv -1 \pmod{21}$, giving $\gcd(19, 21) = 1$ and $\gcd(21, 21) = 21$, both trivial. A new $a$ is chosen: $a = 2$ has order 6 and $2^3 = 8$, so $\gcd(7, 21) = 7$ and $\gcd(9, 21) = 3$.\\
+\emph{Check}: $3 \times 5 = 15$ and $3 \times 7 = 21$.
+\end{worked}
+
+\begin{center}\small
+\begin{tabularx}{\textwidth}{@{}l l l l X@{}}
+\toprule
+Scheme & Classical hard problem & Quantum attack & Effect & Remedy\\
+\midrule
+RSA & factoring & Shor, polynomial & broken & post-quantum KEM / signature\\
+DH, ElGamal, DSA & discrete log mod $p$ & Shor, polynomial & broken & post-quantum KEM / signature\\
+ECDH, ECDSA, EC-ElGamal & elliptic-curve discrete log & Shor, polynomial & broken & post-quantum KEM / signature\\
+AES-128 & $2^{128}$ key search & Grover, $2^{64}$ & weakened & use AES-256 ($2^{128}$ left)\\
+3DES (112-bit key) & $2^{112}$ key search & Grover, $2^{56}$ & weak & retire; use AES-256\\
+AES-256 & $2^{256}$ key search & Grover, $2^{128}$ & secure & none needed\\
+SHA-256 & preimage $2^{256}$ & Grover, $2^{128}$ & secure & SHA-384/512 for margin\\
+One-time pad, QKD key & none (information-theoretic) & none & secure & none needed\\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\textbf{How close is the threat?} The slide mentions D-Wave as one of the companies making quantum computers a reality. D-Wave machines are \emph{quantum annealers} built for optimisation problems; they cannot run Shor's algorithm. Gate-based machines have so far run Shor's algorithm only on toy numbers such as 15 and 21, and published estimates for factoring a 2048-bit RSA modulus need on the order of a million noisy physical qubits. Nevertheless the migration has already started, because of the \textbf{harvest-now, decrypt-later} threat: ciphertext recorded today can be decrypted once a large quantum computer exists, so data that must stay secret for decades needs quantum-safe protection now.
+
+% =====================================================================
+\subsection{Post-quantum cryptography \new}
+\likely{``What is post-quantum cryptography? Differentiate it from quantum cryptography'' (2--3 marks).}
+
+\textbf{Post-quantum cryptography} (PQC) consists of \emph{classical} algorithms, running on ordinary computers, whose security rests on problems that are believed hard even for quantum computers, i.e.\ problems with no known Shor-like structure (no hidden period). After a public competition, NIST published the first standards in August 2024.
+\begin{itemize}
+  \item \textbf{Lattice-based.} Security rests on finding short vectors in high-dimensional lattices, or on \emph{learning with errors} (solving linear equations modulo $q$ to which small random errors have been added). Standards: \textbf{ML-KEM} (FIPS 203, from CRYSTALS-Kyber) for key encapsulation, \textbf{ML-DSA} (FIPS 204, from CRYSTALS-Dilithium) for signatures, and Falcon (FN-DSA) to follow. Keys are about 1--2 KB and operations are as fast as or faster than RSA.
+  \item \textbf{Hash-based signatures.} Security rests only on the preimage and collision resistance of a hash function (\S\ref{sec:integrity}), the best-understood assumption of all. \textbf{SLH-DSA} (FIPS 205, from SPHINCS$^+$) is stateless; XMSS and LMS are stateful (the signer must never reuse a one-time key). Signatures are large (about 8 to 50 KB).
+  \item \textbf{Code-based.} Security rests on decoding a random linear error-correcting code. The McEliece cryptosystem (1978) has never been broken but has public keys of hundreds of kilobytes to about a megabyte; HQC was selected by NIST in 2025 as a second, non-lattice KEM.
+  \item \textbf{Multivariate and isogeny-based} schemes (systems of quadratic equations; maps between elliptic curves) were also studied; two candidates, Rainbow and SIKE, were broken by classical attacks in 2022, which shows why the standards were chosen conservatively.
+\end{itemize}
+
+\begin{center}\small
+\begin{tabularx}{\textwidth}{@{}l X X@{}}
+\toprule
+ & Post-quantum cryptography & Quantum cryptography (QKD)\\
+\midrule
+Security from & mathematical problems believed hard for quantum computers & laws of physics (measurement disturbs, no-cloning)\\
+Hardware & ordinary computers; a software upgrade & single-photon sources, detectors, dedicated fibre or satellite link\\
+Distance & any (works over the Internet) & typically 100--200 km of fibre per link (a few hundred km in record experiments) without trusted relay nodes\\
+Services & key exchange and digital signatures & key exchange only; still needs an authenticated classical channel\\
+Proof & conjectured hardness & information-theoretic, if the devices behave as modelled\\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+% =====================================================================
+\subsection{Challenges of quantum cryptography \new}
+\likely{``List and explain the challenges of quantum cryptography'' (3 marks).}
+
+\textbf{Expensive and complex.} QKD needs specialised hardware (single-photon sources, single-photon detectors, often cooled, and stable optical links) at both ends of every link, and it cannot be added to existing equipment by a software update.
+
+\textbf{Difficult over long distances.} Photons are absorbed in the fibre. A typical loss of 0.2 dB per km means a fraction $10^{-0.02L}$ of the photons survives $L$ km: 10\% after 50 km, 1\% after 100 km, $10^{-4}$ after 200 km and $10^{-10}$ after 500 km, where a source sending $10^9$ pulses per second would deliver only one photon every 10 seconds. Classical optical amplifiers cannot help, because amplifying an unknown quantum state would copy it, which the no-cloning theorem forbids. Long links therefore use chains of \emph{trusted nodes} (each of which sees the key) or satellites; true quantum repeaters are still experimental.
+
+\textbf{Authentication is still classical.} BB84 needs an authenticated public channel, otherwise Eve runs it separately with Alice and with Bob. Authentication needs a pre-shared secret key (or classical signatures), so QKD is really \emph{key expansion}: it turns a short shared secret into a long one.
+
+\textbf{Low key rate and implementation attacks.} Sifting, error estimation and privacy amplification discard most of the raw bits, so key rates are modest and fall quickly with distance. The security proof assumes ideal devices, and real ones leak: a weak laser pulse sometimes contains two photons, of which Eve can keep one (the photon-number-splitting attack, countered with \emph{decoy states}), and bright light can ``blind'' detectors so that Eve controls their clicks.
+
+\textbf{Decoherence and probabilistic output} (slide 15, which concern quantum \emph{computers}). Qubits keep their quantum state only for a short time before interaction with the environment destroys the superposition (\emph{decoherence}), which limits how long a quantum computation can run and is why large-scale error correction is needed. Quantum algorithms are mainly probabilistic: a measurement returns the right answer only with some probability, so the algorithm is repeated and each candidate answer is checked classically (for Shor, by multiplying the factors).
+
+% =====================================================================
+\subsection{Information hiding: what Lecture 18 adds to steganography \new}
+\likely{``Define steganography; why can data be hidden in digital media?'' (2 marks). Basics are in \S\ref{sec:stego}.}
+
+The basics of steganography (hiding the \emph{existence} of a message rather than its meaning, the historical techniques, the two drawbacks, LSB hiding in RGB pixels, watermarking versus steganography, and the OpenStego demo) are in \S\ref{sec:stego} and are not repeated here. The word comes from the Greek \emph{steganos} (``covered'') and \emph{graphein} (``writing''): \imp{steganography is the art of hiding the existence of a message between sender and intended recipient,} so that nobody even suspects that a (possibly encrypted) message exists. Lecture 18 adds the digital-media view: it works because digital media contain \textbf{unused or redundant bits}, whose change is imperceptible to human eyes and ears. Steganography is hiding data within data; it is often combined with cryptography, and the two are not mutually exclusive.
+
+\textbf{Vocabulary.} The innocent file used as a carrier is the \textbf{cover} (cover image, cover audio); the information to hide is the \textbf{secret message} or \textbf{payload}; the secret shared by sender and receiver that controls where and how bits are hidden is the \textbf{stego-key}; the result of \textbf{embedding} is the \textbf{stego object}, from which the receiver performs \textbf{extraction}. The attacker's discipline, detecting (and possibly extracting or destroying) hidden data, is \textbf{steganalysis}, the counterpart of cryptanalysis. A stego system is judged by three competing requirements: \textbf{imperceptibility} (the stego object looks and sounds like the cover), \textbf{capacity} (bits hidden per cover) and \textbf{undetectability} (statistical tests cannot tell stego objects from covers); a watermarking system replaces undetectability by \textbf{robustness}.
+
+\subsection{Steganography in digital media \new}
+\likely{``Explain text, image, audio and video steganography'' (4 marks).}
+
+\textbf{Text steganography.} Text has very little redundancy, so information is hidden in its \emph{format} or \emph{wording}. Format-based methods use the number of tabs or white spaces (for example one or two spaces after a full stop, or invisible trailing spaces), capital letters, or tiny shifts of lines and words, much as Morse code encodes letters in dots and dashes. Random and statistical generation methods produce a text whose statistics encode the message, and linguistic methods choose between synonyms or equivalent sentence structures. Capacity is low and the hiding is fragile, since retyping or reformatting the text destroys it.
+
+\textbf{Image steganography.} Pixels are the building blocks of an image, and in a 24-bit image every pixel has three values (red, green, blue), each from 0 to 255; 8-bit (grey-scale or palette) and 24-bit images are the common covers. The information is hidden in the pixel intensities, either directly (spatial domain) or in transform coefficients (frequency domain). Even a whole image can be hidden inside another (slide 21: a baboon picture hidden in the ``Lena'' cover, whose stego version looks unchanged): one way is to replace the 4 least significant bits of each cover pixel by the 4 most significant bits of the secret pixel, which keeps the cover's appearance (its high bits are untouched) and keeps a recognisable coarse version of the secret image.
+
+\textbf{Audio steganography.} Taking audio as the carrier (WAVE, MIDI, AVI/MPEG formats) has the advantage of large data redundancy, so a large amount of information can be embedded. The methods on the slide are: \emph{LSB encoding} (replace the LSB of each audio sample); \emph{parity encoding} (split the samples into regions and, for each message bit, flip one LSB in the region if needed so that the parity of the region's LSBs equals the bit, choosing the sample whose change is least audible); \emph{phase coding} (replace the phase of an initial segment by a phase pattern representing the data and adjust later segments to keep relative phases, exploiting that the ear is insensitive to absolute phase); and \emph{spread spectrum} (below).
+
+\textbf{Video steganography.} Any file or information is hidden in a digital video (H.264, MP4, MPEG, AVI); the sequence of pictures is the carrier, so capacity is very large and the video format is popular and unsuspicious. There are two main classes: embedding in the uncompressed raw video and compressing it later (the data must then survive compression), and embedding directly into the compressed data stream (for example in DCT coefficients or motion vectors), which avoids the recompression loss.
+
+\textbf{Network (protocol) steganography} (not on the slides). Data can also be hidden in unused or loosely specified fields of packet headers (such as the IP identification field or TCP initial sequence numbers) or in the timing and ordering of packets. Such \emph{covert channels} are a concern for firewalls and intrusion detection, because the traffic looks legitimate.
+
+\begin{center}\small
+\begin{tabularx}{\textwidth}{@{}l X X l@{}}
+\toprule
+Medium & Where the bits go & Typical methods & Capacity\\
+\midrule
+Text & spacing, line/word positions, word choice & format-based, random/statistical generation, linguistic & very low\\
+Image & pixel LSBs, transform coefficients, noisy regions & LSB, BPCS, DCT/DWT, spread spectrum & medium\\
+Audio & sample LSBs, phase, spread noise & LSB, parity, phase coding, spread spectrum, echo & high\\
+Video & frames, DCT coefficients, motion vectors & raw-frame embedding, compressed-domain embedding & very high\\
+Network & header fields, packet timing & covert storage and timing channels & low\\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\subsection{Steganography techniques \hot\new}
+\likely{``Classify steganography techniques; explain LSB, transform-domain and spread-spectrum hiding'' (4--5 marks), or an LSB capacity numerical.}
+
+Image steganography is broadly divided into two categories (slide 24). In \textbf{spatial-domain} methods the message is hidden directly in the pixel values of the base image. In \textbf{frequency-domain} (transform-domain) methods the cover is first converted into the frequency domain with the discrete cosine transform (DCT), the discrete Fourier transform (DFT) or the discrete wavelet transform (DWT), the message is hidden in the coefficients, and the inverse transform produces the stego image that is transmitted. The standard textbook classification (Katzenbeisser and Petitcolas) has six classes; the techniques on slides 25--28 fit into them as follows.
+
+\textbf{1. Substitution systems (spatial): LSB.} The least significant bits of the cover are replaced by message bits. In a typical grey-scale image (8 bits per pixel) the 8th (least significant) bit of some or all bytes is replaced by a message bit; in a full-colour image (24 bits per pixel, 8 per colour) one bit of each of the red, green and blue components can be used, i.e.\ 3 bits per pixel. The change is imperceptible because it alters a value by at most 1 out of 255. This can be quantified with the \textbf{peak signal-to-noise ratio} $\mathrm{PSNR} = 10\log_{10}(255^2/\mathrm{MSE})$, where MSE is the mean squared change per value. Since each LSB changes by at most 1, $\mathrm{MSE} \le 1$ and $\mathrm{PSNR} \ge 48.1$ dB; with random message bits only half the LSBs actually change, so $\mathrm{MSE} = 0.5$ and $\mathrm{PSNR} = 51.1$ dB, far above the roughly 40 dB beyond which differences are generally invisible.
+
+\textbf{Weaknesses of LSB.} LSB hiding is \emph{fragile}: JPEG compression, resizing or filtering rewrites the low bits and destroys the message (which is why stego images are saved as PNG or BMP, \S\ref{sec:stego}). It is also \emph{statistically detectable}: replacing an LSB only ever moves a value within its pair $\{2i, 2i+1\}$, so after embedding random bits the counts of $2i$ and $2i+1$ in the histogram become nearly equal, whereas in natural images they differ; the chi-square attack of Westfeld and Pfitzmann tests exactly this.
+
+\begin{worked}[: LSB embedding and capacity]
+\textbf{Q.} (a) Hide the character \ttx{H} with 1-bit LSB substitution in eight grey-scale pixels with values 154, 155, 200, 201, 99, 100, 37, 38, and compute the PSNR of this block. (b) How many bytes can be hidden in a $512 \times 512$ 24-bit colour image using one LSB per colour component, and using two?
+
+\textbf{A.} (a) \ttx{H} $= 72 = $ \ttx{01001000}. Each pixel's LSB is set to the next message bit (value $\&\,{\sim}1$, then OR the bit):
+\begin{center}\small
+\setlength{\tabcolsep}{5pt}
+\begin{tabular}{@{}lcccccccc@{}}
+\toprule
+Pixel & 154 & 155 & 200 & 201 & 99 & 100 & 37 & 38\\
+Old LSB & 0 & 1 & 0 & 1 & 1 & 0 & 1 & 0\\
+Message bit & 0 & 1 & 0 & 0 & 1 & 0 & 0 & 0\\
+New value & 154 & 155 & 200 & \textbf{200} & 99 & 100 & \textbf{36} & 38\\
+\bottomrule
+\end{tabular}
+\end{center}
+Only 2 of the 8 pixels change, each by 1: $\mathrm{MSE} = 2/8 = 0.25$, $\mathrm{PSNR} = 10\log_{10}(255^2/0.25) = \mathbf{54.2}$ \textbf{dB}. Reading the LSBs of the new values gives \ttx{01001000} $=$ \ttx{H}.\\
+(b) Pixels $= 512 \times 512 = 262\,144$; with 3 bits per pixel, $786\,432$ bits $= \mathbf{98\,304}$ \textbf{bytes} (96 KiB). With 2 LSBs per component (6 bits per pixel), $\mathbf{196\,608}$ bytes. (An 8-bit grey-scale image of the same size holds $262\,144$ bits $= 32\,768$ bytes at 1 bit per pixel.)\\
+\emph{Check}: capacity is $1/8$ of the image size per LSB plane: $512 \times 512 \times 3$ bytes $/ 8 = 98\,304$.
+\end{worked}
+
+\textbf{BPCS: bit-plane complexity segmentation} (slide 26, called ``binary pattern complexity''). An 8-bit image is split into 8 bit-planes, and each plane into small blocks (typically $8 \times 8$). The \emph{complexity} of a block is measured by the number of changes between adjacent 0 and 1 bits relative to the maximum possible; blocks above a threshold are ``noisy'' and the eye cannot see their exact pattern. These noisy blocks are replaced by blocks of secret data (a data block that happens to be too simple is first XORed with a checkerboard so that it looks noisy, and a flag records this). Because whole noisy blocks on several bit-planes can be replaced, BPCS hides far more than LSB, often a large fraction of the image size.
+
+\textbf{2. Transform-domain systems: DCT, DFT, DWT.} The cover is transformed, and the message is hidden in selected coefficients. In JPEG images the data are hidden in the LSBs of the quantised DCT coefficients (as in the JSteg tool), so the hidden data survive JPEG storage because they are part of what JPEG keeps. The \textbf{discrete wavelet transform} (slide 26) transforms the image from the spatial domain to the frequency domain by decomposing it hierarchically with \emph{wavelets}, small waves of different frequency and limited duration, which suits non-stationary signals such as images. One level of DWT splits the image into an approximation sub-band (low frequencies, LL) and three detail sub-bands (horizontal, vertical, diagonal high frequencies), i.e.\ it identifies the low- and high-frequency information at each location. Hiding in the high-frequency detail bands is least visible; hiding in lower bands is more robust. Since a change to one coefficient spreads over a whole region of pixels after the inverse transform, transform-domain hiding is more robust to compression and filtering than LSB, at the cost of lower capacity.
+
+\textbf{3. Spread-spectrum systems} (slide 27). The secret data are spread over a wide frequency band, with such a small signal-to-noise ratio in every band that the presence of data is hard to detect. Let the cover samples (or coefficients) be $x_1, \dots, x_N$, let the stego-key generate a pseudo-random sequence $p_1, \dots, p_N$ of $\pm 1$, and let a message bit be $b = \pm 1$. Embedding adds a tiny multiple of the sequence: $y_i = x_i + \alpha\, b\, p_i$ with small strength $\alpha$. The receiver, who knows $p$, correlates:
+\[
+\frac1N \sum_{i=1}^{N} y_i p_i = \frac1N \sum_{i=1}^{N} x_i p_i + \alpha b \frac1N \sum_{i=1}^{N} p_i^2 = \underbrace{\frac1N \sum x_i p_i}_{\approx 0} + \alpha b ,
+\]
+because $p_i^2 = 1$ and the cover is uncorrelated with the random signs, so the first term shrinks like $1/\sqrt N$. The sign of the result is $b$. Each sample changes only by $\pm\alpha$ (imperceptible), but $N$ samples add up to a clear signal. Even if parts of the data are removed from several bands, enough remains in the others to recover it, so the data cannot be removed without entirely destroying the cover; without the key, Eve sees only faint noise. This is why spread spectrum is the classic \textbf{watermarking} technique.
+
+\textbf{4. Statistical methods} hide one bit per block of the cover by changing a statistical property of the block (for example forcing its mean or the parity of its LSBs above or below a threshold), and the receiver tests the property. \textbf{5. Distortion techniques} store the message as a sequence of small modifications of the cover; the receiver needs the original cover and decodes from the differences. \textbf{6. Cover-generation methods} do not modify any cover; they generate one that encodes the message (for example grammatically generated text or ``spam-like'' messages whose word choices carry the bits). The slide's comparison table names the same families as spatial domain, transform domain, model-based and ad hoc.
+
+\textbf{Combined methods} (slide 28). In \textbf{multilevel steganography} at least two methods are used together, so that one method (the upper level) serves as a carrier for the second (the lower level); someone who finds the upper-level message still does not see the lower-level one. In \textbf{hybrid cryptography and steganography} the data are first encrypted with RSA or any other cipher and then hidden in an image or other file, so detection reveals only ciphertext (the ``best of both'' of \S\ref{sec:stego}).
+
+\begin{center}\small
+\begin{tabular}{@{}llll@{}}
+\toprule
+Technique & Capacity & Robustness & Detectability\\
+\midrule
+LSB substitution & high & very low (destroyed by compression) & moderate (histogram pairs)\\
+BPCS & very high & very low & moderate\\
+Transform domain (DCT/DWT) & medium & medium to high & low\\
+Spread spectrum & low & high & very low without the key\\
+Statistical / distortion & low & low to medium & low\\
+Cover generation & low & n/a (no cover to attack) & depends on generator quality\\
+\bottomrule
+\end{tabular}
+\end{center}
+The pattern is a \textbf{trade-off}: hiding more bits (capacity) means larger or more numerous changes, which hurts imperceptibility and makes detection easier, while spreading few bits redundantly over the whole cover gives robustness but little capacity. Steganography favours capacity and undetectability; watermarking favours robustness.
+
+% =====================================================================
+\subsection{Cryptography versus information hiding \hot\new}
+\likely{``Differentiate cryptography, steganography and watermarking'' (3--5 marks): reproduce the table.}
+
+Slide 18 compares the three techniques by application, principle, visibility and requirement. Cryptography transforms the message itself; the two information-hiding techniques embed something into a separate cover file, and they differ in what that something is and what must survive.
+\begin{center}\small
+\begin{tabularx}{\textwidth}{@{}l X X X@{}}
+\toprule
+ & \textbf{Cryptography} & \multicolumn{2}{c}{\textbf{Information hiding}}\\
+\cmidrule(l){3-4}
+Technique & & \textbf{Steganography} & \textbf{Watermarking}\\
+\midrule
+Application & secret information & secret communication & copyright\\
+Principle & plaintext $+$ key $\to$ \emph{encryption} $\to$ ciphertext & secret message $+$ cover file $+$ key $\to$ \emph{embedding} $\to$ stego file & signature $+$ cover file $+$ key $\to$ \emph{encoding} $\to$ marked file\\
+Visibility & visible (ciphertext is obviously secret) & invisible / inaudible & visible or invisible\\
+Requirement & robustness & undetectability, capacity & robustness\\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+Slide 19 gives a detailed comparison of steganography and cryptography. It is transcribed below; entries marked $^\dagger$ are wrong or misleading and are corrected after the table.
+\begin{center}\small
+\begin{tabularx}{\textwidth}{@{}l X X@{}}
+\toprule
+Comparison & Steganography & Cryptography\\
+\midrule
+Basic & it is known as cover writing & it means secret writing\\
+Goal & secret communication & data protection\\
+Structure of the message & not altered & altered only for the transmission\\
+Popularity & less popular & more commonly used\\
+Relies on & key & no parameters$^\dagger$\\
+Supported security principles & confidentiality and authentication & confidentiality, data integrity, authentication, and non-repudiation\\
+Techniques & spatial domain, transform domain, model-based, and ad hoc & transposition, substitution, stream ciphers, block ciphers\\
+Implemented on & audio, video, image, text & only on text files$^\dagger$\\
+Types of attack & steganalysis & cryptanalysis\\
+\bottomrule
+\end{tabularx}
+\end{center}
+$^\dagger$Cryptography relies \emph{entirely} on its key: by Kerckhoffs's principle the algorithm is public and only the key is secret. Cryptography is applied to any bit string (images, audio, disks, network packets), not only to text. In an exam, write ``relies on: secrecy of the method and a stego-key'' for steganography and ``relies on: secrecy of the key'' for cryptography.
+
+\textbf{The key conceptual difference.} Cryptography hides the \emph{meaning} and leaves the existence obvious; once Eve sees ciphertext she knows a secret is being exchanged and attacks the cipher (cryptanalysis). Steganography hides the \emph{existence}; Eve's task is first to notice that anything is hidden (steganalysis), and once she does, an unencrypted payload is lost. Combining them (encrypt, then hide) gives both protections.
+
+% =====================================================================
+\subsection{Digital watermarking \hot\new}
+\likely{``What is digital watermarking? Explain its types, properties and applications; differentiate it from steganography'' (5--6 marks).}
+
+\textbf{Watermarking} is embedding some information within digital media (an image, audio, video or document) so that the media looks unchanged. The hidden information is not important by itself, but it \emph{says something about the media}: who owns it, who bought this copy, or whether it has been altered. Watermarking is closely related to steganography, since both hide a message inside a digital signal and watermarking uses the same techniques, but they are separated by their goal: \imp{steganography protects the hidden message, whereas watermarking protects the cover (authenticity, proof of ownership).} Paper watermarks (patterns pressed into banknotes and letter paper) can often be removed or imitated with little effort, which led to the digital watermark, which is an internal part of the digital media and so cannot easily be detected or removed.
+
+The process has two parts: \textbf{embedding} the watermark into the host media and \textbf{extraction} (or \emph{detection}) of the watermark from the possibly modified media.
+\begin{center}
+\begin{tikzpicture}[font=\footnotesize, >=Stealth, node distance=4mm,
+  wb/.style={draw, rounded corners=2pt, align=center, minimum height=0.8cm, inner sep=3pt}]
+\node[wb, fill=gray!12] (cov) {Host media\\(cover)};
+\node[wb, fill=gold!15, below=of cov] (wm) {Watermark\\(logo, owner/buyer ID)};
+\node[wb, fill=warn!8, below=of wm] (k1) {Secret key};
+\node[wb, fill=acc!12, right=10mm of wm, minimum height=1.6cm] (emb) {Embedding\\algorithm};
+\node[wb, right=8mm of emb] (mk) {Watermarked\\media};
+\node[wb, fill=gray!8, right=8mm of mk] (ch) {Distribution:\\compression, cropping,\\noise, attacks};
+\node[wb, fill=acc!12, right=8mm of ch, minimum height=1.6cm] (det) {Detection /\\extraction};
+\node[wb, fill=warn!8, below=8mm of det] (k2) {Secret key (+ original\\if non-blind)};
+\node[wb, fill=good!12, above=8mm of det] (out) {Watermark found?\\extracted owner ID};
+\draw[arr] (cov.east) -- (emb); \draw[arr] (wm) -- (emb); \draw[arr] (k1.east) -- (emb);
+\draw[arr] (emb) -- (mk); \draw[arr] (mk) -- (ch); \draw[arr] (ch) -- (det); \draw[arr] (k2) -- (det); \draw[arr] (det) -- (out);
+\end{tikzpicture}
+\end{center}
+A common embedding is the additive spread-spectrum rule of the previous subsection, $y_i = x_i + \alpha w_i$, where the watermark sequence $w$ is generated from the key and placed in perceptually significant transform coefficients (Cox et al.); detection correlates the received media with $w$ and declares the watermark present if the correlation exceeds a threshold. Because the mark sits in the significant coefficients, removing it requires damaging exactly the parts of the image that matter.
+
+\textbf{Properties.} A watermarking system is judged by:
+\begin{itemize}
+  \item \textbf{Imperceptibility (fidelity):} an invisible watermark must not perceptibly degrade the media.
+  \item \textbf{Robustness:} the watermark must survive common processing (compression, filtering, scaling, printing and scanning) and deliberate attempts at removal, as long as the media remains useful.
+  \item \textbf{Capacity (payload):} the number of bits the watermark carries, from 1 bit (``marked or not'') to an owner or buyer identifier.
+  \item \textbf{Security:} without the key, an attacker cannot detect, read, remove or forge the watermark, even knowing the algorithm (Kerckhoffs's principle again).
+  \item \textbf{Low false-positive rate:} unmarked media must almost never trigger the detector, otherwise ownership claims are worthless.
+\end{itemize}
+These conflict. A larger strength $\alpha$ makes the mark more robust but more perceptible; more payload bits leave fewer cover samples per bit, so each bit's correlation margin shrinks and robustness falls. Every design picks a point in this imperceptibility--robustness--capacity triangle.
+
+\textbf{Types of watermark.}
+\begin{itemize}
+  \item \textbf{Visible or invisible.} A visible watermark is a translucent logo or text over the content (slide 30: the original image and a version covered with a faint repeated ``KH'' pattern); it advertises ownership and deters misuse but can be cropped or painted out. An invisible watermark is hidden in the content and found only by the detector.
+  \item \textbf{Robust, fragile or semi-fragile.} A robust watermark survives processing and is used for copyright and fingerprinting. A fragile watermark is destroyed by any change (for example a hash of the image hidden in its own LSBs), so a missing or broken mark proves tampering and can even show where. A semi-fragile watermark survives benign operations such as JPEG compression but breaks under content changes, which suits authentication of photographs.
+  \item \textbf{Blind or non-blind.} Blind detection needs only the key and the marked media; non-blind (informed) detection also needs the original, which makes it more reliable but impractical for monitoring large amounts of content.
+  \item \textbf{Spatial or frequency domain}, exactly as for steganography.
+\end{itemize}
+
+\textbf{Attacks on watermarks.} \emph{Removal attacks} add noise, denoise, compress or filter until the detector fails; \emph{geometric attacks} rotate, scale or crop slightly so that the detector loses synchronisation; \emph{collusion attacks} average several copies carrying different buyer fingerprints so that the individual marks cancel; \emph{ambiguity (protocol) attacks} let a pirate ``find'' his own fake watermark in the original, so that two parties claim ownership. The last is countered by making the watermark depend on a hash of the original and registering it with a trusted time-stamp.
+
+\textbf{Applications (slides 32--33).}
+\begin{itemize}
+  \item \textbf{Owner identification.} The owner's identity is embedded so that it can be read from any copy; a strong (robust) watermark is important to prove ownership during conflict resolution.
+  \item \textbf{Copy protection.} Illegal copying is prevented by embedding a \emph{copy-protect bit} (for example ``copy never'', ``copy once'') that compliant recorders and players read and obey.
+  \item \textbf{Proofs and samples.} Professional photographers watermark the digital proofs sent to clients until the client agrees to purchase, at which point the original, unaltered images are released; this allows them to distribute demos and samples without giving away the originals.
+  \item \textbf{Broadcast monitoring.} Television and radio broadcasts (especially paid media such as sports, news and advertisements) carry watermarks so that automatic monitors can verify when and where each item was actually aired.
+  \item \textbf{Data authentication.} The sender embeds a (fragile) watermark in the host data, and the receiver extracts and verifies it; a mismatch shows that the data were altered.
+  \item \textbf{Fingerprinting (traitor tracing)} (textbook addition). Each buyer's copy carries a different watermark, so a leaked copy identifies the buyer who leaked it.
+\end{itemize}
+
+Slide 31 compares watermarking with cryptography; most rows are copied from slide 19, and three are wrong ($^\dagger$, corrected below).
+\begin{center}\small
+\begin{tabularx}{\textwidth}{@{}l X X@{}}
+\toprule
+Comparison & Cryptography & Watermarking\\
+\midrule
+Basic & it means secret writing & it is known as cover writing\\
+Goal & data protection & copyright protection\\
+Structure of the message & altered only for the transmission & not altered\\
+Popularity & more commonly used & less popular\\
+Relies on & no parameters$^\dagger$ & key\\
+Supported security principles & confidentiality, data integrity, authentication, and non-repudiation & confidentiality and authentication$^\dagger$\\
+Techniques & transposition, substitution, stream cipher, block ciphers & application-based: using a universal logo without encryption in the embedding algorithm\\
+Implemented on & only on text files$^\dagger$ & audio, video, image, text\\
+Types of attack & steganalysis$^\dagger$ & cryptanalysis$^\dagger$\\
+\bottomrule
+\end{tabularx}
+\end{center}
+$^\dagger$The attack row is swapped: cryptography is attacked by \emph{cryptanalysis}; watermarks are attacked by removal, geometric, collusion and ambiguity attacks. Watermarking gives ownership proof, authentication and (fragile marks) integrity, not confidentiality, since the mark is often public or even visible. Cryptography relies on its key and applies to any data, as noted for slide 19.
+
+The comparison most often asked is \textbf{watermarking versus steganography} (both hide data in a cover, which is why they are confused):
+\begin{center}\small
+\begin{tabularx}{\textwidth}{@{}l X X@{}}
+\toprule
+ & Steganography & Watermarking\\
+\midrule
+Goal & secret communication: hide that a message exists & prove ownership, identify the buyer, or authenticate the cover\\
+What is valuable & the hidden message; the cover is just a carrier & the cover; the watermark is information \emph{about} it\\
+Relation to the cover & none (any cover will do) & tied to the cover (owner ID, buyer ID, hash of the content)\\
+Visibility & always invisible / inaudible & visible or invisible\\
+Main requirement & undetectability and high capacity & robustness (or deliberate fragility for tamper detection)\\
+Payload & large & small (one bit up to an identifier)\\
+Attacker wins by & detecting that something is hidden & removing or forging the mark without ruining the cover\\
+Is detection a failure? & yes, detection alone defeats it & no; a visible mark is known to everyone\\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+% =====================================================================
+\subsection*{The last slide}
+The lecture ends with the slide ``Hss aol ilza mvy fvby lehtz'', a Caesar cipher (the shift cipher of the classical-cipher sections, with key $k$: $C = (P + k) \bmod 26$), a fitting reminder that the oldest technique of the course still turns up at the end.
+\begin{worked}[: decrypting the closing slide]
+\textbf{Q.} Decrypt ``Hss aol ilza mvy fvby lehtz''.
+
+\textbf{A.} \emph{Finding the key.} The first word has three letters with a double letter at the end; the likely English word is ``All'', which gives $k = \mathrm{H} - \mathrm{A} = 7 - 0 = 7$. The most frequent ciphertext letter is \ttx{l} (3 times), and $\mathrm{l} - \mathrm{e} = 11 - 4 = 7$ agrees. \emph{Decryption} $P = (C - 7) \bmod 26$:
+\begin{center}\small
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{@{}lccccccccccccccc@{}}
+\toprule
+$C$ & h & s & a & o & l & i & z & m & v & y & f & b & e & t\\
+$C$ (number) & 7 & 18 & 0 & 14 & 11 & 8 & 25 & 12 & 21 & 24 & 5 & 1 & 4 & 19\\
+$(C - 7) \bmod 26$ & 0 & 11 & 19 & 7 & 4 & 1 & 18 & 5 & 14 & 17 & 24 & 20 & 23 & 12\\
+$P$ & a & l & t & h & e & b & s & f & o & r & y & u & x & m\\
+\bottomrule
+\end{tabular}
+\end{center}
+Plaintext: \textbf{``All the best for your exams''}. \emph{Check}: re-encrypting ``exams'' with $+7$ gives ``lehtz''.
+\end{worked}
+
+\begin{fixbox}
+\begin{itemize}
+  \item \textbf{Slide 6 (ASCII-to-DNA table):} 14 four-base words are assigned to two or three characters (\ttx{AAGC}: \$ and $-$; \ttx{CCGT}: 2, 5, 8; \ttx{GACT}: n, q, v; \ttx{GAGT}: h, DEL; \ttx{GATG}: i, \textasciitilde; \ttx{GGTG}: s, |; \ttx{GTGA}: m, z; \ttx{TAAG}: Z, \textbackslash; \ttx{TACT}: A, K; \ttx{TAGT}: F, M; \ttx{TCCG}: \_, \textasciigrave; \ttx{TCCT}: B, X; \ttx{TGAG}: S, V; \ttx{TGTT}: I, \textasciicircum). Only 80 of 96 words are distinct, so the table cannot be decoded uniquely (\ttx{HI} $\mapsto$ \ttx{TGGC TGTT}, and \ttx{TGTT} could be \ttx{I} or \ttx{\textasciicircum}). A usable code book must be one-to-one.
+  \item \textbf{Slide 9:} the ``complementary rule'' A$\to$C, C$\to$G, G$\to$T, T$\to$A is \emph{not} the Watson--Crick complement of slide 5 (A$\leftrightarrow$T, C$\leftrightarrow$G); it is a cyclic shift (add 1 mod 4 to each 2-bit group). Use the slide's rule when asked about this algorithm. ``DND strands'' should read ``DNA strands''.
+  \item \textbf{Slides 9 and 11:} a key ``between 1 and 256'' that ``determines the permutation of the four characters A, T, G, C'' is inconsistent: four letters have only $4! = 24$ permutations, and 256 keys are brute-forced instantly. Slide 11's key space of about $10^{23}$ ($\approx 2^{76}$) does not follow from a 1--256 key. With a true one-time-pad key (slide 8) the scheme is perfectly secret, but only because of the XOR.
+  \item \textbf{Slides 8 and 10:} the flowcharts omit the complementary-rule step of slide 9; decryption must also undo it (C$\to$A, G$\to$C, T$\to$G, A$\to$T).
+  \item \textbf{Slide 3:} ``DNA computing does not require power'' is overstated (PCR heating cycles and electrophoresis need power), and the speed advantage comes from parallelism; individual reactions take minutes to hours.
+  \item \textbf{Slide 13:} the ``photon filter \dots{} or else the photon will be destroyed'' is an oversimplification: a photon at $45^\circ$ to the filter passes with probability $\cos^2 45^\circ = 1/2$ and is then re-polarised; only at $90^\circ$ is it always blocked. A qubit is any two-level quantum system; a single photon is the carrier used in QKD.
+  \item \textbf{Slides 14--15:} Shor's and Grover's algorithms are quantum \emph{attacks} on classical cryptography, not algorithms ``of quantum cryptography''. D-Wave's annealers cannot run Shor's algorithm. Decoherence and probabilistic output are challenges of quantum \emph{computers}, not of QKD.
+  \item \textbf{Slide 19:} cryptography relies on a key (not ``no parameters'') and is applied to any data, not ``only on text files''.
+  \item \textbf{Slide 31:} the attack row is swapped (cryptography $\to$ cryptanalysis; watermarking $\to$ removal/geometric/collusion attacks), and watermarking does not provide confidentiality; the rows were copied from slide 19.
+  \item \textbf{Slide 26:} the standard name of ``Binary Pattern Complexity (BPC)'' is \emph{bit-plane complexity segmentation} (BPCS). \textbf{Slide 16:} ``fist place'' $\to$ ``first place''; the hidden message need not be encrypted.
+\end{itemize}
+\end{fixbox}
