@@ -1,0 +1,80 @@
+% College Lecture 3 (security goals, attacks) + Lecture 5 (Kerckhoff, cryptanalysis attack types)
+\section{Security Goals, Attacks and Cryptanalysis}\label{sec:attacks}
+
+\subsection{Security goals (CIA)}
+\begin{center}\small
+\begin{tabularx}{\textwidth}{@{}l X@{}}
+\toprule
+\textbf{Confidentiality} & hide information from unauthorised access, in storage \emph{and} in transmission (military secrets, bank accounts).\\
+\textbf{Integrity} & changes only by authorised entities through authorised mechanisms. Violation need not be malicious (a power surge can corrupt data).\\
+\textbf{Availability} & information must be accessible to authorised entities when needed; unavailability is as harmful as a breach.\\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\subsection{Attacks (Forouzan's taxonomy)}
+\begin{center}\small
+\begin{tabularx}{\textwidth}{@{}l l l X@{}}
+\toprule
+Attack & Threatens & Type & What happens\\
+\midrule
+\textbf{Snooping} & confidentiality & passive & unauthorised access/interception of data. Counter: encipherment.\\
+\textbf{Traffic analysis} & confidentiality & passive & learning addresses, timing, request/response pairs from traffic even when it's encrypted.\\
+\textbf{Modification} & integrity & active & intercept and change (or delete, delay) a message.\\
+\textbf{Masquerading} (spoofing) & integrity & active & impersonating someone (stolen card + PIN; a fake bank site).\\
+\textbf{Replaying} & integrity & active & capture a message and resend it later (a second payment).\\
+\textbf{Repudiation} & integrity & active & a \emph{party to the communication} denies having sent or received a message.\\
+\textbf{Denial of service} & availability & active & slow down or stop the service (bogus requests; deleting responses).\\
+\bottomrule
+\end{tabularx}
+\end{center}
+\textbf{Passive} attacks only obtain information: they don't change data, are hard to \emph{detect}, and are prevented by encipherment. \textbf{Active} attacks change data or harm the system: they are easier to detect than to prevent.
+
+\textbf{Stallings' four-way picture} (normal flow source $\to$ destination): \textbf{interruption} (availability), \textbf{interception} (confidentiality), \textbf{modification} (integrity), \textbf{fabrication} (authenticity / masquerade).
+
+\begin{trap}[: repudiation is not an outsider attack]
+Every other attack is by a third party (Eve). Repudiation is done by Alice or Bob themselves. It is countered by digital signatures (non-repudiation), not encryption.
+\end{trap}
+
+\subsection{Kerckhoff's principle and cryptanalysis attacks}
+\textbf{Kerckhoff's principle}: assume Eve knows the algorithm; security must rest \emph{only} on the secrecy of the key.
+\begin{center}\small
+\begin{tabularx}{\textwidth}{@{}l X X@{}}
+\toprule
+Attack & Eve has & Note\\
+\midrule
+\textbf{Ciphertext-only} & only ciphertext & most probable. Methods: brute force (key space must be huge), statistical (letter frequencies), pattern attacks.\\
+\textbf{Known-plaintext} & earlier plaintext/ciphertext pairs (same key) & easier, less likely (key may have changed).\\
+\textbf{Chosen-plaintext} & pairs for plaintexts she chose (access to Alice's machine) & much easier, much less likely.\\
+\textbf{Chosen-ciphertext} & plaintexts for ciphertexts she chose (access to Bob's machine) & \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\subsection{History notes from the slides}
+Atbash (Hebrew, reversed alphabet), scytale (Greek, rod transposition), Caesar (shift 3), Vigen\`ere (1587, broken by Kasiski 1863), Enigma (Scherbius 1918, rotor machine), Shannon (1949, proved OTP unbreakable), DES (IBM, 1970s), Diffie--Hellman (1976), RSA (1977), ECC (Miller, Koblitz 1985), MD5 (Rivest 1991), AES (2001), SHA-512 (2001).
+
+\textbf{ADFGVX} (German army, WWI): a keyed $6 \times 6$ Polybius square (letters $+$ digits, rows/columns labelled A D F G V X) followed by a \textbf{columnar transposition}.
+\begin{center}\small
+\begin{tabular}{@{}c|cccccc@{}}
+ & A&D&F&G&V&X\\ \midrule
+A&1&4&7&r&e&g\\
+D&i&m&n&t&a&b\\
+F&c&d&f&h&j&k\\
+G&l&o&p&q&s&u\\
+V&v&w&x&y&z&0\\
+X&2&3&5&6&8&9\\
+\end{tabular}
+\quad
+\begin{minipage}{0.55\textwidth}
+Square keyword \ttx{147regiment} (then the rest of a--z, 0--9). Encrypt \ttx{attackat1200am}: $a \to$ DV, $t \to$ DG, \dots\ giving \ttx{DVDGDGDVFAFXDVDGAAXAVXVXDVDD}. Write it under the transposition key \ttx{PRIVACY}, read columns in alphabetical order of the key letters (A, C, I, P, R, V, Y):\\
+\ttx{DXXV GDAD DAAX DVDX VFGV GFAD DVVD} (verified).
+\end{minipage}
+\end{center}
+
+\begin{fixbox}
+\begin{itemize}
+  \item Slide 13's figure lists replaying under integrity (correct) but places it visually near confidentiality; use the table above.
+  \item The ADFGVX decryption example (keys \ttx{monkeys}/\ttx{zebras}): the transposition step with key \ttx{zebras} does give the slide's intermediate text \ttx{GXFGAXXFDFDAFXDDDXGAAXDFGG}, but a square built from \ttx{monkeys} does not give ``the way is clear''; the slide's square is a different (unshown) one. Learn the method from the encryption example.
+\end{itemize}
+\end{fixbox}

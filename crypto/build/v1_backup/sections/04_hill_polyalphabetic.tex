@@ -1,0 +1,304 @@
+% Videos: Hill cipher encryption, Hill cipher decryption, Vigenere & autokey, Vernam
+\section{Hill Cipher}
+
+\begin{itemize}
+  \item A \textbf{multiletter} substitution cipher by mathematician \textbf{Lester Hill (1929)}. Better security than Playfair.
+  \item Encrypts a \textbf{block of $m$ letters at a time} using an $m\times m$ \textbf{key matrix} $K$: $2\times2$ for digraphs, $3\times3$ for trigraphs, $m\times m$ for polygraphs.
+  \item Like Playfair, the same letter can become different ciphertext letters depending on its block.
+  \item Maths needed: matrix multiplication mod 26 (enough for encryption); \textbf{determinant} and \textbf{multiplicative inverse} mod 26 (needed for decryption).
+\end{itemize}
+
+\begin{keybox}[title=Hill cipher]
+\vspace{-6pt}
+\[
+\text{Encrypt: } C = PK \bmod 26 \qquad\qquad \text{Decrypt: } P = CK^{-1} \bmod 26
+\]
+Works because $CK^{-1} = (PK)K^{-1} = P(KK^{-1}) = PI = P$.
+\end{keybox}
+
+For $m = 3$, the plaintext block is a \textbf{row vector} $(P_1\;P_2\;P_3)$:
+\[
+(C_1\;C_2\;C_3) = (P_1\;P_2\;P_3)\begin{pmatrix}K_{11}&K_{12}&K_{13}\\K_{21}&K_{22}&K_{23}\\K_{31}&K_{32}&K_{33}\end{pmatrix} \bmod 26
+\qquad
+\begin{aligned}
+C_1 &= (P_1K_{11}+P_2K_{21}+P_3K_{31}) \bmod 26\\
+C_2 &= (P_1K_{12}+P_2K_{22}+P_3K_{32}) \bmod 26\\
+C_3 &= (P_1K_{13}+P_2K_{23}+P_3K_{33}) \bmod 26
+\end{aligned}
+\]
+Sizes: $(1\times3)(3\times3) = (1\times3)$. Each $C_j$ = plaintext row $\cdot$ column $j$ of $K$.
+
+\textbf{$PK$ vs.\ $KP$:} this lecture uses $C = PK$ (plaintext as a row). Some books use a \textbf{column} vector: $C = KP$, and then decryption is $P = K^{-1}C$. Use one convention consistently.
+
+\subsection{Encryption example: ``pay more money''}
+\[
+K = \begin{pmatrix}17&17&5\\21&18&21\\2&2&19\end{pmatrix}
+\qquad\text{Blocks of 3: } \ttx{pay | mor | emo | ney} \quad\text{(pad with \ttx{x} if needed)}
+\]
+Block 1, \ttx{pay} $= (15\;0\;24)$:
+\[
+\begin{aligned}
+C_1 &= 15\cdot17 + 0\cdot21 + 24\cdot2 = 255+0+48 = 303 = 11\cdot26 + \mathbf{17} &&\to \ttx{R}\\
+C_2 &= 15\cdot17 + 0\cdot18 + 24\cdot2 = 255+0+48 = 303 \equiv \mathbf{17} &&\to \ttx{R}\\
+C_3 &= 15\cdot5 + 0\cdot21 + 24\cdot19 = 75+0+456 = 531 = 20\cdot26 + \mathbf{11} &&\to \ttx{L}
+\end{aligned}
+\]
+\begin{center}\small
+\begin{tabular}{@{}lcccc@{}}
+\toprule
+Block & $P$ & $PK$ (before mod) & $\bmod 26$ & Ciphertext\\
+\midrule
+pay & (15, 0, 24) & (303, 303, 531) & (17, 17, 11) & \textbf{RRL}\\
+mor & (12, 14, 17) & (532, 490, 677) & (12, 22, 1) & \textbf{MWB}\\
+emo & (4, 12, 14) & (348, 312, 538) & (10, 0, 18) & \textbf{KAS}\\
+ney & (13, 4, 24) & (353, 341, 605) & (15, 3, 7) & \textbf{PDH}\\
+\bottomrule
+\end{tabular}
+\end{center}
+Answer: \textbf{\ttx{RRLMWBKASPDH}}.
+
+\subsection{Decryption: finding $K^{-1}$}
+\begin{keybox}[title=Recipe]
+$K^{-1} = \big(\det K\big)^{-1} \cdot \operatorname{adj}(K) \bmod 26$
+\begin{enumerate}[leftmargin=1.5em]
+  \item $\det K \bmod 26$.
+  \item Its multiplicative inverse mod 26.
+  \item $\operatorname{adj}(K) \bmod 26$.
+  \item Multiply (2) by (3), reduce mod 26. Check $KK^{-1} \equiv I$.
+\end{enumerate}
+\end{keybox}
+
+\textbf{Step 1: determinant} (expand along row 1, signs $+\,-\,+$):
+\[
+\det K = 17\begin{vmatrix}18&21\\2&19\end{vmatrix} - 17\begin{vmatrix}21&21\\2&19\end{vmatrix} + 5\begin{vmatrix}21&18\\2&2\end{vmatrix}
+= 17(300) - 17(357) + 5(6) = 5100 - 6069 + 30 = -939
+\]
+$-939 = -36\cdot26 - 3$, so $\det K \equiv -3 \equiv -3 + 26 = \mathbf{23} \pmod{26}$.
+
+\textbf{Step 2: inverse of 23 mod 26.} Find $x$ with $23x \bmod 26 = 1$ by trying $x = 1, 2, 3, \dots$
+\begin{center}\small\setlength{\tabcolsep}{3.2pt}
+\begin{tabular}{@{}l*{17}{c}@{}}
+\toprule
+$x$ & 1&2&3&4&5&6&7&8&9&10&11&12&13&14&15&16&\hl{17}\\
+$23x \bmod 26$ & 23&20&17&14&11&8&5&2&25&22&19&16&13&10&7&4&\hl{1}\\
+\bottomrule
+\end{tabular}
+\end{center}
+$23 \times 17 = 391 = 15\cdot26 + 1$, so $\mathbf{23^{-1} \equiv 17}$.
+An inverse exists only if $\gcd(\det K, 26) = 1$, i.e.\ $\det K$ is odd and not 13. Otherwise the key can't be used, because messages could not be decrypted.
+
+\textbf{Step 3: adjoint, using the $5\times5$ shortcut.}
+\begin{enumerate}[leftmargin=1.5em]
+  \item Copy the first two columns to the right, then the first two rows to the bottom ($5\times5$).
+  \item Delete the first row and first column. That leaves a $4\times4$ grid.
+  \item Slide a $2\times2$ window over the grid. Each window gives $ad - bc$.
+  \textbf{Columns 1--2 of the grid give row 1 of $\operatorname{adj}K$} (windows at rows 1--2, 2--3, 3--4); columns 2--3 give row 2; columns 3--4 give row 3. The signs come out automatically.
+\end{enumerate}
+\begin{center}\small
+\begin{tabular}{ccccc}
+\color{gray}17&\color{gray}17&\color{gray}5&\color{gray}17&\color{gray}17\\
+\color{gray}21&18&21&21&18\\
+\color{gray}2&2&19&2&2\\
+\color{gray}17&17&5&17&17\\
+\color{gray}21&18&21&21&18
+\end{tabular}
+\quad$\Rightarrow$\quad
+\begin{tabular}{|cc|cc|}
+\hline
+\cellcolor{cyan!20}18&\cellcolor{cyan!20}21&21&18\\
+\cellcolor{cyan!20}2&\cellcolor{cyan!20}19&2&2\\
+17&5&17&17\\
+18&21&21&18\\
+\hline
+\end{tabular}
+\quad
+{\footnotesize first window: $18\cdot19 - 21\cdot2 = 300$}
+\end{center}
+\[
+\operatorname{adj}K =
+\begin{pmatrix}
+18\cdot19-21\cdot2 & 2\cdot5-19\cdot17 & 17\cdot21-5\cdot18\\
+21\cdot2-21\cdot19 & 19\cdot17-2\cdot5 & 5\cdot21-17\cdot21\\
+21\cdot2-18\cdot2 & 2\cdot17-2\cdot17 & 17\cdot18-17\cdot21
+\end{pmatrix}
+=
+\begin{pmatrix}300&-313&267\\-357&313&-252\\6&0&-51\end{pmatrix}
+\]
+\[
+\equiv
+\begin{pmatrix}14&-1&7\\-19&1&-18\\6&0&-25\end{pmatrix}
+\equiv
+\begin{pmatrix}14&25&7\\7&1&8\\6&0&1\end{pmatrix} \pmod{26}
+\]
+(Reduce mod 26, then add 26 to each negative: $-1\to25$, $-19\to7$, $-18\to8$, $-25\to1$.)
+
+\textbf{Step 4: combine.}
+\[
+K^{-1} = 17\begin{pmatrix}14&25&7\\7&1&8\\6&0&1\end{pmatrix}
+= \begin{pmatrix}238&425&119\\119&17&136\\102&0&17\end{pmatrix}
+\equiv \boxed{\begin{pmatrix}4&9&15\\15&17&6\\24&0&17\end{pmatrix}} \pmod{26}
+\]
+Check: $KK^{-1} = \begin{pmatrix}443&442&442\\858&495&780\\494&52&365\end{pmatrix} \equiv \begin{pmatrix}1&0&0\\0&1&0\\0&0&1\end{pmatrix} = I$ \checkmark\;
+($443 = 17\cdot26+1$, $442 = 17\cdot26$, \dots)
+
+\subsection{Decryption example: \ttx{RRLMWBKASPDH}}
+\begin{center}\small
+\begin{tabular}{@{}lcccc@{}}
+\toprule
+Block & $C$ & $CK^{-1}$ (before mod) & $\bmod 26$ & Plaintext\\
+\midrule
+RRL & (17, 17, 11) & (587, 442, 544) & (15, 0, 24) & \textbf{pay}\\
+MWB & (12, 22, 1) & (402, 482, 329) & (12, 14, 17) & \textbf{mor}\\
+KAS & (10, 0, 18) & (472, 90, 456) & (4, 12, 14) & \textbf{emo}\\
+PDH & (15, 3, 7) & (273, 186, 362) & (13, 4, 24) & \textbf{ney}\\
+\bottomrule
+\end{tabular}
+\end{center}
+e.g.\ $P_1 = 17\cdot4 + 17\cdot15 + 11\cdot24 = 68 + 255 + 264 = 587 = 22\cdot26 + 15 \to \ttx{p}$.\quad Answer: \textbf{pay more money}.
+
+{\small\emph{Not in the lecture:} Hill hides single-letter frequencies well, but it is linear. If an attacker knows some plaintext--ciphertext pairs, they can solve for $K$.}
+
+\section{Polyalphabetic Ciphers}\label{sec:poly}
+
+Monoalphabetic ciphers fall to frequency analysis because every letter always gets the same substitute. \textbf{Polyalphabetic} ciphers use \textbf{different} monoalphabetic rules at different positions:
+\begin{keybox}
+\begin{enumerate}[leftmargin=1.5em]
+  \item A \textbf{set of related monoalphabetic substitution rules} is used.
+  \item A \textbf{key} decides which rule is used for each letter.
+\end{enumerate}
+\end{keybox}
+
+\subsection{Vigen\`ere cipher}
+The rule set is the \textbf{26 Caesar ciphers} (shifts 0--25). Each key letter picks the shift for one plaintext letter. The key is \textbf{repeated} to the length of the message.
+\begin{keybox}[title=Vigen\`ere (key length $m$)]
+\vspace{-6pt}
+\[
+C_i = \big(P_i + K_{i \bmod m}\big) \bmod 26 \qquad\qquad P_i = \big(C_i - K_{i \bmod m}\big) \bmod 26
+\]
+\end{keybox}
+
+\textbf{Example:} plaintext \ttx{wearediscoveredsaveyourself} (27 letters), key \ttx{deceptive} (9 letters, repeated 3 times).
+\begin{center}\footnotesize\setlength{\tabcolsep}{2.9pt}
+\begin{tabular}{@{}l*{14}{c}@{}}
+\toprule
+Key & d&e&c&e&p&t&i&v&e&d&e&c&e&p\\
+$K$ & 3&4&2&4&15&19&8&21&4&3&4&2&4&15\\
+Plain & w&e&a&r&e&d&i&s&c&o&v&e&r&e\\
+$P$ & 22&4&0&17&4&3&8&18&2&14&21&4&17&4\\
+$(P{+}K) \bmod 26$ & 25&8&2&21&19&22&16&\hl{13}&6&17&25&6&21&19\\
+Cipher & \textbf{Z}&\textbf{I}&\textbf{C}&\textbf{V}&\textbf{T}&\textbf{W}&\textbf{Q}&\textbf{N}&\textbf{G}&\textbf{R}&\textbf{Z}&\textbf{G}&\textbf{V}&\textbf{T}\\
+\bottomrule
+\end{tabular}
+\\[4pt]
+\begin{tabular}{@{}l*{13}{c}@{}}
+\toprule
+Key & t&i&v&e&d&e&c&e&p&t&i&v&e\\
+$K$ & 19&8&21&4&3&4&2&4&15&19&8&21&4\\
+Plain & d&s&a&v&e&y&o&u&r&s&e&l&f\\
+$P$ & 3&18&0&21&4&24&14&20&17&18&4&11&5\\
+$(P{+}K) \bmod 26$ & 22&\hl{0}&21&25&7&\hl{2}&16&24&\hl{6}&\hl{11}&12&\hl{6}&9\\
+Cipher & \textbf{W}&\textbf{A}&\textbf{V}&\textbf{Z}&\textbf{H}&\textbf{C}&\textbf{Q}&\textbf{Y}&\textbf{G}&\textbf{L}&\textbf{M}&\textbf{G}&\textbf{J}\\
+\bottomrule
+\end{tabular}
+\end{center}
+Answer: \textbf{\ttx{ZICVTWQNGRZGVTWAVZHCQYGLMGJ}} (highlighted cells wrapped past 25).
+
+\textbf{Why it's stronger:} the same plaintext letter gets different ciphertext letters. \ttx{e} at position 2 (key \ttx{e}=4) $\to 8 =$ \ttx{I}; \ttx{e} at position 5 (key \ttx{p}=15) $\to 19 =$ \ttx{T}. Letter frequencies get flattened.
+
+\textbf{Cryptanalysis:} the weakness is that the \textbf{key repeats}. Once the attacker finds the key length $m$, they split the ciphertext into $m$ groups (every $m$-th letter). Each group is just a \textbf{Caesar cipher}, which falls to frequency analysis or brute force.
+
+\subsection{Autokey system}
+To stop the key from repeating, Vigen\`ere proposed the \textbf{autokey}: the keyword is followed by the \textbf{plaintext itself}, giving a \textbf{running key} as long as the message.
+\begin{center}\small\ttfamily\setlength{\tabcolsep}{2.2pt}
+\begin{tabular}{@{}l*{27}{c}@{}}
+\rmfamily Key & \textbf{d}&\textbf{e}&\textbf{c}&\textbf{e}&\textbf{p}&\textbf{t}&\textbf{i}&\textbf{v}&\textbf{e}&w&e&a&r&e&d&i&s&c&o&v&e&r&e&d&s&a&v\\
+\rmfamily Plain & w&e&a&r&e&d&i&s&c&o&v&e&r&e&d&s&a&v&e&y&o&u&r&s&e&l&f\\
+\rmfamily Cipher & Z&I&C&V&T&W&Q&N&G&K&Z&E&I&I&G&A&S&X&S&T&S&L&V&V&W&L&A
+\end{tabular}
+\end{center}
+Answer: \textbf{\ttx{ZICVTWQNGKZEIIGASXSTSLVVWLA}}. The first 9 letters match Vigen\`ere (same key); after that the key is the plaintext (\ttx{w e a r e \dots}).
+\begin{itemize}
+  \item No period to find, so the key-length attack above fails.
+  \item Still breakable: the key is ordinary English too, so key and plaintext \textbf{share the same letter frequencies}, and statistics can still be applied.
+\end{itemize}
+
+\subsection{Vernam cipher}
+\begin{itemize}
+  \item \textbf{Gilbert Vernam}, AT\&T engineer, \textbf{1918}.
+  \item Works on \textbf{binary bits}, not letters.
+  \item Goal: a key \textbf{as long as the message} that \textbf{does not repeat}, so no statistical pattern is left.
+\end{itemize}
+\begin{minipage}[c]{0.5\textwidth}
+\begin{keybox}[title=Vernam]
+\vspace{-6pt}
+\[
+C_i = P_i \oplus K_i \qquad\qquad P_i = C_i \oplus K_i
+\]
+$\oplus$ = XOR: output 1 if the bits differ, 0 if they are equal.
+\end{keybox}
+Decryption works because XOR undoes itself:
+\[
+C_i \oplus K_i = P_i \oplus K_i \oplus K_i = P_i \oplus 0 = P_i
+\]
+\end{minipage}\hfill
+\begin{minipage}[c]{0.45\textwidth}
+\centering\small
+\begin{tabular}{cc|c}
+\toprule
+$a$ & $b$ & $a\oplus b$\\
+\midrule
+0&0&0\\ 0&1&1\\ 1&0&1\\ 1&1&0\\
+\bottomrule
+\end{tabular}
+\qquad
+\begin{tabular}{@{}r@{\;}l@{}}
+$P$ & \ttx{1011}\\
+$K$ & \ttx{0110}\\
+\midrule
+$C$ & \ttx{1101}\\
+$C\oplus K$ & \ttx{1011} $= P$
+\end{tabular}\\[2pt]
+{\footnotesize (bit example is mine, not from the lecture)}
+\end{minipage}
+
+\begin{center}
+\begin{tikzpicture}[node distance=6mm]
+  \node[box,fill=gray!15,text width=32mm] (g1) {Cryptographic stream generator};
+  \node[draw,circle,below=6mm of g1,font=\large,inner sep=1pt] (x1) {$\oplus$};
+  \node[left=10mm of x1,font=\small] (p1) {Plaintext $P_i$};
+  \node[box,fill=gray!15,text width=32mm,right=38mm of g1] (g2) {Cryptographic stream generator};
+  \node[draw,circle,below=6mm of g2,font=\large,inner sep=1pt] (x2) {$\oplus$};
+  \node[right=10mm of x2,font=\small] (p2) {Plaintext $P_i$};
+  \draw[arr] (g1) -- node[right,font=\scriptsize]{$K_i$} (x1);
+  \draw[arr] (g2) -- node[right,font=\scriptsize]{$K_i$} (x2);
+  \draw[arr] (p1) -- (x1);
+  \draw[arr] (x1) -- node[above,font=\scriptsize]{Ciphertext $C_i$ (sent)} (x2);
+  \draw[arr] (x2) -- (p2);
+  \node[below=1mm of x1,font=\scriptsize] {encryption};
+  \node[below=1mm of x2,font=\scriptsize] {decryption};
+\end{tikzpicture}
+\end{center}
+Both sides need the \textbf{same, synchronised key stream}.
+
+\textbf{Weakness:} Vernam's machine read the key from a \textbf{loop of paper tape}, so the key eventually \textbf{repeated}. With enough ciphertext, and some known or probable plaintext, it can be broken.
+\textbf{Fix:} make the key truly random, as long as the message, and never reused. That is the \textbf{one-time pad}, which gives perfect secrecy (next topic).
+
+\begin{examtip}
+\begin{itemize}
+  \item Hill: $C = PK \bmod 26$, $P = CK^{-1} \bmod 26$. State which convention ($PK$ or $KP$) you use.
+  \item $K^{-1} = (\det K)^{-1}\operatorname{adj}K \bmod 26$. Show every step: det, inverse (table), adjoint, product, then check $KK^{-1}=I$.
+  \item Negative numbers mod 26: add 26 until the result is in $0$--$25$.
+  \item The key matrix must have $\gcd(\det K, 26) = 1$, or it can't be inverted.
+  \item Polyalphabetic = many monoalphabetic rules, and the key picks which one. Vigen\`ere = 26 Caesar ciphers.
+  \item Vigen\`ere weakness: the repeating key. Autokey fixes it (keyword + plaintext), but key and plaintext share frequencies.
+  \item Vernam: Gilbert Vernam, 1918, bits, XOR. Weakness: repeating tape. Leads to the one-time pad.
+\end{itemize}
+\end{examtip}
+
+\begin{fixbox}
+\begin{itemize}
+  \item All of Gemini's numbers for this batch are correct (Hill encryption, det, adjoint, $K^{-1}$, decryption, Vigen\`ere, autokey; checked by script).
+  \item Slide typos noted by Gemini: for \ttx{ney}, the slide shows the old vector $(348, 312, 538)$ instead of $(353, 341, 605)$. For \ttx{RRL}, the slide shows $(17\;17\;14)$ labelled $C$; it should be $(17\;17\;11)$ and the output is $P$.
+  \item The notes put ``key and plaintext share letter frequencies'' under Vigen\`ere cryptanalysis. That point is really about the autokey system, where the key \emph{is} plaintext, so it is placed there above.
+\end{itemize}
+\end{fixbox}

@@ -1,0 +1,191 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[margin=2cm]{geometry}
+\usepackage{amsmath}
+\usepackage{xcolor}
+\usepackage{array,booktabs,tabularx,enumitem,multirow}
+\usepackage[most]{tcolorbox}
+\usepackage{fontspec}
+\usepackage{unicode-math}
+\setmainfont{texgyretermes}[Extension=.otf,UprightFont=*-regular,BoldFont=*-bold,ItalicFont=*-italic,BoldItalicFont=*-bolditalic]
+\setmathfont{texgyretermes-math.otf}
+\setmonofont{AnnotationM Nerd Font Mono}[Scale=MatchLowercase]
+\newfontfamily\solfont{FiraSans}[Ligatures=TeX,Extension=.otf,UprightFont=*-Regular,BoldFont=*-SemiBold,ItalicFont=*-Italic,BoldItalicFont=*-SemiBoldItalic]
+\newfontfamily\symfallback{STIXTwoMath-Regular.otf}
+\AtBeginDocument{\renewcommand{\checkmark}{\text{\symfallback\char"2713}}}
+\setlength{\parindent}{0pt}
+\setlist{nosep}
+\pagestyle{plain}
+% Atom One Light accents for the solutions
+\definecolor{acc}{HTML}{4078F2}\definecolor{warn}{HTML}{E45649}\definecolor{tbg}{HTML}{FAFAFA}\definecolor{tfg}{HTML}{383A42}
+\newtcolorbox{sol}[1]{colback=acc!4!tbg,colframe=acc,boxrule=0.6pt,arc=2pt,left=5pt,right=5pt,top=3pt,bottom=3pt,title={#1},fonttitle=\bfseries\small,coltext=tfg,breakable}
+\newtcolorbox{trap}{colback=warn!8,colframe=warn,boxrule=0.6pt,arc=2pt,left=5pt,right=5pt,top=2pt,bottom=2pt,title={Trap},fonttitle=\bfseries\small,coltext=tfg,breakable}
+\newcommand{\ttx}[1]{\texttt{#1}}
+\newcolumntype{Q}{>{\bfseries}p{0.7cm}}
+\newcolumntype{M}{>{\centering\arraybackslash}p{1.1cm}}
+
+\begin{document}
+% ===================== QUESTION PAPER =====================
+\begin{center}
+{\bfseries Motilal Nehru National Institute of Technology Allahabad}\\
+Prayagraj-211004 [India]\\[6pt]
+{\bfseries Computer Science and Engineering Department}\\
+{\bfseries Mid Semester (Odd) Examination 2026-27 \ (MOCK)}
+\end{center}
+\vspace{2pt}
+\begin{tabularx}{\textwidth}{@{}X X@{}}
+Programme Name: B.Tech & Semester: V\\
+Course Code: CSN15403 & Course Name: Cryptography and Network Security\\
+ & Student Reg. No.: \rule{4cm}{0.4pt}\\[4pt]
+Duration: 90 Minutes & Max. Marks: 25\\
+\end{tabularx}
+
+\vspace{4pt}
+\textbf{Instructions:} (Related to Questions)
+\begin{enumerate}[leftmargin=2em]
+  \item Precise answer with proper justification will be considered to get complete marks.
+  \item Attempt all questions.
+\end{enumerate}
+\vspace{2pt}
+\renewcommand{\arraystretch}{1.25}
+\newcommand{\qrow}[3]{\par\noindent\begin{tabularx}{\textwidth}{@{}Q X M@{}}#1 & #2 & #3\\\end{tabularx}\par\vspace{2pt}\hrule\vspace{4pt}}
+\noindent\rule{\textwidth}{0.8pt}\\\hspace*{\fill}\textbf{Marks}\hspace*{0.2cm}\\[-4pt]\rule{\textwidth}{0.4pt}
+\qrow{Q1}{\textbf{a.} In each of the following, what is the maximum number of characters that will be changed in the ciphertext if only a single character is changed in the plaintext? \;(i) Hill cipher with a $3\times3$ key \;(ii) Keyed transposition cipher \;(iii) Auto-key cipher \;(iv) DES in ECB mode, 8-character (64-bit) blocks.
+
+\textbf{b.} A hash function produces a 64-bit digest. How many digests must Eve create to find a collision with probability more than 0.5? Compare with a preimage attack.}{2}
+\qrow{Q2}{Eve secretly gets access to Alice's computer and, using her cipher, types \ttx{hi}. The screen shows \ttx{CL}. Eve knows that Alice is using an affine cipher.
+\begin{enumerate}[label=\alph*.,leftmargin=1.5em]
+  \item What type of attack is Eve launching?
+  \item Find the key pair $(k_1, k_2)$.
+  \item Decrypt the intercepted ciphertext \ttx{VBBGRGENNE}.
+\end{enumerate}}{3}
+\qrow{Q3}{Use the Playfair cipher to encipher the message ``\textit{Hide the keys in the classroom}''. The key matrix is made from the keyword ``\textit{MOTILAL NEHRU}'' followed by the rest of the alphabet. Assume `X' as the bogus letter and that I/J go in the same cell.}{4}
+\qrow{Q4}{In GF($2^8$), find the inverse of $(x^7 + 1)$ modulo $(x^8 + x^4 + x^3 + x + 1)$ using the extended Euclidean algorithm. Also state:
+\begin{enumerate}[label=\arabic*-,leftmargin=1.5em]
+  \item How many iterations your method takes.
+  \item Value of the remainder in iteration 2.
+  \item Value of the quotient in iteration 3.
+\end{enumerate}}{4}
+\qrow{Q5}{Solve the following:
+\begin{enumerate}[label=\roman*.,leftmargin=1.8em]
+  \item In the field GF(13), find the result of $7 \div 5$.
+  \item Find $3^{2025} \bmod 13$ and $7^{-1} \bmod 40$ (show the extended Euclidean table).
+  \item Find the particular and general solutions of the linear Diophantine equation $12x + 18y = 30$.
+\end{enumerate}}{3}
+\qrow{Q6}{\textbf{a.} Bob's RSA public key is $(e, n) = (5, 323)$. Eve intercepts the ciphertext $C = 264$. Showing every step, find Bob's private key $d$ and the plaintext $M$. Why would this attack fail for a 2048-bit $n$?
+
+\textbf{b.} For the elliptic curve $E_{11}(1, 6):\ y^2 = x^3 + x + 6 \pmod{11}$, compute $2P$ for $P = (2, 7)$ and verify that the result lies on the curve.}{5}
+\qrow{Q7}{In the Advanced Encryption Standard, the state after SubBytes in round 1 and the round-1 key are:
+\[
+S = \begin{bmatrix}\ttx{d4}&\ttx{e0}&\ttx{b8}&\ttx{1e}\\\ttx{27}&\ttx{bf}&\ttx{b4}&\ttx{41}\\\ttx{11}&\ttx{98}&\ttx{5d}&\ttx{52}\\\ttx{ae}&\ttx{f1}&\ttx{e5}&\ttx{30}\end{bmatrix}
+\qquad
+K_1 = \begin{bmatrix}\ttx{a0}&\ttx{88}&\ttx{23}&\ttx{2a}\\\ttx{fa}&\ttx{54}&\ttx{a3}&\ttx{6c}\\\ttx{fe}&\ttx{2c}&\ttx{39}&\ttx{76}\\\ttx{17}&\ttx{b1}&\ttx{39}&\ttx{05}\end{bmatrix}
+\]
+\begin{enumerate}[label=\alph*.,leftmargin=1.5em]
+  \item Show the ShiftRows transformation.
+  \item Compute the first column of the MixColumns output (show the GF($2^8$) working).
+  \item Given that MixColumns produces the state below, perform AddRoundKey.
+  \[\begin{bmatrix}\ttx{04}&\ttx{e0}&\ttx{48}&\ttx{28}\\\ttx{66}&\ttx{cb}&\ttx{f8}&\ttx{06}\\\ttx{81}&\ttx{19}&\ttx{d3}&\ttx{26}\\\ttx{e5}&\ttx{9a}&\ttx{7a}&\ttx{4c}\end{bmatrix}\]
+\end{enumerate}\vspace{6pt}}{4}
+
+% ===================== SOLUTIONS =====================
+\clearpage
+{\solfont
+\pagecolor{tbg}\color{tfg}
+{\Large\bfseries\color{acc} Model Answers}\\[2pt]
+{\small Every number below was computed and checked by script; Q7 values are the FIPS-197 Appendix B test vectors.}
+
+\begin{sol}{Q1 (2 marks)}
+\textbf{a.} (i) \textbf{3}: the whole 3-letter block depends on every plaintext letter in it. (ii) \textbf{1}: transposition only moves characters, so only the changed one changes (it just sits at another position). (iii) \textbf{2}: $C_i$ changes, and $P_i$ is the key for $C_{i+1}$ ($k_{i+1} = P_i$), so $C_{i+1}$ changes too. (iv) \textbf{8}: the avalanche effect spreads one changed bit across the whole 64-bit block.\\
+\textbf{b.} Collision $=$ birthday problem 3: $k = 1.18 \times 2^{n/2} = 1.18 \times 2^{32} \approx 5.07 \times 10^{9}$ digests. Preimage $=$ problem 1: $k = 0.69 \times 2^{64} \approx 1.27 \times 10^{19}$. A 64-bit digest is safe against preimage but \textbf{not} against collision.
+\end{sol}
+
+\begin{sol}{Q2 (3 marks)}
+\textbf{a.} \textbf{Chosen-plaintext attack} (Eve chooses the plaintext and sees the ciphertext).\\
+\textbf{b.} $h = 7 \to C = 2$, $i = 8 \to L = 11$: \;$7k_1 + k_2 \equiv 2$, \;$8k_1 + k_2 \equiv 11 \pmod{26}$. Subtract: $k_1 \equiv 9$; then $k_2 \equiv 2 - 63 = -61 \equiv 17$. $\gcd(9, 26) = 1$, so $(k_1, k_2) = \mathbf{(9, 17)}$ is valid.\\
+\textbf{c.} $P = (C - 17) \times 9^{-1}$, $9^{-1} = 3$ ($27 \equiv 1$): \;\ttx{V}$=21$: $(21 - 17) \cdot 3 = 12 = $ \ttx{m}; \;\ttx{B}$=1$: $(1 - 17) \cdot 3 = -48 \equiv 4 = $ \ttx{e}; \dots\\
+\ttx{VBBGRGENNE} $\to$ \textbf{\ttx{meetatnoon}} (``meet at noon'').
+\end{sol}
+
+\begin{sol}{Q3 (4 marks)}
+Key matrix (\ttx{MOTILAL NEHRU} $\to$ \ttx{M O T I L A N E H R U}, then the rest):
+\begin{center}\small
+\begin{tabular}{|c|c|c|c|c|}\hline
+M&O&T&I/J&L\\\hline A&N&E&H&R\\\hline U&B&C&D&F\\\hline G&K&P&Q&S\\\hline V&W&X&Y&Z\\\hline
+\end{tabular}
+\end{center}
+Digrams: \ttx{hi de th ek ey si nt he cl as sr \textbf{ox} om} (\ttx{oo} in ``classroom'' is split with the filler X; 26 letters so no final filler).
+\begin{center}\small
+\begin{tabular}{@{}lllllllllllll@{}}
+\toprule
+hi&de&th&ek&ey&si&nt&he&cl&as&sr&ox&om\\
+col&rect&rect&rect&rect&rect&rect&row&rect&rect&col&rect&row\\
+\textbf{DH}&\textbf{CH}&\textbf{IE}&\textbf{NP}&\textbf{HX}&\textbf{QL}&\textbf{EO}&\textbf{RH}&\textbf{FT}&\textbf{RG}&\textbf{ZF}&\textbf{TW}&\textbf{TO}\\
+\bottomrule
+\end{tabular}
+\end{center}
+Ciphertext: \textbf{\ttx{DHCHIENPHXQLEORHFTRGZFTWTO}}.\\
+Checks: \ttx{hi} (same column, each moves down: h$\to$D, i$\to$H); \ttx{he} (same row, each moves right: h$\to$R, e$\to$H); \ttx{om} (same row: o$\to$T, m$\to$O); \ttx{sr} (same column S/R: s$\to$Z, r$\to$F).
+\end{sol}
+
+\begin{sol}{Q4 (4 marks)}
+$r_1 = x^8 + x^4 + x^3 + x + 1$, $r_2 = x^7 + 1$, $t_1 = 0$, $t_2 = 1$; each row $t = t_1 + q\,t_2$ (subtraction $=$ addition in GF(2)).
+\begin{center}\footnotesize\setlength{\tabcolsep}{3pt}
+\begin{tabular}{@{}cllllll@{}}
+\toprule
+It. & $q$ & $r_1$ & $r_2$ & $r$ & $t_1$, \;$t_2$ & $t$\\
+\midrule
+1 & $x$ & $x^8 + x^4 + x^3 + x + 1$ & $x^7 + 1$ & $x^4 + x^3 + 1$ & $0$, \;$1$ & $x$\\
+2 & $x^3 + x^2 + x + 1$ & $x^7 + 1$ & $x^4 + x^3 + 1$ & $x^2 + x$ & $1$, \;$x$ & $x^4 + x^3 + x^2 + x + 1$\\
+3 & $x^2$ & $x^4 + x^3 + 1$ & $x^2 + x$ & $1$ & $x$, \;$t^{(2)}$ & $x^6 + x^5 + x^4 + x^3 + x^2 + x$\\
+4 & $x^2 + x$ & $x^2 + x$ & $1$ & $0$ & & \\
+\bottomrule
+\end{tabular}
+\end{center}
+($t^{(2)}$ $=$ the $t$ of iteration 2.) Final $r_1 = 1$ $\Rightarrow$ inverse exists: $(x^7 + 1)^{-1} = \mathbf{x^6 + x^5 + x^4 + x^3 + x^2 + x}$ (\ttx{7E}). Check: $\ttx{81} \otimes \ttx{7E} = \ttx{01}$ \checkmark.\\
+1- \textbf{4} iterations. \;2- Remainder in iteration 2: $\mathbf{x^2 + x}$. \;3- Quotient in iteration 3: $\mathbf{x^2}$.
+\end{sol}
+
+\begin{sol}{Q5 (3 marks)}
+\textbf{i.} $7 \div 5 = 7 \times 5^{-1}$; $5 \times 8 = 40 \equiv 1 \pmod{13}$, so $5^{-1} = 8$; $7 \times 8 = 56 \equiv \mathbf{4}$.\\
+\textbf{ii.} Fermat: $3^{12} \equiv 1 \pmod{13}$, $2025 = 168 \cdot 12 + 9$, so $3^{2025} \equiv 3^9 = (3^3)^3 = 27^3 \equiv 1^3 = \mathbf{1}$.\\
+$7^{-1} \bmod 40$: \;
+\begin{tabular}[t]{@{}c|ccc|ccc@{}}
+$q$ & $r_1$ & $r_2$ & $r$ & $t_1$ & $t_2$ & $t$\\\hline
+5&40&7&5&0&1&$-5$\\ 1&7&5&2&1&$-5$&6\\ 2&5&2&1&$-5$&6&$-17$\\ 2&2&1&0&6&$-17$&40\\ &1&0&&$-17$&&\\
+\end{tabular}
+\;$\Rightarrow 7^{-1} \equiv -17 \equiv \mathbf{23}$ ($7 \cdot 23 = 161 = 4 \cdot 40 + 1$).\\
+\textbf{iii.} $d = \gcd(12, 18) = 6 \mid 30$: infinitely many solutions. Divide: $2x + 3y = 5$; $2(-1) + 3(1) = 1$, so $s = -1$, $t = 1$. Particular: $x_0 = 5(-1) = -5$, $y_0 = 5(1) = 5$. General: $\mathbf{x = -5 + 3k,\ y = 5 - 2k}$ ($k \in \mathbb{Z}$). Check: $12(-5) + 18(5) = 30$ \checkmark.
+\end{sol}
+
+\begin{sol}{Q6 (5 marks)}
+\textbf{a.} Factor $n$: trial division by primes $\le \sqrt{323} \approx 17.97$ gives $323 = \mathbf{17 \times 19}$. $\phi(n) = 16 \times 18 = 288$.\\
+$d = 5^{-1} \bmod 288$: rows $(q; r_1, r_2, r; t)$: $(57; 288, 5, 3; -57)$, $(1; 5, 3, 2; 58)$, $(1; 3, 2, 1; -115)$, $(2; 2, 1, 0)$ $\Rightarrow d \equiv -115 \equiv \mathbf{173}$ ($5 \cdot 173 = 865 = 3 \cdot 288 + 1$).\\
+$M = 264^{173} \bmod 323 = \mathbf{42}$. Check by re-encrypting: $42^2 = 1764 \equiv 149$, $42^4 \equiv 149^2 \equiv 237$, $42^5 \equiv 237 \cdot 42 = 9954 \equiv 264 \pmod{323}$ \checkmark.\\
+For a 2048-bit $n$ (two $\approx$1024-bit primes), factoring is computationally infeasible, so $\phi(n)$ and $d$ cannot be found: RSA's security is exactly the factoring problem.\\[3pt]
+\textbf{b.} Doubling: $s = \dfrac{3x_1^2 + a}{2y_1} = \dfrac{3 \cdot 4 + 1}{14} \equiv 13 \cdot 3^{-1} \equiv 2 \cdot 4 = 8 \pmod{11}$ (since $14 \equiv 3$, $3^{-1} = 4$).\\
+$x_3 = s^2 - 2x_1 = 64 - 4 = 60 \equiv 5$; \;$y_3 = s(x_1 - x_3) - y_1 = 8(2 - 5) - 7 = -31 \equiv 2$. So $\mathbf{2P = (5, 2)}$.\\
+Check: $y^2 = 4$; $x^3 + x + 6 = 125 + 5 + 6 = 136 \equiv 4 \pmod{11}$ \checkmark.
+\end{sol}
+
+\begin{sol}{Q7 (4 marks)}
+\textbf{a.} Row $r$ rotates left by $r$ bytes:
+\[
+\begin{bmatrix}\ttx{d4}&\ttx{e0}&\ttx{b8}&\ttx{1e}\\\ttx{bf}&\ttx{b4}&\ttx{41}&\ttx{27}\\\ttx{5d}&\ttx{52}&\ttx{11}&\ttx{98}\\\ttx{30}&\ttx{ae}&\ttx{f1}&\ttx{e5}\end{bmatrix}
+\]
+\textbf{b.} Column $(\ttx{d4}, \ttx{bf}, \ttx{5d}, \ttx{30})$; $02 \cdot b$ $=$ shift left, XOR \ttx{1b} if the top bit was 1; $03 \cdot b = 02 \cdot b \oplus b$.\\
+$02 \cdot \ttx{d4} = \ttx{b3}$, $03 \cdot \ttx{bf} = \ttx{da}$: \;$\ttx{b3} \oplus \ttx{da} \oplus \ttx{5d} \oplus \ttx{30} = \mathbf{04}$\\
+$\ttx{d4} \oplus 02 \cdot \ttx{bf} (\ttx{65}) \oplus 03 \cdot \ttx{5d} (\ttx{e7}) \oplus \ttx{30} = \mathbf{66}$\\
+$\ttx{d4} \oplus \ttx{bf} \oplus 02 \cdot \ttx{5d} (\ttx{ba}) \oplus 03 \cdot \ttx{30} (\ttx{50}) = \mathbf{81}$\\
+$03 \cdot \ttx{d4} (\ttx{67}) \oplus \ttx{bf} \oplus \ttx{5d} \oplus 02 \cdot \ttx{30} (\ttx{60}) = \mathbf{e5}$ \;$\Rightarrow$ first column $(\ttx{04}, \ttx{66}, \ttx{81}, \ttx{e5})$ \checkmark\ (matches part c).\\
+\textbf{c.} XOR element by element with $K_1$:
+\[
+\begin{bmatrix}\ttx{a4}&\ttx{68}&\ttx{6b}&\ttx{02}\\\ttx{9c}&\ttx{9f}&\ttx{5b}&\ttx{6a}\\\ttx{7f}&\ttx{35}&\ttx{ea}&\ttx{50}\\\ttx{f2}&\ttx{2b}&\ttx{43}&\ttx{49}\end{bmatrix}
+\qquad(\text{e.g. } \ttx{04} \oplus \ttx{a0} = \ttx{a4},\ \ttx{66} \oplus \ttx{fa} = \ttx{9c})
+\]
+\end{sol}
+
+\begin{trap}
+Q1(iii): Forouzan's auto-key uses the \emph{previous plaintext} letter as the next key, so it is 2, not ``all following characters''. Q3: don't forget to split \ttx{oo} in ``classroom''. Q4: in GF($2^n$), $t = t_1 - q t_2 = t_1 + q t_2$ (XOR). Q6a: $d$ is the inverse mod $\phi(n) = 288$, not mod 323.
+\end{trap}
+}
+\end{document}

@@ -1,0 +1,77 @@
+% College Lecture 8: DES. Examples verified by script.
+\section{Data Encryption Standard (DES)}\label{sec:des}
+
+\textbf{DES}: NIST's symmetric \textbf{block cipher}: 64-bit block, \textbf{56-bit key} (given as 64 bits with 8 parity bits), \textbf{16 Feistel rounds}, sixteen 48-bit round keys.
+\begin{center}
+\begin{tikzpicture}[font=\scriptsize,b/.style={draw,rounded corners=2pt,minimum width=3.0cm,minimum height=5.5mm,align=center}]
+  \node[b] (p) at (0,0) {64-bit plaintext};
+  \node[b] (ip) at (0,-0.9) {Initial permutation};
+  \node[b] (r1) at (0,-1.8) {Round 1};
+  \node (dots) at (0,-2.55) {\dots};
+  \node[b] (r16) at (0,-3.3) {Round 16 (no swap)};
+  \node[b] (fp) at (0,-4.2) {Final permutation};
+  \node[b] (c) at (0,-5.1) {64-bit ciphertext};
+  \foreach \a/\b in {p/ip,ip/r1,r16/fp,fp/c}{\draw[arr] (\a)--(\b);}
+  \draw[arr] (r1)--(dots); \draw[arr] (dots)--(r16);
+  \node[b,minimum width=3.4cm] (kg) at (5.0,-2.55) {Round-key generator\\56-bit key $\to$ $K_1 \dots K_{16}$ (48 bits)};
+  \draw[arr] (kg.west) -- ++(-0.8,0) |- (r1.east) node[pos=0.75,above]{$K_1$};
+  \draw[arr] (kg.west) -- ++(-0.8,0) |- (r16.east) node[pos=0.75,below]{$K_{16}$};
+  \begin{scope}[xshift=9.6cm]
+  \node[b,minimum width=1.6cm] (L) at (-0.9,0) {$L_{i-1}$ (32)};
+  \node[b,minimum width=1.6cm] (R) at (0.9,0) {$R_{i-1}$ (32)};
+  \node[draw,circle,inner sep=1pt] (x) at (-0.9,-1.4) {$\oplus$};
+  \node[b,minimum width=1.4cm] (f) at (0.9,-1.4) {$f(R, K_i)$};
+  \draw[arr] (L)--(x); \draw[arr] (R)--(f); \draw[arr] (f)--(x);
+  \node[b,minimum width=1.6cm] (L2) at (-0.9,-3.0) {$L_i$};
+  \node[b,minimum width=1.6cm] (R2) at (0.9,-3.0) {$R_i$};
+  \draw[arr] (x) -- (0.9,-2.3) -- (R2); \draw[arr] (R.south west) ++(0,-0.05) -- (-0.9,-2.3) -- (L2);
+  \node[align=center] at (0,-3.75) {$L_i = R_{i-1}$, \; $R_i = L_{i-1} \oplus f(R_{i-1}, K_i)$};
+  \end{scope}
+\end{tikzpicture}
+\end{center}
+
+\subsection{Initial and final permutations}
+Keyless straight P-boxes, inverses of each other, with \textbf{no cryptographic significance}. IP table starts \ttx{58 50 42 34 26 18 10 02 | 60 52 44 \dots}: output bit 1 $=$ input bit 58; input bit 1 goes to output 40.\\
+\textbf{Example}: input \ttx{0x0002 0000 0000 0001} has only bits 15 and 64 set. In the IP table, 15 is at position 63 and 64 is at position 25 $\Rightarrow$ output \ttx{0x0000 0080 0000 0002} (bits 25 and 63). FP maps it back.
+
+\subsection{The round function $f(R_{i-1}, K_i)$}
+\begin{enumerate}[leftmargin=1.5em]
+  \item \textbf{Expansion P-box} 32 $\to$ 48: 8 groups of 4 bits become 6 by copying the neighbouring bits (first row \ttx{32 01 02 03 04 05}, last row \ttx{28 29 30 31 32 01}).
+  \item \textbf{Whitener}: XOR with the 48-bit round key $K_i$.
+  \item \textbf{8 S-boxes}, each \textbf{6 bits $\to$ 4 bits} (the confusion, ``real mixing''). Row $=$ bits 1 and 6 (0--3), column $=$ bits 2--5 (0--15).
+  \item \textbf{Straight P-box} 32 $\to$ 32 (\ttx{16 07 20 21 29 12 28 17 \dots}: input bit 16 becomes output bit 1, input bit 7 becomes output bit 2).
+\end{enumerate}
+\begin{center}\small\setlength{\tabcolsep}{3.5pt}
+\begin{tabular}{@{}c|*{16}{c}@{}}
+S1 & 0&1&2&3&4&5&6&7&8&9&10&11&12&13&14&15\\ \midrule
+0 & 14&4&13&1&2&15&11&8&3&10&6&12&5&9&0&7\\
+1 & 0&15&7&4&14&2&13&1&10&6&12&11&9&5&3&8\\
+2 & 4&1&14&8&13&6&2&11&15&12&9&7&3&10&5&0\\
+3 & 15&12&8&2&4&9&1&7&5&11&3&14&10&0&6&13\\
+\end{tabular}
+\end{center}
+\textbf{Example}: input \ttx{100011} to S1: row $= (1\,1)_2 = 3$, column $= (0001)_2 = 1$ $\Rightarrow$ 12 $=$ \ttx{1100}. (Others: \ttx{000000} $\to$ 14 $=$ \ttx{1110}; \ttx{111111} $\to$ row 3 col 15 $=$ 13 $=$ \ttx{1101}.)
+
+\textbf{Cipher vs.\ reverse cipher}: each round $=$ mixer ($L \oplus f(R, K)$) $+$ swapper; the \textbf{last round has no swapper} so that the reverse cipher is the same algorithm with keys $K_{16} \dots K_1$.
+
+\subsection{Key generation}
+64-bit key $\to$ \textbf{parity drop} (removes bits 8, 16, \dots, 64, permutes) $\to$ 56 bits $\to$ split into two 28-bit halves $\to$ each round: \textbf{circular left shift} both halves, combine, \textbf{compression P-box 56 $\to$ 48} $\to$ $K_i$.\\
+Shifts: \textbf{1 bit in rounds 1, 2, 9, 16}; 2 bits in the others (total 28, so the halves return to the start).
+
+\subsection{Analysis and weaknesses}
+\begin{itemize}
+  \item \textbf{Avalanche effect} (small change in plaintext or key $\to$ big change in ciphertext) and \textbf{completeness} (each ciphertext bit depends on many plaintext bits): DES is strong in both.
+  \item \textbf{Design weaknesses}: in S-box 4 three output bits can be derived from the first; two chosen inputs to the S-box array can give the same output; the same round output can come from changing only 3 neighbouring S-boxes; IP/FP add nothing; the expansion repeats the 1st and 4th bit of every 4-bit group.
+  \item \textbf{Key size}: $2^{56}$ keys. At $10^6$ keys/s on $10^6$ parallel chips: about \textbf{20 hours}. (The slides' 3500 networked computers took 120 days on an RSA challenge.)
+  \item \textbf{Weak keys} (4): all round keys identical (e.g.\ \ttx{0101 0101 0101 0101}, \ttx{FEFE FEFE FEFE FEFE}); encrypting twice gives back the plaintext. \textbf{Semi-weak keys} (6 pairs): only 2 distinct round keys, each used 8 times; one key of a pair decrypts what the other encrypted.
+\end{itemize}
+
+\subsection{Multiple DES}
+\begin{itemize}
+  \item \textbf{Double DES}: $C = E_{K_2}(E_{K_1}(P))$, 112-bit key, but the \textbf{meet-in-the-middle} attack (known plaintext) cuts it to about $2^{57}$ tests: encrypt $P$ under all $2^{56}$ $K_1$ and store the middle values $M$; decrypt $C$ under all $2^{56}$ $K_2$ and look for a match ($M = E_{K_1}(P) = D_{K_2}(C)$).
+  \item \textbf{Triple DES, two keys} (EDE): $C = E_{K_1}(D_{K_2}(E_{K_1}(P)))$. With $K_1 = K_2$ it reduces to single DES (backward compatible). \textbf{Three keys}: $E_{K_3}(D_{K_2}(E_{K_1}(P)))$.
+\end{itemize}
+
+\begin{examtip}
+``Explain DES'' (5--10 marks): block/key/round sizes; the structure diagram; the round (expansion, XOR, S-boxes with the row/column rule, straight P); key generation (parity drop, shifts 1/2, compression); one weakness (key size) and the 3DES fix. A numerical: an S-box lookup or an IP mapping.
+\end{examtip}

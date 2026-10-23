@@ -1,0 +1,45 @@
+% College Lecture 12: asymmetric-key cryptography and RSA. All numbers verified by script.
+\section{Asymmetric-Key Cryptography and RSA}
+
+\textbf{Idea}: the \textbf{public key locks, the private key unlocks}. $C = f(K_{\text{public}}, P)$, $P = g(K_{\text{private}}, C)$. Much slower than symmetric ciphers, so it's used for key exchange, authentication and digital signatures rather than bulk data.
+
+\begin{keybox}[title=Trapdoor one-way function]
+\textbf{One-way}: $y = f(x)$ easy, $x = f^{-1}(y)$ infeasible. \textbf{Trapdoor}: $f^{-1}$ becomes easy with a secret.\\
+$n = pq$ is one-way (factoring). $y = x^k \bmod n$ is a trapdoor one-way function: with the trapdoor $k'$, $kk' \equiv 1 \pmod{\phi(n)}$, recover $x = y^{k'} \bmod n$.
+\end{keybox}
+
+\subsection{RSA (Rivest, Shamir, Adleman)}
+\begin{keybox}[title={Key generation, encryption, decryption}]
+1.\ Choose large primes $p \ne q$; \;$n = pq$; \;$\phi(n) = (p - 1)(q - 1)$.\\
+2.\ Choose $e$ with $1 < e < \phi(n)$, $\gcd(e, \phi(n)) = 1$. \;3.\ $d = e^{-1} \bmod \phi(n)$ (extended Euclid).\\
+Public key $(e, n)$; private key $d$.
+\qquad Encrypt: $C = P^e \bmod n$ \;($P < n$). \qquad Decrypt: $P = C^d \bmod n$.
+\end{keybox}
+\textbf{Why it works}: $ed = k\phi(n) + 1$, so $C^d = P^{ed} = P^{k\phi(n)+1} \equiv P \pmod n$ (Euler, second version). RSA uses a public ring $\langle \mathbb{Z}_n, +, \times\rangle$ for encryption/decryption and a private group $\langle \mathbb{Z}_{\phi(n)}^*, \times\rangle$ for key generation.
+
+\begin{center}\small
+\begin{tabular}{@{}lllllll@{}}
+\toprule
+$p, q$ & $n$ & $\phi(n)$ & $e$ & $d$ & $P \to C$ & $C \to P$\\
+\midrule
+7, 11 & 77 & 60 & 13 & 37 & $5^{13} \bmod 77 = 26$ & $26^{37} \bmod 77 = 5$\\
+7, 11 & 77 & 60 & 13 & 37 & $63^{13} \bmod 77 = 28$ & $28^{37} \bmod 77 = 63$\\
+17, 11 & 187 & 160 & 7 & 23 & $88^{7} \bmod 187 = 11$ & $11^{23} \bmod 187 = 88$\\
+3, 11 & 33 & 20 & 7 & 3 & $5^7 \bmod 33 = 14$ & $14^3 \bmod 33 = 5$\\
+\bottomrule
+\end{tabular}
+\end{center}
+Finding $d$ for $(e, \phi) = (7, 160)$: extended Euclid gives $160 = 22\cdot7 + 6$, $7 = 1\cdot6 + 1$, back-substitute: $1 = 7 - 6 = 7 - (160 - 22\cdot7) = 23\cdot7 - 160$ $\Rightarrow d = 23$.
+
+\subsection{Attacks and recommendations}
+Potential attacks (none devastating so far): \textbf{factorization} of $n$; \textbf{chosen-ciphertext}; on the \textbf{encryption exponent} (low $e$: Coppersmith, broadcast, related messages, short pad); on the \textbf{decryption exponent} (revealed or low $d$); \textbf{plaintext} (short message, cyclic, unconcealed); \textbf{common modulus}; \textbf{implementation} (timing, power).
+\begin{itemize}
+  \item $n$ at least \textbf{1024 bits} (309 digits); $p$, $q$ at least \textbf{512 bits} each, \textbf{not close} to each other (Fermat factoring), $p - 1$ and $q - 1$ with at least one large prime factor (Pollard $p - 1$), $p/q$ not close to a simple fraction.
+  \item Never share $n$ between users. $e = 2^{16} + 1 = 65537$ or close to it.
+  \item If $d$ leaks, change $n$, $e$ and $d$ (knowing $n$ and one $(e, d)$ pair lets you factor $n$).
+  \item Pad messages with \textbf{OAEP}.
+\end{itemize}
+
+\begin{trap}[: the usual slips]
+$d$ is the inverse of $e$ mod $\boldsymbol{\phi(n)}$, not mod $n$. The plaintext must be $< n$. $e$ must be coprime to $\phi(n)$, so $e = 2$ never works ($\phi(n)$ is even).
+\end{trap}

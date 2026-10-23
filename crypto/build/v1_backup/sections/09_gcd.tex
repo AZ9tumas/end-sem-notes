@@ -1,0 +1,139 @@
+% Videos: GCD - Euclidean algorithm method 1 (table), method 2 (recursive)
+\section{GCD and the Euclidean Algorithm}
+
+\textbf{Divisibility}: $n \mid a$ iff $a = qn$. Properties: $a \mid 1 \Rightarrow a = \pm1$; $a \mid b$ and $b \mid a \Rightarrow a = \pm b$; $a \mid b, b \mid c \Rightarrow a \mid c$; $a \mid b, a \mid c \Rightarrow a \mid (mb + nc)$.
+
+\subsection{The key fact}
+\begin{keybox}
+\vspace{-6pt}
+\[
+\gcd(a, b) = \gcd(b,\; a \bmod b) \qquad\qquad \gcd(a, 0) = a
+\]
+\end{keybox}
+\textbf{Why it's true:} $a = qb + r$. Anything that divides $a$ and $b$ also divides $r = a - qb$. Anything that divides $b$ and $r$ also divides $a = qb + r$. So the pairs $(a, b)$ and $(b, r)$ have exactly the same common divisors, and therefore the same GCD. Each step replaces the numbers with smaller ones until one of them is 0.
+
+\subsection{Method 1: the Q A B R table}
+\begin{enumerate}[leftmargin=1.5em]
+  \item Columns $Q$ (quotient), $A$, $B$, $R$ (remainder). Start with $A$ = larger number, $B$ = smaller number.
+  \item Each row: $Q = \lfloor A/B \rfloor$, $R = A \bmod B$.
+  \item Next row: \textbf{$B$ moves into $A$} and \textbf{$R$ moves into $B$} (the diagonal arrows).
+  \item \textbf{Stop when $B = 0$} (you can't divide by 0; write X for $Q$ and $R$). \textbf{The GCD is the $A$ in that row.}
+\end{enumerate}
+
+\begin{center}
+\begin{tikzpicture}[x=11mm,y=6mm]
+  \foreach \h [count=\c] in {Q,A,B,R}{\node[font=\small\bfseries] at (\c,0) {\h};}
+  \draw (0.5,-0.5) -- (4.5,-0.5);
+  \foreach \q/\a/\b/\r [count=\i] in {2/33/12/9, 1/12/9/3, 3/9/3/0, X/3/0/X}{
+    \node[font=\small] at (1,-\i) {\q};
+    \node[font=\small] (a\i) at (2,-\i) {\a};
+    \node[font=\small] (b\i) at (3,-\i) {\b};
+    \node[font=\small] (r\i) at (4,-\i) {\r};
+  }
+  \foreach \i in {1,2,3}{\pgfmathtruncatemacro{\j}{\i+1}
+    \draw[-{Stealth[length=1.5mm]},orange!80!black] (b\i.south west) -- (a\j.north east);
+    \draw[-{Stealth[length=1.5mm]},orange!80!black] (r\i.south west) -- (b\j.north east);}
+  \draw[warn,thick,dashed,rounded corners=2pt] (1.6,-3.6) rectangle (2.4,-4.4);
+  \node[font=\small,anchor=west] at (4.8,-1) {$33 = 2\cdot12 + 9$};
+  \node[font=\small,anchor=west] at (4.8,-2) {$12 = 1\cdot9 + 3$};
+  \node[font=\small,anchor=west] at (4.8,-3) {$9 = 3\cdot3 + 0$ \;(don't stop yet!)};
+  \node[font=\small,anchor=west] at (4.8,-4) {$B = 0$: stop. \;$\gcd(12, 33) = \mathbf{3}$};
+\end{tikzpicture}
+\end{center}
+
+\begin{minipage}[t]{0.48\textwidth}
+\centering\small
+$\gcd(750, 900)$\\[2pt]
+\begin{tabular}{cccc}
+\toprule
+Q&A&B&R\\
+\midrule
+1&900&750&150\\
+5&750&150&0\\
+X&\textbf{150}&0&X\\
+\bottomrule
+\end{tabular}
+\end{minipage}\hfill
+\begin{minipage}[t]{0.48\textwidth}
+\centering\small
+$\gcd(252, 105)$\\[2pt]
+\begin{tabular}{cccc}
+\toprule
+Q&A&B&R\\
+\midrule
+2&252&105&42\\
+2&105&42&21\\
+2&42&21&0\\
+X&\textbf{21}&0&X\\
+\bottomrule
+\end{tabular}
+\end{minipage}
+
+\medskip
+\textbf{Shortcut:} the GCD is the \textbf{last non-zero remainder} (9, 3, \textbf{3} then 0; or 42, \textbf{21} then 0). The extra ``$B = 0$'' row is just where the lecture reads it off.
+
+\subsection{Method 2: recursion}
+\begin{center}
+\begin{minipage}{0.45\textwidth}
+\small\ttfamily
+Prerequisite: a > b\\
+Euclid\_GCD(a, b):\\
+\hspace*{1.5em}if b = 0 then\\
+\hspace*{3em}return a;\\
+\hspace*{1.5em}else\\
+\hspace*{3em}return Euclid\_GCD(b, a mod b);
+\end{minipage}
+\end{center}
+\begin{minipage}[t]{0.42\textwidth}
+\small
+\textbf{$\gcd(50, 12)$}\\
+$= \gcd(12, 50 \bmod 12) = \gcd(12, 2)$\\
+$= \gcd(2, 12 \bmod 2) = \gcd(2, 0)$\\
+$= \mathbf{2}$
+\end{minipage}\hfill
+\begin{minipage}[t]{0.55\textwidth}
+\small
+\textbf{$\gcd(83, 19)$}\\
+$= \gcd(19, 7)$ \quad ($83 = 4\cdot19 + 7$)\\
+$= \gcd(7, 5)$ \quad ($19 = 2\cdot7 + 5$)\\
+$= \gcd(5, 2)$ \quad ($7 = 1\cdot5 + 2$)\\
+$= \gcd(2, 1)$ \quad ($5 = 2\cdot2 + 1$)\\
+$= \gcd(1, 0) = \mathbf{1}$ \quad ($2 = 2\cdot1 + 0$)
+\end{minipage}
+
+\medskip
+Both methods do exactly the same divisions; use whichever you like. If you're given $a < b$ (e.g.\ $\gcd(10, 20)$), swap them first.
+(The algorithm fixes it on its own anyway: $\gcd(12, 33) \to \gcd(33, 12 \bmod 33) = \gcd(33, 12)$, which wastes one step.)
+
+\subsection{Relatively prime}
+\begin{keybox}
+$a$ and $b$ are \textbf{relatively prime} (coprime) if $\gcd(a, b) = 1$. Example: 83 and 19.
+Coprime numbers need not be prime themselves: $\gcd(8, 9) = 1$.
+\end{keybox}
+\textbf{Why cryptography cares:}
+\begin{itemize}
+  \item $a^{-1} \bmod n$ exists \textbf{only if} $\gcd(a, n) = 1$. That was the Hill key condition $\gcd(\det K, 26) = 1$.
+  \item The \textbf{extended} Euclidean algorithm (next on the roadmap) runs these same divisions backwards to actually \emph{find} $a^{-1}$, instead of the trial table we used for $23^{-1} \bmod 26$.
+  \item RSA key generation picks an $e$ with $\gcd(e, \phi(n)) = 1$.
+\end{itemize}
+{\small\emph{Not in the lecture:} Euclid is fast because the remainder at least halves every two steps. The slowest inputs are consecutive Fibonacci numbers, e.g.\ $\gcd(89, 55)$ takes 9 divisions, all with quotient 1.}
+
+\textbf{Lecture homework:} $\gcd(1005, 105)$ and $\gcd(529, 123)$. Solutions are in practice Q43.
+
+\begin{examtip}
+\begin{itemize}
+  \item GCD $=$ HCF. $\gcd(a, b) = \gcd(b, a \bmod b)$, and $\gcd(a, 0) = a$.
+  \item Table method: stop when $B = 0$ (not when $R = 0$); the answer is that row's $A$, i.e.\ the last non-zero remainder.
+  \item Put the larger number first.
+  \item $\gcd = 1$ means relatively prime (coprime), which is exactly when a multiplicative inverse exists.
+  \item Show every division as $a = q\cdot b + r$ in exams.
+\end{itemize}
+\end{examtip}
+
+\begin{fixbox}
+\begin{itemize}
+  \item All results are correct (checked by script): 3, 25, 1, 3, 150, 21, 2, 1.
+  \item Verbal slips only: ``divisors of 13'' means 33 (video 1); ``a = 9'' means 19 (video 2). The slides are right.
+  \item Wording: ``$A$ mod $B$'' gives the \emph{remainder}; ``$A$ divided by $B$'' gives the quotient $Q$. The table needs both.
+\end{itemize}
+\end{fixbox}

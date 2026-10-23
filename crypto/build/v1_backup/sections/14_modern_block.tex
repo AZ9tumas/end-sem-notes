@@ -1,0 +1,70 @@
+% College Lecture 7: modern symmetric-key ciphers
+\section{Modern Symmetric-Key Ciphers}
+
+Traditional ciphers are character-oriented; modern ones are \textbf{bit-oriented} (text, numbers, images, audio all become bits). A \textbf{modern block cipher} encrypts an $n$-bit block with a $k$-bit key; decryption must be the inverse.
+
+\textbf{Padding}: 100 characters of 8-bit ASCII $= 800$ bits; blocks of 64: $|Pad| = -800 \bmod 64 = 32$ bits $\Rightarrow$ 832 bits $=$ 13 blocks (only the last is padded).
+
+\begin{keybox}[title=Diffusion vs.\ confusion (Shannon)]
+\textbf{Diffusion} hides the relation between \textbf{ciphertext and plaintext}: changing one plaintext bit changes many ciphertext bits (defeats ciphertext statistics).\\
+\textbf{Confusion} hides the relation between \textbf{ciphertext and key}: changing one key bit changes most ciphertext bits (stops recovering the key).\\
+P-boxes give diffusion; S-boxes give confusion.
+\end{keybox}
+
+\subsection{Components}
+\textbf{P-box} (permutation box, bit transposition):
+\begin{center}\small
+\begin{tabular}{@{}llll@{}}
+\toprule
+Type & In/out & Table entries & Invertible?\\
+\midrule
+Straight & $n \to n$ & a permutation of $1..n$ ($n!$ possible) & \textbf{yes}\\
+Expansion & $n \to m$, $m > n$ & $m$ entries, some inputs repeated & no\\
+Compression & $n \to m$, $m < n$ & $m$ entries, some inputs missing (blocked) & no\\
+\bottomrule
+\end{tabular}
+\end{center}
+Example: an $8 \times 8$ straight P-box moving the middle bits 4, 5 to the ends without disturbing the others: table \ttx{[4 1 2 3 6 7 8 5]} (output position $i$ takes input bit table[$i$]). Slides' $12 \times 16$ expansion table repeats inputs 1, 3, 9, 12; the $32 \times 24$ compression table blocks inputs 7, 8, 9, 15, 16, 23, 24, 25.
+
+\textbf{S-box}: a small substitution, $n$ input bits to $m$ output bits ($m$, $n$ may differ). \textbf{Linear} if each output bit is an XOR of input bits, $y_i = a_{i1}x_1 \oplus \dots \oplus a_{in}x_n$ (e.g.\ $y_1 = x_1 \oplus x_2 \oplus x_3$, $y_2 = x_1$); \textbf{nonlinear} otherwise ($y_1 = x_1^3 + x_2$). Real S-boxes must be nonlinear. Invertible only if $m = n$.
+
+\textbf{XOR} (addition in GF$(2^n)$): closure, associativity, commutativity, identity $00\dots0$, and every word is \textbf{its own inverse} ($x \oplus x = 0$). Also circular shift, swap, split, combine.
+
+\textbf{Rounds}: an \textbf{iterated product cipher} repeats a round (S-boxes, P-boxes, key mixing/whitening by XOR with a round key) $N$ times; intermediate text is the \textbf{middle text}; a \textbf{key schedule} creates the round keys.
+
+\subsection{Feistel vs.\ non-Feistel}
+\begin{center}\small
+\begin{tabularx}{\textwidth}{@{}l X X@{}}
+\toprule
+ & \textbf{Feistel} (DES) & \textbf{Non-Feistel} (AES)\\
+\midrule
+Components & invertible, self-invertible \emph{and noninvertible} & \textbf{only invertible} (equal-size S-boxes, straight P-boxes)\\
+Structure & split into $L$, $R$; mixer $L \oplus f(R, K)$ + swapper & whole block; each component has an inverse component\\
+Decryption & same structure, round keys reversed & inverse components, round keys reversed\\
+\bottomrule
+\end{tabularx}
+\end{center}
+\textbf{Why Feistel works}: $f$ may be noninvertible because it is only ever XORed in:
+\[
+C = P \oplus f(K) \;\Rightarrow\; C \oplus f(K) = P \oplus f(K) \oplus f(K) = P.
+\]
+Slide example: $P = 0111$, $K = 101$; $f$ takes key bits 1 and 3 ($11_2 = 3$), squares it ($9 = 1001$). $C = 0111 \oplus 1001 = \mathbf{1110}$; decrypt: $1110 \oplus 1001 = 0111$ \checkmark.
+
+\textbf{Improved design}: $f$ also takes the right half as input: $L_2 = L_1 \oplus f(R_1, K)$, $R_2 = R_1$. Flaw: $R$ never changes, so Eve reads half the plaintext from the ciphertext. \textbf{Final design}: more rounds, plus a \textbf{swapper} after each mixer (except the last), so both halves get mixed. The mixer and swapper are each self-inverse, so decryption is the same circuit with keys in reverse order.
+
+\subsection{Attacks on modern block ciphers}
+\begin{itemize}
+  \item \textbf{Brute force}: infeasible with large keys.
+  \item \textbf{Differential cryptanalysis} (Biham--Shamir; \textbf{chosen-plaintext}): study how input differences $P_1 \oplus P_2$ propagate to output differences $C_1 \oplus C_2$. For a cipher that is only an XOR with the key, $C_1 \oplus C_2 = P_1 \oplus P_2$ regardless of the key.
+  \item \textbf{Linear cryptanalysis} (Matsui; \textbf{known-plaintext}): approximate the S-boxes by linear equations that hold with probability $\neq 1/2$, and solve for key bits.
+\end{itemize}
+
+\subsection{Modern stream ciphers}
+Encrypt $r$ bits at a time: $c_i = p_i \oplus k_i$. \textbf{Synchronous}: key stream independent of plaintext/ciphertext (one-time pad; LFSR generators). \textbf{Nonsynchronous}: each key element depends on earlier plaintext or ciphertext.
+
+\begin{fixbox}
+\begin{itemize}
+  \item Feistel example: the slide first says $f$ uses the \emph{first and third} key bits, then ``extracts the first and second bits to get 11''. For $K = 101$ the first and second bits are \ttx{10} $= 2$; only the first and third give \ttx{11} $= 3$ and the stated $f = 1001$. Use first and third.
+  \item The stream-cipher slide says ``In \emph{a}synchronous stream cipher the key is independent of the plaintext'': that's a typo for \textbf{synchronous}.
+\end{itemize}
+\end{fixbox}

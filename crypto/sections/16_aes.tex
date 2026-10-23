@@ -1,0 +1,395 @@
+% College Lecture 9: AES (Forouzan ch. 7, Stallings ch. 5). Every byte in this file (S-box, SubBytes, ShiftRows,
+% MixColumns, AddRoundKey, key expansion, FIPS-197 Appendix B round 1 and ciphertext) recomputed by
+% scratchpad/aes/aes_check.py and extra.py; the S-box is generated from GF(2^8) inverse + affine map and matched to FIPS-197.
+\providecommand{\aesM}[1]{\left(\begin{tabular}{@{\hspace{2pt}}>{\ttfamily}c@{\hspace{5pt}}>{\ttfamily}c@{\hspace{5pt}}>{\ttfamily}c@{\hspace{5pt}}>{\ttfamily}c@{\hspace{2pt}}}#1\end{tabular}\right)}
+\providecommand{\aesB}[1]{\textcolor{acc}{\textbf{#1}}}
+
+\section{Advanced Encryption Standard (AES)}\label{sec:aes}
+
+\textbf{Why DES had to be replaced.} By the late 1990s the 56-bit DES key was within reach of brute force: a $2^{56}$ search is about $7.2 \times 10^{16}$ trials, and a purpose-built machine (EFF, 1998) found a DES key in a few days. Triple DES fixes the key length but runs three DES encryptions per block, which is slow in software, and it keeps DES's 64-bit block, which is too small for encrypting large volumes of data under one key. NIST therefore ran an open competition, judged on three criteria (\emph{security, cost, implementation}), and in 2000 chose \textbf{Rijndael} by Daemen and Rijmen. It was published as the \textbf{Advanced Encryption Standard} (FIPS 197) in December 2001.
+
+\textbf{What kind of cipher it is.} \imp{AES is a symmetric-key, non-Feistel block cipher that encrypts 128-bit blocks with a 128-, 192- or 256-bit key in 10, 12 or 14 rounds.} Non-Feistel means that, unlike DES, the round does not split the block into halves and hide a one-way function inside a swap. Instead every step of the round is itself invertible, and decryption runs the inverse steps in reverse order. Such a design is called a substitution--permutation network: substitution (SubBytes) gives confusion, and permutation plus mixing (ShiftRows, MixColumns) give diffusion.
+
+\subsection{Parameters and data units}
+The block is always 128 bits and every round key is always 128 bits, whatever the cipher-key length. Only the number of rounds $N_r$ depends on the key size, because a longer key needs more rounds before every key bit has influenced every state bit. Since one round key is added before round 1 and one in each of the $N_r$ rounds, \imp{the number of round keys is $N_r + 1$}, and each round key is 4 words.
+\begin{center}\small
+\begin{tabular}{@{}lccccc@{}}
+\toprule
+Version & Key (bits) & Rounds $N_r$ & Round keys $N_r + 1$ & Key words $4(N_r + 1)$ & Brute force\\
+\midrule
+AES-128 & 128 & 10 & 11 & 44 ($w_0$--$w_{43}$) & $2^{128}$\\
+AES-192 & 192 & 12 & 13 & 52 ($w_0$--$w_{51}$) & $2^{192}$\\
+AES-256 & 256 & 14 & 15 & 60 ($w_0$--$w_{59}$) & $2^{256}$\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\textbf{Data units.} AES names five units. A \emph{bit} is a binary digit; a \emph{byte} is 8 bits and is treated as an element of GF$(2^8)$, written as two hex digits; a \emph{word} is 4 bytes (32 bits), seen either as a row or as a column of 4 bytes; a \emph{block} is 16 bytes (128 bits), $b_0 b_1 \dots b_{15}$; and the \emph{state} is the block arranged as a $4 \times 4$ matrix of bytes $s_{r,c}$, which is what every transformation actually acts on. Each column of the state is one word, so the state is also four words $w_0 w_1 w_2 w_3$ side by side.
+
+\textbf{Block to state.} The 16 bytes fill the state \textbf{column by column}: bytes $b_0..b_3$ form column 0 (top to bottom), $b_4..b_7$ column 1, and so on, so that
+\[
+s_{r,c} = b_{r + 4c}, \qquad\text{equivalently}\qquad b_i \to s_{\,i \bmod 4,\; \lfloor i/4 \rfloor}.
+\]
+The reverse mapping reads the state column by column to get the output block. This column-major order matters because MixColumns and AddRoundKey work on columns, so four consecutive input bytes are processed together.
+
+\begin{trap}[: filling the state row-wise]
+Writing the 16 bytes \emph{across} the rows is the most common slip. The first four bytes go \emph{down} column 0. With the wrong order every later step (ShiftRows, MixColumns, the key words as columns) gives a wrong answer.
+\end{trap}
+
+\begin{worked}[: text block to state (slide Example 1, from Forouzan)]
+\textbf{Q.} Show the state for the text block ``AES uses a matrix'', letters coded A $= 00$ to Z $= 25$ in hex, padding with Z.\\[2pt]
+\textbf{A.} Removing spaces gives 14 letters, so two bogus Z's make 16: \ttx{AESUSESAMATRIXZZ}. Each letter's number is written in \textbf{hex} (for example M $= 12 = $ \ttx{0C}, R $= 17 = $ \ttx{11}, X $= 23 = $ \ttx{17}, Z $= 25 = $ \ttx{19}):
+\begin{center}\small\ttfamily\setlength{\tabcolsep}{3.2pt}
+\begin{tabular}{@{}l*{16}{c}@{}}
+\rmfamily Text & A&E&S&U&S&E&S&A&M&A&T&R&I&X&Z&Z\\
+\rmfamily Hex  & 00&04&12&14&12&04&12&00&0C&00&13&11&08&17&19&19
+\end{tabular}
+\end{center}
+Filling column by column (first four bytes down column 0):
+\[
+\text{State} = \aesM{00&12&0C&08\\04&04&00&17\\12&12&13&19\\14&00&11&19}
+\]
+Check: $s_{1,3} = b_{1 + 12} = b_{13} = $ \ttx{17} (the X). The slide prints \ttx{23} here; see the corrections box.
+\end{worked}
+
+\subsection{Round structure}
+Encryption of AES-128 is one key addition followed by 10 rounds:
+\begin{enumerate}
+  \item \textbf{Pre-round:} AddRoundKey with round key $K_0 = w_0..w_3$ (the cipher key itself).
+  \item \textbf{Rounds 1 to $N_r - 1$:} SubBytes, ShiftRows, MixColumns, AddRoundKey (with $K_i = w_{4i}..w_{4i+3}$).
+  \item \textbf{Last round $N_r$:} SubBytes, ShiftRows, AddRoundKey, \textbf{without MixColumns}.
+\end{enumerate}
+
+\begin{center}
+\begin{tikzpicture}[node distance=3mm, every node/.style={font=\footnotesize}]
+\node[box] (p) {Plaintext\\128 bits};
+\node[box, right=of p, fill=acc!10] (k0) {AddRoundKey\\$K_0$};
+\node[box, right=6mm of k0, fill=orange!12] (r) {SubBytes $\to$ ShiftRows $\to$\\MixColumns $\to$ AddRoundKey $K_i$};
+\node[box, right=6mm of r, fill=orange!12] (l) {SubBytes $\to$ ShiftRows\\$\to$ AddRoundKey $K_{N_r}$};
+\node[box, right=of l] (c) {Ciphertext};
+\draw[arr] (p) -- (k0); \draw[arr] (k0) -- (r); \draw[arr] (r) -- (l); \draw[arr] (l) -- (c);
+\node[below=1mm of r, font=\scriptsize] {rounds $1..N_r - 1$};
+\node[below=1mm of l, font=\scriptsize] {last round (no MixColumns)};
+\node[below=1mm of k0, font=\scriptsize] {pre-round};
+\end{tikzpicture}
+\end{center}
+
+\textbf{Why a key addition comes first.} Every step except AddRoundKey is public and keyless. If the cipher began with SubBytes, an attacker who knows the plaintext could compute that step himself, so it would add work but no secrecy. Adding the key first (key whitening) means that from the very first non-linear step onward, nothing is computable without the key.
+
+\textbf{Why the last round has no MixColumns.} MixColumns is linear over GF$(2^8)$, so $\mathrm{MC}(Y) \oplus K = \mathrm{MC}\big(Y \oplus \mathrm{MC}^{-1}(K)\big)$. If the last round ended with MixColumns and then AddRoundKey, an attacker could apply InvMixColumns to the ciphertext and obtain $Y \oplus \mathrm{MC}^{-1}(K_{N_r})$, which is just the same cipher without the final MixColumns under a different (equally unknown) key. The final MixColumns therefore adds no security. Leaving it out costs nothing and makes the decryption algorithm have the same shape as encryption, which allows the ``equivalent inverse cipher'' to reuse the same hardware.
+
+\begin{mustknow}
+AES: block 128, key 128/192/256, rounds 10/12/14, round keys $N_r + 1$ (always 128 bits each), $4(N_r + 1)$ words. Pre-round AddRoundKey; rounds 1..$N_r - 1$: \textbf{SubBytes, ShiftRows, MixColumns, AddRoundKey}; last round drops MixColumns. The state is filled \textbf{column by column}, $s_{r,c} = b_{r + 4c}$.
+\end{mustknow}
+
+\subsection{SubBytes (substitution) \hot}
+\likely{``Find SubBytes of \ttx{0x53}'' or ``apply SubBytes to the given state using the S-box''; or derive one S-box entry from the GF$(2^8)$ inverse and the affine transform.}
+
+\textbf{Problem and idea.} A cipher built only from XORs, shifts and matrix multiplications is linear, and a linear cipher falls to solving a system of equations. SubBytes is the one non-linear step in AES. Each of the 16 bytes is replaced independently by looking it up in one fixed $16 \times 16$ table, the S-box. Because the same table is used for every byte, \imp{equal input bytes always give equal output bytes}; SubBytes is an \emph{intrabyte} transformation, since a byte's output depends on that byte alone.
+
+\textbf{Lookup rule.} Write the byte as two hex digits $xy$. The \textbf{left digit $x$ selects the row} and the \textbf{right digit $y$ selects the column}; the entry there is the output. For example \ttx{53}: row 5, column 3 gives \ttx{ED}, and \ttx{00}: row 0, column 0 gives \ttx{63}.
+
+\begin{center}
+\small\ttfamily\setlength{\tabcolsep}{4pt}\renewcommand{\arraystretch}{1.05}
+\begin{tabular}{@{}>{\columncolor{acc!10}}c|*{16}{c}@{}}
+\rowcolor{acc!10}$x\backslash y$ & \textbf{0}&\textbf{1}&\textbf{2}&\textbf{3}&\textbf{4}&\textbf{5}&\textbf{6}&\textbf{7}&\textbf{8}&\textbf{9}&\textbf{A}&\textbf{B}&\textbf{C}&\textbf{D}&\textbf{E}&\textbf{F}\\\hline
+\textbf{0} & 63 & 7C & 77 & 7B & F2 & 6B & 6F & C5 & 30 & 01 & 67 & 2B & FE & D7 & AB & 76\\
+\textbf{1} & CA & 82 & C9 & 7D & FA & 59 & 47 & F0 & AD & D4 & A2 & AF & 9C & A4 & 72 & C0\\
+\textbf{2} & B7 & FD & 93 & 26 & 36 & 3F & F7 & CC & 34 & A5 & E5 & F1 & 71 & D8 & 31 & 15\\
+\textbf{3} & 04 & C7 & 23 & C3 & 18 & 96 & 05 & 9A & 07 & 12 & 80 & E2 & EB & 27 & B2 & 75\\
+\textbf{4} & 09 & 83 & 2C & 1A & 1B & 6E & 5A & A0 & 52 & 3B & D6 & B3 & 29 & E3 & 2F & 84\\
+\textbf{5} & 53 & D1 & 00 & ED & 20 & FC & B1 & 5B & 6A & CB & BE & 39 & 4A & 4C & 58 & CF\\
+\textbf{6} & D0 & EF & AA & FB & 43 & 4D & 33 & 85 & 45 & F9 & 02 & 7F & 50 & 3C & 9F & A8\\
+\textbf{7} & 51 & A3 & 40 & 8F & 92 & 9D & 38 & F5 & BC & B6 & DA & 21 & 10 & FF & F3 & D2\\
+\textbf{8} & CD & 0C & 13 & EC & 5F & 97 & 44 & 17 & C4 & A7 & 7E & 3D & 64 & 5D & 19 & 73\\
+\textbf{9} & 60 & 81 & 4F & DC & 22 & 2A & 90 & 88 & 46 & EE & B8 & 14 & DE & 5E & 0B & DB\\
+\textbf{A} & E0 & 32 & 3A & 0A & 49 & 06 & 24 & 5C & C2 & D3 & AC & 62 & 91 & 95 & E4 & 79\\
+\textbf{B} & E7 & C8 & 37 & 6D & 8D & D5 & 4E & A9 & 6C & 56 & F4 & EA & 65 & 7A & AE & 08\\
+\textbf{C} & BA & 78 & 25 & 2E & 1C & A6 & B4 & C6 & E8 & DD & 74 & 1F & 4B & BD & 8B & 8A\\
+\textbf{D} & 70 & 3E & B5 & 66 & 48 & 03 & F6 & 0E & 61 & 35 & 57 & B9 & 86 & C1 & 1D & 9E\\
+\textbf{E} & E1 & F8 & 98 & 11 & 69 & D9 & 8E & 94 & 9B & 1E & 87 & E9 & CE & 55 & 28 & DF\\
+\textbf{F} & 8C & A1 & 89 & 0D & BF & E6 & 42 & 68 & 41 & 99 & 2D & 0F & B0 & 54 & BB & 16\\
+\end{tabular}\\[2pt]
+\rmfamily\small AES S-box (FIPS-197), generated by script from the definition below and checked entry by entry.
+\end{center}
+
+\textbf{How the S-box is built.} The table is not arbitrary; each entry is computed in two steps from the byte $a$ viewed as a polynomial in GF$(2^8)$ with modulus $m(x) = x^8 + x^4 + x^3 + x + 1$ (\ttx{11B}).
+\begin{enumerate}
+  \item \textbf{Multiplicative inverse:} $b = a^{-1}$ in GF$(2^8)$, with \ttx{00} mapped to \ttx{00} (it has no inverse). The inverse map is highly non-linear, which is what resists linear and differential cryptanalysis. This is why AES works in GF$(2^8)$ and not in $\mathbb{Z}_{256}$: in $\mathbb{Z}_{256}$ every even byte lacks an inverse, so the map would not be a permutation.
+  \item \textbf{Affine transformation over GF(2):} with $c = \ttx{63} = 0110\,0011$,
+  \[
+  b'_i = b_i \oplus b_{(i+4) \bmod 8} \oplus b_{(i+5) \bmod 8} \oplus b_{(i+6) \bmod 8} \oplus b_{(i+7) \bmod 8} \oplus c_i, \qquad i = 0..7 .
+  \]
+  This step breaks the simple algebraic form $a \mapsto a^{-1}$ and removes its fixed points ($00 \mapsto 00$ and $01 \mapsto 01$). As a result the AES S-box has no fixed point ($S(a) \ne a$ for all 256 bytes) and none with $S(a) = \bar{a}$.
+\end{enumerate}
+InvSubBytes uses the inverse table: undo the affine map, then take the GF$(2^8)$ inverse. Without that table, find the output in the S-box and read off its row and column (for example \ttx{ED} sits at row 5, column 3, so InvSubBytes(\ttx{ED}) $=$ \ttx{53}).
+
+\begin{worked}[: one S-box entry from the definition]
+\textbf{Q.} Show that SubBytes(\ttx{53}) $=$ \ttx{ED} by computing it, not by looking it up.\\[2pt]
+\textbf{A.} \emph{Step 1.} $\ttx{53} = x^6 + x^4 + x + 1$. Its inverse modulo $m(x)$, by the extended Euclidean algorithm in GF$(2^8)$, is $\ttx{CA} = x^7 + x^6 + x^3 + x$ (check: $\ttx{53} \cdot \ttx{CA} = \ttx{01}$). So $b = \ttx{CA} = 1100\,1010$, that is $b_7..b_0 = 1,1,0,0,1,0,1,0$.\\
+\emph{Step 2.} Apply $b'_i = b_i \oplus b_{i+4} \oplus b_{i+5} \oplus b_{i+6} \oplus b_{i+7} \oplus c_i$ (indices mod 8, $c = \ttx{63}$, so $c_0 = c_1 = c_5 = c_6 = 1$):
+\begin{center}\small\setlength{\tabcolsep}{5pt}
+\begin{tabular}{@{}c|cccccc|c@{}}
+\toprule
+$i$ & $b_i$ & $b_{i+4}$ & $b_{i+5}$ & $b_{i+6}$ & $b_{i+7}$ & $c_i$ & $b'_i$\\
+\midrule
+0 & 0 & 0 & 0 & 1 & 1 & 1 & \textbf{1}\\
+1 & 1 & 0 & 1 & 1 & 0 & 1 & \textbf{0}\\
+2 & 0 & 1 & 1 & 0 & 1 & 0 & \textbf{1}\\
+3 & 1 & 1 & 0 & 1 & 0 & 0 & \textbf{1}\\
+4 & 0 & 0 & 1 & 0 & 1 & 0 & \textbf{0}\\
+5 & 0 & 1 & 0 & 1 & 0 & 1 & \textbf{1}\\
+6 & 1 & 0 & 1 & 0 & 0 & 1 & \textbf{1}\\
+7 & 1 & 1 & 0 & 0 & 1 & 0 & \textbf{1}\\
+\bottomrule
+\end{tabular}
+\end{center}
+Reading $b'_7..b'_0 = 1110\,1101$ gives \textbf{SubBytes(\ttx{53}) $=$ \ttx{ED}}, which matches row 5, column 3 of the table.
+\end{worked}
+
+\begin{worked}[: SubBytes of a state (slide Example 2)]
+\textbf{Q.} Apply SubBytes to the state of Example 1.\\[2pt]
+\textbf{A.} Each byte is looked up independently (row $=$ left digit, column $=$ right digit): \ttx{00}$\to$\ttx{63}, \ttx{04}$\to$\ttx{F2}, \ttx{12}$\to$\ttx{C9}, \ttx{14}$\to$\ttx{FA}, \ttx{0C}$\to$\ttx{FE}, \ttx{13}$\to$\ttx{7D}, \ttx{11}$\to$\ttx{82}, \ttx{08}$\to$\ttx{30}, \ttx{17}$\to$\ttx{F0}, \ttx{19}$\to$\ttx{D4}.
+\[
+\aesM{00&12&0C&08\\04&04&00&17\\12&12&13&19\\14&00&11&19}
+\xrightarrow{\ \text{SubBytes}\ }
+\aesM{63&C9&FE&30\\F2&F2&63&\aesB{F0}\\C9&C9&7D&D4\\FA&63&82&D4}
+\]
+The two \ttx{04}'s in row 1 both become \ttx{F2}, showing that SubBytes alone does not hide repeated bytes; ShiftRows and MixColumns are needed for that.
+\end{worked}
+Single-bit changes spread: \ttx{5A} and \ttx{5B} differ in one bit, but $S(\ttx{5A}) = \ttx{BE}$ and $S(\ttx{5B}) = \ttx{39}$ differ in four bits ($\ttx{BE} \oplus \ttx{39} = \ttx{87} = 1000\,0111$).
+
+\subsection{ShiftRows (permutation) \hot}
+\asked{2025--26 Q4(a) (part of 6 marks): ShiftRows on a given state. Solved in full after AddRoundKey below.}
+
+\textbf{Problem and idea.} SubBytes changes each byte on its own, and MixColumns (next) mixes only the four bytes inside one column. Without a step that moves bytes \emph{between} columns, the four columns would never interact, and AES would be four independent 32-bit ciphers running side by side, each attackable separately. ShiftRows is that step: it permutes bytes so that each column's four bytes end up in four different columns.
+
+\textbf{Mechanism.} \imp{Row $r$ of the state is rotated cyclically left by $r$ bytes}: row 0 is unchanged, row 1 moves left by 1, row 2 by 2, row 3 by 3. In symbols $s'_{r,c} = s_{r,(c + r) \bmod 4}$. The permutation is at the \emph{byte} level: bytes change position but the bits inside a byte are untouched, unlike DES, whose P-boxes permute single bits. Since the four bytes of input column $c$ lie in rows 0, 1, 2, 3, they are shifted by 0, 1, 2, 3 places and land in four different columns; after the next MixColumns every output column then depends on all four input columns. InvShiftRows rotates row $r$ \emph{right} by $r$ bytes.
+\[
+\begin{pmatrix}s_{00}&s_{01}&s_{02}&s_{03}\\s_{10}&s_{11}&s_{12}&s_{13}\\s_{20}&s_{21}&s_{22}&s_{23}\\s_{30}&s_{31}&s_{32}&s_{33}\end{pmatrix}
+\xrightarrow{\ \text{ShiftRows}\ }
+\begin{pmatrix}s_{00}&s_{01}&s_{02}&s_{03}\\s_{11}&s_{12}&s_{13}&s_{10}\\s_{22}&s_{23}&s_{20}&s_{21}\\s_{33}&s_{30}&s_{31}&s_{32}\end{pmatrix}
+\]
+Applied to the SubBytes output of Example 2 (slide Example 3):
+\[
+\aesM{63&C9&FE&30\\F2&F2&63&F0\\C9&C9&7D&D4\\FA&63&82&D4}
+\xrightarrow{\ \text{ShiftRows}\ }
+\aesM{63&C9&FE&30\\F2&63&F0&F2\\7D&D4&C9&C9\\D4&FA&63&82}
+\]
+
+\subsection{MixColumns (mixing) \hot}
+\likely{``Perform MixColumns on one column'' (one or all four output bytes), or ``show that the given column maps to \dots''.}
+
+\textbf{Problem and idea.} SubBytes is intrabyte and ShiftRows only exchanges bytes, so neither makes a byte depend on its neighbours. MixColumns is the \emph{interbyte} step: it replaces each column by a combination of all four of its bytes, so that changing one input byte changes all four output bytes. To guarantee that each new byte differs from the others even when all four inputs are equal, each input is first multiplied by a different constant and then the products are added. This is a matrix multiplication over GF$(2^8)$, where ``add'' is XOR and ``multiply'' is polynomial multiplication modulo \ttx{11B}:
+\[
+\begin{pmatrix}s'_{0}\\s'_{1}\\s'_{2}\\s'_{3}\end{pmatrix}
+= \aesM{02&03&01&01\\01&02&03&01\\01&01&02&03\\03&01&01&02}
+\begin{pmatrix}s_{0}\\s_{1}\\s_{2}\\s_{3}\end{pmatrix},
+\qquad
+\text{InvMixColumns: } \aesM{0E&0B&0D&09\\09&0E&0B&0D\\0D&09&0E&0B\\0B&0D&09&0E}.
+\]
+Each row of the matrix is the row above rotated right by one. Written out, $s'_0 = 02 \cdot s_0 \oplus 03 \cdot s_1 \oplus s_2 \oplus s_3$, $s'_1 = s_0 \oplus 02 \cdot s_1 \oplus 03 \cdot s_2 \oplus s_3$, $s'_2 = s_0 \oplus s_1 \oplus 02 \cdot s_2 \oplus 03 \cdot s_3$, $s'_3 = 03 \cdot s_0 \oplus s_1 \oplus s_2 \oplus 02 \cdot s_3$. The two matrices multiply to the identity in GF$(2^8)$ (checked by script), which is why InvMixColumns undoes MixColumns.
+
+\textbf{Why the constants 01, 02, 03.} They make encryption cheap, because multiplying by these needs only a shift and XORs. Multiplying by \ttx{02} is multiplying by $x$: shift the byte left by one bit, and if the bit shifted out (the old top bit $b_7$) was 1, the result has an $x^8$ term, which is reduced by XOR with \ttx{1B} (since $x^8 \equiv x^4 + x^3 + x + 1$). This operation is called \textbf{xtime}. Multiplying by \ttx{03} $= x + 1$ is then $(02 \cdot b) \oplus b$. The matrix is also chosen so that the total number of non-zero bytes in an input column plus its output column is at least 5 (branch number 5), so one changed input byte always changes all four output bytes.
+\begin{mustknow}[: xtime]
+$02 \cdot b = (b \ll 1)$, then XOR \ttx{1B} if the top bit of $b$ was 1. \qquad $03 \cdot b = (02 \cdot b) \oplus b$. \qquad $01 \cdot b = b$.
+\end{mustknow}
+
+\begin{worked}[: one column (FIPS-197 test column)]
+\textbf{Q.} Apply MixColumns to the column $(\ttx{DB}, \ttx{13}, \ttx{53}, \ttx{45})^T$.\\[2pt]
+\textbf{A.} First the products by 02 and 03 of every input byte:
+\begin{center}\small\setlength{\tabcolsep}{5pt}
+\begin{tabular}{@{}ccccc@{}}
+\toprule
+$b$ & binary & shift left & top bit 1? & $02 \cdot b$ \;/\; $03 \cdot b = (02 \cdot b) \oplus b$\\
+\midrule
+\ttx{DB} & 1101\,1011 & 1011\,0110 $=$ \ttx{B6} & yes: $\ttx{B6} \oplus \ttx{1B}$ & \ttx{AD} \;/\; \ttx{76}\\
+\ttx{13} & 0001\,0011 & 0010\,0110 $=$ \ttx{26} & no & \ttx{26} \;/\; \ttx{35}\\
+\ttx{53} & 0101\,0011 & 1010\,0110 $=$ \ttx{A6} & no & \ttx{A6} \;/\; \ttx{F5}\\
+\ttx{45} & 0100\,0101 & 1000\,1010 $=$ \ttx{8A} & no & \ttx{8A} \;/\; \ttx{CF}\\
+\bottomrule
+\end{tabular}
+\end{center}
+Then each output byte is a row of the matrix times the column, XORed left to right:
+\begin{align*}
+s'_0 &= 02{\cdot}\ttx{DB} \oplus 03{\cdot}\ttx{13} \oplus \ttx{53} \oplus \ttx{45} = \ttx{AD} \oplus \ttx{35} \oplus \ttx{53} \oplus \ttx{45} = \ttx{98} \oplus \ttx{53} \oplus \ttx{45} = \ttx{CB} \oplus \ttx{45} = \textbf{\ttx{8E}}\\
+s'_1 &= \ttx{DB} \oplus 02{\cdot}\ttx{13} \oplus 03{\cdot}\ttx{53} \oplus \ttx{45} = \ttx{DB} \oplus \ttx{26} \oplus \ttx{F5} \oplus \ttx{45} = \ttx{FD} \oplus \ttx{F5} \oplus \ttx{45} = \ttx{08} \oplus \ttx{45} = \textbf{\ttx{4D}}\\
+s'_2 &= \ttx{DB} \oplus \ttx{13} \oplus 02{\cdot}\ttx{53} \oplus 03{\cdot}\ttx{45} = \ttx{DB} \oplus \ttx{13} \oplus \ttx{A6} \oplus \ttx{CF} = \ttx{C8} \oplus \ttx{A6} \oplus \ttx{CF} = \ttx{6E} \oplus \ttx{CF} = \textbf{\ttx{A1}}\\
+s'_3 &= 03{\cdot}\ttx{DB} \oplus \ttx{13} \oplus \ttx{53} \oplus 02{\cdot}\ttx{45} = \ttx{76} \oplus \ttx{13} \oplus \ttx{53} \oplus \ttx{8A} = \ttx{65} \oplus \ttx{53} \oplus \ttx{8A} = \ttx{36} \oplus \ttx{8A} = \textbf{\ttx{BC}}
+\end{align*}
+Answer: $(\ttx{DB}, \ttx{13}, \ttx{53}, \ttx{45}) \to \mathbf{(\ttx{8E}, \ttx{4D}, \ttx{A1}, \ttx{BC})}$, the FIPS-197 test value. Check: every output byte changed, as the branch-number argument predicts.
+\end{worked}
+
+A second check comes from the exam state below: column 0 after ShiftRows is $(\ttx{87}, \ttx{6E}, \ttx{46}, \ttx{A6})$. With $02 \cdot \ttx{87} = \ttx{0E} \oplus \ttx{1B} = \ttx{15}$, $03 \cdot \ttx{6E} = \ttx{DC} \oplus \ttx{6E} = \ttx{B2}$, the first output byte is $\ttx{15} \oplus \ttx{B2} \oplus \ttx{46} \oplus \ttx{A6} = \ttx{47}$, and the whole column becomes $(\ttx{47}, \ttx{37}, \ttx{94}, \ttx{ED})$, which is exactly column 0 of the state given in part (b) of that question (Stallings' figures chain ShiftRows $\to$ MixColumns $\to$ AddRoundKey).
+
+\subsection{AddRoundKey (key adding) \hot}
+\asked{2025--26 Q4(b) (part of 6 marks): AddRoundKey of a given state with a given key matrix.}
+
+\textbf{Problem and idea.} The three steps above are fixed and public, so on their own they would be a keyless scrambling that anyone can undo. \imp{AddRoundKey is the only step that uses the key}: it XORs the 128-bit round key into the state. It proceeds column by column, like MixColumns, but where MixColumns multiplies each column by a constant matrix, AddRoundKey \emph{adds} a key word to it: in round $i$, column $c$ becomes $s_c \oplus w_{4i + c}$. Equivalently, write the round key as a $4 \times 4$ matrix whose columns are the four words and XOR the two matrices entry by entry.
+
+\textbf{Inverse.} Addition and subtraction in GF$(2^8)$ are both XOR, and $x \oplus k \oplus k = x$, so AddRoundKey is its own inverse; decryption uses the same operation with the same round key.
+
+\textbf{Doing the XOR by hand.} XOR one hex digit at a time, through its 4-bit binary form: $\ttx{4} \oplus \ttx{A} = 0100 \oplus 1010 = 1110 = \ttx{E}$. Useful shortcuts: $x \oplus x = 0$, $x \oplus 0 = x$, $x \oplus \ttx{F}$ flips all four bits.
+
+\begin{worked}[: 2025--26 Q4 (6 marks), Stallings' AES example]
+\textbf{Q.} In AES, the state is given below. (a) Show the ShiftRows transformation. (b) After MixColumns, assume the state and the round key are as given. Perform AddRoundKey.\\[2pt]
+\textbf{A.} (a) Row $r$ is rotated left by $r$ bytes: row 0 unchanged; row 1 \ttx{EC 6E 4C 90} $\to$ \ttx{6E 4C 90 EC}; row 2 \ttx{4A C3 46 E7} $\to$ \ttx{46 E7 4A C3}; row 3 \ttx{8C D8 95 A6} $\to$ \ttx{A6 8C D8 95}.
+\[
+\aesM{87&F2&4D&97\\EC&6E&4C&90\\4A&C3&46&E7\\8C&D8&95&A6}
+\xrightarrow{\ \text{ShiftRows}\ }
+\aesM{87&F2&4D&97\\\aesB{6E}&\aesB{4C}&\aesB{90}&\aesB{EC}\\\aesB{46}&\aesB{E7}&\aesB{4A}&\aesB{C3}\\\aesB{A6}&\aesB{8C}&\aesB{D8}&\aesB{95}}
+\]
+(b) AddRoundKey is the byte-wise XOR of the state and the key matrix, $s'_{r,c} = s_{r,c} \oplus k_{r,c}$:
+\[
+\aesM{47&40&A3&4C\\37&D4&70&9F\\94&E4&3A&42\\ED&A5&A6&BC}
+\oplus
+\aesM{AC&19&28&57\\77&FA&D1&5C\\66&DC&29&00\\F3&21&41&6A}
+=
+\aesM{\aesB{EB}&\aesB{59}&\aesB{8B}&\aesB{1B}\\\aesB{40}&\aesB{2E}&\aesB{A1}&\aesB{C3}\\\aesB{F2}&\aesB{38}&\aesB{13}&\aesB{42}\\\aesB{1E}&\aesB{84}&\aesB{E7}&\aesB{D6}}
+\]
+Working, digit by digit (left digits, then right digits):
+\begin{center}\footnotesize\ttfamily\setlength{\tabcolsep}{6pt}
+\begin{tabular}{@{}llll@{}}
+47$\oplus$AC: 4$\oplus$A=E, 7$\oplus$C=B $\to$ EB & 40$\oplus$19: 5, 9 $\to$ 59 & A3$\oplus$28: 8, B $\to$ 8B & 4C$\oplus$57: 1, B $\to$ 1B\\
+37$\oplus$77: 4, 0 $\to$ 40 & D4$\oplus$FA: 2, E $\to$ 2E & 70$\oplus$D1: A, 1 $\to$ A1 & 9F$\oplus$5C: C, 3 $\to$ C3\\
+94$\oplus$66: F, 2 $\to$ F2 & E4$\oplus$DC: 3, 8 $\to$ 38 & 3A$\oplus$29: 1, 3 $\to$ 13 & 42$\oplus$00: 4, 2 $\to$ 42\\
+ED$\oplus$F3: 1, E $\to$ 1E & A5$\oplus$21: 8, 4 $\to$ 84 & A6$\oplus$41: E, 7 $\to$ E7 & BC$\oplus$6A: D, 6 $\to$ D6
+\end{tabular}
+\end{center}
+For example $\ttx{47} \oplus \ttx{AC}$: $0100\,0111 \oplus 1010\,1100 = 1110\,1011 = \ttx{EB}$. Check: XORing the answer with the key again returns the given state (for instance $\ttx{EB} \oplus \ttx{AC} = \ttx{47}$), because AddRoundKey is self-inverse.
+\end{worked}
+
+\begin{trap}[: AddRoundKey]
+Do not add bytes as integers ($\ttx{47} + \ttx{AC} = \ttx{F3}$ is wrong; the answer is $\ttx{47} \oplus \ttx{AC} = \ttx{EB}$). And in the ShiftRows part, shift \emph{left}, by the row index starting from 0; rotating right, or shifting row 1 by 2, is the usual slip.
+\end{trap}
+
+\subsection{Key expansion (AES-128) \hot}
+\likely{``Given the cipher key, find $w_4$--$w_7$ (the first round key)'', Forouzan/Stallings style, using the S-box table.}
+
+\textbf{Problem.} AES-128 needs 11 round keys of 128 bits, that is 44 words $w_0..w_{43}$, but the user supplies only one 128-bit key. The expansion must be cheap, must spread every key bit into many round-key bits, and must not be linear; otherwise knowing part of one round key would give the others by simple algebra, and keys with patterns (like DES's weak keys) would produce repeating round keys.
+
+\textbf{Mechanism.} The first four words are the cipher key itself, taken 4 bytes at a time: $w_0 = k_0 k_1 k_2 k_3$, $w_1 = k_4..k_7$, and so on. Each later word is the word four positions back XORed with the previous word, except that every fourth word passes the previous word through a non-linear function first:
+\[
+w_i =
+\begin{cases}
+w_{i-4} \oplus w_{i-1}, & i \bmod 4 \ne 0,\\[2pt]
+w_{i-4} \oplus t_i, \quad t_i = \mathrm{SubWord}\big(\mathrm{RotWord}(w_{i-1})\big) \oplus \mathrm{RCon}[i/4], & i \bmod 4 = 0.
+\end{cases}
+\]
+\begin{itemize}
+  \item \textbf{RotWord} rotates the 4 bytes of a word left by one: $[a_0, a_1, a_2, a_3] \to [a_1, a_2, a_3, a_0]$. It is ShiftRows applied to a single row.
+  \item \textbf{SubWord} applies the S-box to each of the 4 bytes. It is SubBytes on a single word and supplies the non-linearity.
+  \item \textbf{RCon} (round constant) is a word whose rightmost three bytes are zero and whose left byte is $x^{j-1} \bmod m(x)$ for round $j$. Each value is \ttx{02} times the previous one in GF$(2^8)$, so \ttx{01, 02, 04, 08, 10, 20, 40, 80}, then $02 \cdot \ttx{80}$ overflows and is reduced to $\ttx{00} \oplus \ttx{1B} = \ttx{1B}$, and $02 \cdot \ttx{1B} = \ttx{36}$. RCon is different in every round, which breaks the symmetry between rounds, so that no key gives identical round keys.
+\end{itemize}
+\begin{center}\small
+\begin{tabular}{@{}l*{10}{c}@{}}
+\toprule
+Round $j$ & 1&2&3&4&5&6&7&8&9&10\\
+RCon$[j]$ & \ttx{01}&\ttx{02}&\ttx{04}&\ttx{08}&\ttx{10}&\ttx{20}&\ttx{40}&\ttx{80}&\ttx{1B}&\ttx{36}\\
+\bottomrule
+\end{tabular}\qquad (each followed by \ttx{00 00 00})
+\end{center}
+Round key $K_j$ is the four words $w_{4j}, w_{4j+1}, w_{4j+2}, w_{4j+3}$, placed as the \emph{columns} of a $4 \times 4$ matrix, so that AddRoundKey can XOR column $c$ with $w_{4j+c}$. For AES-192 and AES-256 the rule is the same with 6 or 8 words per step instead of 4 ($t$ is computed when $i \bmod 6 = 0$ or $i \bmod 8 = 0$); AES-256 additionally applies SubWord alone when $i \bmod 8 = 4$.
+
+\begin{worked}[: first round key (FIPS-197 / Stallings key)]
+\textbf{Q.} The AES-128 cipher key is \ttx{2B7E1516 28AED2A6 ABF71588 09CF4F3C}. Find $w_4, w_5, w_6, w_7$.\\[2pt]
+\textbf{A.} $w_0 = \ttx{2B7E1516}$, $w_1 = \ttx{28AED2A6}$, $w_2 = \ttx{ABF71588}$, $w_3 = \ttx{09CF4F3C}$.\\
+$i = 4$ is a multiple of 4, so compute $t_4$ from $w_3$:
+\begin{center}\small
+\begin{tabular}{@{}ll@{}}
+RotWord$(w_3)$ & \ttx{09 CF 4F 3C} $\to$ \ttx{CF 4F 3C 09}\\
+SubWord & $S(\ttx{CF}) = \ttx{8A}$ (row C, col F), $S(\ttx{4F}) = \ttx{84}$, $S(\ttx{3C}) = \ttx{EB}$, $S(\ttx{09}) = \ttx{01}$ $\Rightarrow$ \ttx{8A84EB01}\\
+$\oplus$ RCon[1] & $\ttx{8A84EB01} \oplus \ttx{01000000} = t_4 = \ttx{8B84EB01}$
+\end{tabular}
+\end{center}
+Then
+\begin{align*}
+w_4 &= w_0 \oplus t_4 = \ttx{2B7E1516} \oplus \ttx{8B84EB01} = \textbf{\ttx{A0FAFE17}}\\
+w_5 &= w_1 \oplus w_4 = \ttx{28AED2A6} \oplus \ttx{A0FAFE17} = \textbf{\ttx{88542CB1}}\\
+w_6 &= w_2 \oplus w_5 = \ttx{ABF71588} \oplus \ttx{88542CB1} = \textbf{\ttx{23A33939}}\\
+w_7 &= w_3 \oplus w_6 = \ttx{09CF4F3C} \oplus \ttx{23A33939} = \textbf{\ttx{2A6C7605}}
+\end{align*}
+As a matrix (words as columns) the round-1 key is
+\[K_1 = \aesM{A0&88&23&2A\\FA&54&A3&6C\\FE&2C&39&76\\17&B1&39&05}.\]
+Check: these are the FIPS-197 Appendix A values; continuing the same way gives $t_8 = \ttx{52386BE5}$ (RotWord(\ttx{2A6C7605}) $=$ \ttx{6C76052A}, SubWord $=$ \ttx{50386BE5}, RCon $=$ \ttx{02}), $w_8 = \ttx{F2C295F2}$, and finally $w_{43} = \ttx{B6630CA6}$.
+\end{worked}
+
+\subsection{One complete round: FIPS-197 example}
+Putting the four steps together on the standard test vector (plaintext \ttx{3243F6A8 885A308D 313198A2 E0370734}, the key above) shows what a full round looks like; the mock paper's AES question (Q8) takes its matrices from this trace. The plaintext fills the state column by column, the pre-round XORs it with $K_0$ (the cipher key), and round 1 then gives:
+\begingroup\small
+\[
+\underbrace{\aesM{19&A0&9A&E9\\3D&F4&C6&F8\\E3&E2&8D&48\\BE&2B&2A&08}}_{\text{after } K_0}
+\xrightarrow{\text{Sub}}
+\aesM{D4&E0&B8&1E\\27&BF&B4&41\\11&98&5D&52\\AE&F1&E5&30}
+\xrightarrow{\text{Shift}}
+\aesM{D4&E0&B8&1E\\BF&B4&41&27\\5D&52&11&98\\30&AE&F1&E5}
+\xrightarrow{\text{Mix}}
+\aesM{04&E0&48&28\\66&CB&F8&06\\81&19&D3&26\\E5&9A&7A&4C}
+\xrightarrow{\oplus K_1}
+\aesM{A4&68&6B&02\\9C&9F&5B&6A\\7F&35&EA&50\\F2&2B&43&49}
+\]
+\endgroup
+After all ten rounds the ciphertext is \ttx{3925841D 02DC09FB DC118597 196A0B32}; a Python AES implementation reproduces this and decrypts it back.
+
+\subsection{Decryption}
+Since every step is invertible, decryption applies the inverse steps in reverse order with the round keys in reverse order ($K_{N_r}$ first, $K_0$ last). In the original design (Forouzan's figure) this gives:
+\begin{enumerate}
+  \item AddRoundKey with $K_{N_r} = w_{40}..w_{43}$.
+  \item Each of the first $N_r - 1$ decryption rounds: InvShiftRows, InvSubBytes, AddRoundKey, InvMixColumns.
+  \item Last decryption round: InvShiftRows, InvSubBytes, AddRoundKey with $K_0$ (no InvMixColumns).
+\end{enumerate}
+InvShiftRows rotates right, InvSubBytes uses the inverse S-box, InvMixColumns uses the matrix [\ttx{0E 0B 0D 09}] and AddRoundKey is its own inverse. Because InvShiftRows and InvSubBytes commute (one moves bytes, the other changes each byte on its own) and InvMixColumns is linear, the steps can be reordered into the same pattern as encryption (InvSubBytes, InvShiftRows, InvMixColumns, AddRoundKey) if the middle round keys are passed through InvMixColumns; this is the \emph{equivalent inverse cipher}. Unlike DES, AES decryption is a different algorithm from encryption, and InvMixColumns, with its larger constants, is slower than MixColumns.
+
+\subsection{Analysis of AES}
+\textbf{Brute force.} A 128-bit key needs up to $2^{128}$ trials against DES's $2^{56}$, so if DES can be broken in $t$ seconds, AES-128 needs $2^{128} / 2^{56} \cdot t = 2^{72}\,t$ seconds. The 192- and 256-bit versions widen the gap further. The best published shortcut (biclique attack, 2011) lowers the AES-128 cost only to about $2^{126}$, which is still far out of reach.
+
+\textbf{No weak keys.} DES has keys whose 16 round keys are all equal, so encrypting twice decrypts. In AES, SubWord makes the key schedule non-linear and RCon makes each round's step different, so no such keys are known.
+
+\textbf{Diffusion and statistical attacks.} The steps work together to spread a single change over the whole block in two rounds. In round 1 a changed byte stays one byte through SubBytes and ShiftRows, then MixColumns spreads it to all 4 bytes of its column. In round 2 ShiftRows sends those 4 bytes to 4 different columns, and MixColumns spreads each of them over its column, so all 16 bytes have changed (checked by script: 4 bytes after one round, 16 after two). With 10 or more rounds the ciphertext shows no frequency pattern of the plaintext, and statistical analysis has failed.
+
+\textbf{Differential and linear cryptanalysis.} AES was designed after these attacks were known; the S-box (GF$(2^8)$ inverse) has low differential and linear probabilities, and the branch number of MixColumns forces many active S-boxes over a few rounds, so no such attack works on full AES.
+
+\textbf{Simplicity and cost.} The steps are byte operations, table lookups and XORs, so AES is fast on cheap 8-bit processors with little memory as well as on 32-bit machines (where SubBytes, ShiftRows and MixColumns can be merged into table lookups), and many processors have AES instructions.
+
+\subsection{AES versus DES}
+\begin{center}\small
+\begin{tabularx}{\textwidth}{@{}l X X@{}}
+\toprule
+ & DES & AES\\
+\midrule
+Structure & Feistel (round function need not be invertible) & non-Feistel SPN (every step invertible)\\
+Block size & 64 bits & 128 bits\\
+Key size & 56 bits (64 with parity) & 128, 192 or 256 bits\\
+Rounds & 16 & 10, 12 or 14\\
+Round key & 48 bits, 16 keys & 128 bits, $N_r + 1$ keys\\
+Works on & bits (expansion, P-boxes) & bytes in GF$(2^8)$ (state matrix)\\
+Non-linearity & eight 6-to-4-bit S-boxes & one 8-to-8-bit S-box (inverse $+$ affine)\\
+Permutation & bit-level P-boxes & byte-level ShiftRows\\
+Decryption & same algorithm, keys reversed & inverse steps, keys reversed\\
+Brute force & $2^{56}$ (broken in practice) & $2^{128}$ or more\\
+Weak keys & 4 weak, 12 semi-weak & none known\\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\begin{fixbox}
+\begin{itemize}
+  \item \textbf{Example 1, letter X.} The slide writes X as \ttx{23}. X is letter 23 in \emph{decimal}, which is \ttx{17} in hex (the same slide correctly converts M $= 12 \to$ \ttx{0C} and R $= 17 \to$ \ttx{11}). With \ttx{17}, SubBytes gives \ttx{F0}; the slide's \ttx{26} (in Examples 2 and 3) is $S(\ttx{23})$. If the exam reuses the slide's state, say which value you used.
+  \item \textbf{S-box, row B, column 1.} The slide's table prints \ttx{CB}; the correct FIPS-197 entry is $S(\ttx{B1}) = \ttx{C8}$. \ttx{CB} already appears at row 5, column 9 ($S(\ttx{59}) = \ttx{CB}$), and an S-box is a permutation, so it cannot appear twice. The inverse table on the next slide is right (InvS(\ttx{C8}) $=$ \ttx{B1}). All other 255 entries of the slide match.
+  \item \textbf{ShiftRows rows.} The slide numbers the rows 1 to 4 (``Row 1: no shifting, Row 2: 1-byte left shift, \dots''), while the pseudocode and these notes number them 0 to 3. Either way the top row is not shifted and the bottom row moves left by 3.
+\end{itemize}
+\end{fixbox}
+
+\subsection*{Check your understanding}
+\begin{enumerate}[leftmargin=1.5em,itemsep=2pt]
+  \item \textbf{Why does AES do its arithmetic in GF$(2^8)$ rather than in $\mathbb{Z}_{256}$?} The S-box needs the inverse of every non-zero byte and MixColumns needs an invertible matrix. In $\mathbb{Z}_{256}$ the 128 even bytes have no inverse, while GF$(2^8)$ is a field, so every non-zero byte has one, and addition is plain XOR.
+  \item \textbf{How many rounds, round keys and key words does AES-192 use?} 12 rounds, $12 + 1 = 13$ round keys of 128 bits each, so $13 \times 4 = 52$ words.
+  \item \textbf{What would happen if ShiftRows were removed?} Every other step works within one column, so the four columns would never mix. AES would become four independent 32-bit ciphers, each of which could be attacked separately with a $2^{32}$-sized codebook.
+  \item \textbf{Why is AddRoundKey its own inverse, and why is it the only keyed step?} XOR with $k$ twice gives back the input. The other steps are fixed public maps, so all secrecy must enter through AddRoundKey, which is why it also comes before round 1.
+  \item \textbf{Compute $02 \cdot \ttx{87}$ and $03 \cdot \ttx{87}$.} $\ttx{87} = 1000\,0111$; shifting gives $0000\,1110 = \ttx{0E}$, and the top bit was 1, so $02 \cdot \ttx{87} = \ttx{0E} \oplus \ttx{1B} = \ttx{15}$. Then $03 \cdot \ttx{87} = \ttx{15} \oplus \ttx{87} = \ttx{92}$.
+  \item \textbf{What is SubBytes(\ttx{00}), and why is it not \ttx{00}?} \ttx{00} has no inverse and is mapped to \ttx{00}, but the affine step then XORs in the constant \ttx{63}, so $S(\ttx{00}) = \ttx{63}$. The constant is there precisely so that the S-box has no fixed points.
+  \item \textbf{Why is MixColumns omitted in the last round?} It is linear and keyless, so a final MixColumns could be undone by anyone applying InvMixColumns to the ciphertext (moving it past AddRoundKey only changes the key). It adds no security, and omitting it lets decryption have the same structure as encryption.
+  \item \textbf{Given $w_7 = \ttx{2A6C7605}$ and $w_4 = \ttx{A0FAFE17}$, find $w_8$.} $8 \bmod 4 = 0$: RotWord gives \ttx{6C76052A}, SubWord gives \ttx{50386BE5}, XOR RCon[2] $=$ \ttx{02000000} gives $t_8 = \ttx{52386BE5}$, and $w_8 = w_4 \oplus t_8 = \ttx{F2C295F2}$.
+  \item \textbf{Is AES a Feistel cipher? Differentiate.} No. In a Feistel cipher (DES) half the block passes through a round function that need not be invertible and the halves are swapped, so decryption is the same algorithm. AES transforms the whole state each round with invertible steps, so decryption needs the inverse steps.
+  \item \textbf{After how many rounds does every output byte depend on every input byte?} Two: MixColumns in round 1 spreads one byte over its column, and ShiftRows plus MixColumns in round 2 spread those four bytes over all four columns.
+\end{enumerate}

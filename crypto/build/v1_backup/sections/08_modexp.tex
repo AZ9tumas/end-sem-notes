@@ -1,0 +1,129 @@
+% Videos: modular exponentiation part 1 (direct reduction), part 2 (repeated squaring)
+\section{Modular Exponentiation}\label{sec:modexp}
+
+\begin{keybox}
+Exponentiation performed over a modulus: $\;a^b \bmod m$, which means $(a^b) \bmod m$. The mod applies to the \textbf{whole power}, not just the exponent.
+It is the core operation of \textbf{RSA} ($C = M^e \bmod n$), \textbf{Diffie--Hellman} ($g^{ab} \bmod p$), ECC and the Rabin cryptosystem.
+\end{keybox}
+The point is to \textbf{never compute the huge number}. $3^{100}$ has 48 digits, but $3^{100} \bmod 29$ can be done by hand.
+
+\begin{keybox}[title=The two tools]
+\begin{enumerate}[leftmargin=1.5em]
+  \item \textbf{Reduce the base first}: if $a \equiv r \pmod m$ then $a^b \equiv r^b \pmod m$. Pick the \textbf{smallest} $r$, which may be \textbf{negative}: if $r > m/2$, use $r - m$ (e.g.\ $23 \equiv -7 \pmod{30}$).
+  \item \textbf{Repeated squaring}: build $a^1, a^2, a^4, a^8, \dots$ (each the square of the previous one, reduced mod $m$). Then multiply the ones whose exponents add up to $b$.
+\end{enumerate}
+\textbf{Never reduce the exponent mod $m$}: only the base can be reduced. (See practice Q41.)
+\end{keybox}
+
+\subsection{Part 1: when the base is close to the modulus}
+\begin{center}\small
+\begin{tabularx}{\textwidth}{@{}l l X l@{}}
+\toprule
+Problem & Base becomes & Working & Answer\\
+\midrule
+$23^3 \bmod 30$ & $23 \equiv -7$ & $(-7)^3 = 49 \times (-7) = -133 \equiv -13 \equiv -13 + 30$ & \textbf{17}\\
+$31^{500} \bmod 30$ & $31 \equiv 1$ & $1^{500} = 1$, however large the exponent & \textbf{1}\\
+$242^{329} \bmod 243$ & $242 \equiv -1$ & $329$ is odd, so $(-1)^{329} = -1 \equiv -1 + 243$ & \textbf{242}\\
+$11^{7} \bmod 13$ & $11 \equiv -2$ & $(-2)^7 = -128 = -10\cdot13 + 2$ & \textbf{2}\\
+\bottomrule
+\end{tabularx}
+\end{center}
+\begin{itemize}
+  \item $(-1)^n = +1$ if $n$ is even, $-1$ if $n$ is odd. So $a \equiv -1$ makes any power trivial.
+  \item A negative result? Add $m$: $-133 \equiv -13 \equiv 17 \pmod{30}$. (Formally $-133 = -5\cdot30 + 17$.)
+  \item Check by brute force once: $23^3 = 12167 = 405 \cdot 30 + 17$ \checkmark. For big exponents this is impossible, which is why the tools matter.
+\end{itemize}
+
+\subsection{Part 2: repeated squaring}
+When the base is far from the modulus (e.g.\ $88$ vs.\ $187$: $88 - 187 = -99$ is no smaller), use repeated squaring:
+\begin{keybox}[title=Repeated squaring]
+\begin{enumerate}[leftmargin=1.5em]
+  \item Write $b$ as a \textbf{sum of powers of 2} (its binary form): e.g.\ $7 = 4 + 2 + 1$, $100 = 64 + 32 + 4$.
+  \item Compute $a^1, a^2, a^4, \dots$ up to the biggest power of 2 that is $\le b$. Each is the \textbf{square of the previous}, reduced mod $m$ (use negatives to keep numbers small).
+  \item \textbf{Multiply} the values you need, reducing mod $m$ after each multiplication.
+\end{enumerate}
+\end{keybox}
+\textbf{Why it's fast:} $3^{100}$ needs 6 squarings ($3^2, 3^4, \dots, 3^{64}$) and 2 multiplications, 8 in total instead of 99. For a 2048-bit RSA exponent that's about 4000 steps instead of $2^{2048}$.
+
+\subsubsection*{Example 1: $88^7 \bmod 187$ \quad ($7 = 4 + 2 + 1$)}
+\begin{center}\small
+\begin{tabular}{@{}lll@{}}
+\toprule
+Power & Computation & mod 187\\
+\midrule
+$88^1$ & & 88\\
+$88^2$ & $88 \times 88 = 7744 = 41\cdot187 + 77$ & 77\\
+$88^4$ & $77 \times 77 = 5929 = 31\cdot187 + 132$ & 132\\
+\bottomrule
+\end{tabular}
+\end{center}
+$88^7 = 88^4 \cdot 88^2 \cdot 88^1 \equiv 132 \cdot 77 \cdot 88$. The lecture multiplies everything first ($894{,}432 = 4783\cdot187 + 11$). It's easier to reduce after each step:
+$132 \cdot 77 = 10164 \equiv 66$, then $66 \cdot 88 = 5808 \equiv \mathbf{11}$.
+\begin{keybox}[title=Bookmark this (the lecturer's advice)]
+$88^7 \bmod 187 = 11$ appears again in the \textbf{RSA} lecture. The homework is the reverse: $11^{23} \bmod 187 = 88$ (practice Q37). Together they are an RSA encryption/decryption pair: $e = 7$, $d = 23$, $n = 187$.
+\end{keybox}
+
+\subsubsection*{Example 2: last two digits of $29^5$}
+The last $k$ digits of a number are the number $\bmod 10^k$ (last digit: mod 10; last two: mod 100; last three: mod 1000). So find $29^5 \bmod 100$, with $5 = 4 + 1$:
+\begin{center}\small
+\begin{tabular}{@{}llll@{}}
+\toprule
+Power & Computation & mod 100 & or\\
+\midrule
+$29^1$ & & \textbf{29} & $-71$\\
+$29^2$ & $29 \times 29 = 841$ & 41 & $-59$\\
+$29^4$ & $41 \times 41 = 1681$ & 81 & $\mathbf{-19}$\\
+\bottomrule
+\end{tabular}
+\end{center}
+$29^5 = 29^4 \cdot 29^1 \equiv (-19)(29) = -551 \equiv -51 \equiv \mathbf{49}$. Check another way: $29^2 \cdot 29^2 \cdot 29 = 41 \cdot 41 \cdot 29 = 48749 \to 49$ \checkmark.
+Choose whichever of $r$ and $r - m$ is smaller in size: $29$ beats $-71$, and $-19$ beats $81$.
+
+\subsubsection*{Example 3: $3^{100} \bmod 29$ \quad ($100 = 64 + 32 + 4$, binary \ttx{1100100})}
+\begin{center}\small
+\begin{tabular}{@{}lllll@{}}
+\toprule
+Power & Computation & mod 29 & or & Use\\
+\midrule
+$3^1$ & & 3 & $-26$ & 3\\
+$3^2$ & $3 \times 3$ & 9 & $-20$ & 9\\
+$3^4$ & $9 \times 9 = 81$ & 23 & $-6$ & \textbf{$-6$} $\leftarrow$ needed\\
+$3^8$ & $(-6)^2 = 36$ & 7 & $-22$ & 7\\
+$3^{16}$ & $7 \times 7 = 49$ & 20 & $-9$ & $-9$\\
+$3^{32}$ & $(-9)^2 = 81$ & 23 & $-6$ & \textbf{$-6$} $\leftarrow$ needed\\
+$3^{64}$ & $(-6)^2 = 36$ & 7 & $-22$ & \textbf{7} $\leftarrow$ needed\\
+\bottomrule
+\end{tabular}
+\end{center}
+$3^{100} = 3^{64}\cdot3^{32}\cdot3^4 \equiv 7 \cdot (-6) \cdot (-6) = 252 = 8\cdot29 + 20 \Rightarrow \mathbf{20}$.
+Notice the values repeat ($-6 \to 7 \to -9 \to -6 \to 7$): powers mod $m$ always eventually cycle.
+{\small\emph{Preview (Fermat, coming up):} 29 is prime, so $3^{28} \equiv 1$ and $3^{100} = 3^{3\cdot28 + 16} \equiv 3^{16} \equiv 20$ \checkmark.}
+
+\subsubsection*{Example 4: $23^{16} \bmod 30$ (exponent is a power of 2)}
+When $b = 2^k$, just square $k$ times, reducing each time:
+\[
+23^{16} = \Big(\big((23^2)^2\big)^2\Big)^2:\quad 23 \equiv -7 \;\xrightarrow{\;^2\;}\; 49 \equiv 19 \equiv -11 \;\xrightarrow{\;^2\;}\; 121 \equiv 1 \;\xrightarrow{\;^2\;}\; 1 \;\xrightarrow{\;^2\;}\; \mathbf{1}
+\]
+Once you hit 1, every further square stays 1.
+
+\textbf{Lecture homework:} (1) $11^{23} \bmod 187$; (2) the last 3 digits of $175^{209}$. Full solutions are in the practice section (Q37, Q38).
+
+\begin{examtip}
+\begin{itemize}
+  \item $a^b \bmod m = (a^b) \bmod m$. Reduce the \textbf{base}, never the exponent (mod $m$).
+  \item Base $\equiv 1$: the answer is 1. Base $\equiv -1$: the answer is 1 or $m - 1$, depending on whether the exponent is even or odd.
+  \item Repeated squaring: write the exponent as powers of 2, build a table $a^1, a^2, a^4, \dots$, then multiply the needed rows.
+  \item Use negative residues ($r - m$) when they are smaller in size, and turn the final answer positive.
+  \item ``Last $k$ digits'' means $\bmod 10^k$.
+  \item Remember $88^7 \bmod 187 = 11$ for RSA.
+\end{itemize}
+\end{examtip}
+
+\begin{fixbox}
+\begin{itemize}
+  \item All of Gemini's numbers are correct (checked by script: 17, 1, 242, 2, 11, 49, 20, 1).
+  \item Slide glitches noted by Gemini: in Example 2 the summary line briefly reads ``$88^7 \bmod 187 = 49$'' (copy--paste error; it should be $29^5 \bmod 100 = 49$). Example 3's slide stops at ``$252 \bmod 29$'' (the answer, 20, is only spoken).
+  \item $-133 \bmod 30$: the lecture writes the intermediate step as $-13$ (truncated division), then adds 30. Formally $-133 = -5\cdot30 + 17$. Same answer.
+  \item The slide writes $-7^3$ for $(-7)^3$. Strictly $-7^3 = -(7^3)$; the brackets matter when the exponent is even (e.g.\ $(-7)^2 = 49$ but $-7^2 = -49$).
+\end{itemize}
+\end{fixbox}

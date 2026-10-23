@@ -1,0 +1,320 @@
+% Lecture 10 (Fermat, Euler, inverses), Lecture 11 (order, primitive roots) + videos. All numbers recomputed by script (scratchpad/euler/v11.py).
+\section{Fermat's and Euler's Theorems, Inverses and Primitive Roots}\label{sec:fermat}
+
+Public-key cryptography computes powers $a^b \bmod n$ with exponents hundreds of digits long, and it needs inverses modulo $n$. Square-and-multiply (\S\ref{sec:modexp}) makes such powers feasible, but the two theorems of this section do more: they say that the powers of $a$ modulo $n$ repeat with a known period, so a huge exponent can be replaced by a small one, and they give a formula for the inverse. The same periodicity, studied element by element, leads to the order of an element and to primitive roots, which Diffie--Hellman and ElGamal are built on.
+
+\subsection{Fermat's little theorem and exponent reduction \hot}
+\asked{2024--25 Q5(ii) (part of 3 marks): $100^{95} \bmod 9$, $658^{17} \bmod 17$, $145^{102} \bmod 101$.}
+\textbf{First version.} \imp{If $p$ is prime and $a$ is an integer not divisible by $p$, then $a^{p-1} \equiv 1 \pmod p$.} Both conditions must be checked before the theorem is used: for a composite modulus or for $p \mid a$ it says nothing.
+
+\textbf{Why it is true.} Multiply each of $1, 2, \dots, p-1$ by $a$ and reduce modulo $p$. No product is 0, because $p$ divides neither factor, and no two products are equal, because $ai \equiv aj$ would mean $p \mid a(i - j)$ and hence $p \mid (i - j)$, i.e.\ $i = j$. The $p - 1$ products are therefore just $1, \dots, p-1$ in a different order; for $p = 7$, $a = 3$ they are $3, 6, 2, 5, 1, 4$. Multiplying all of them together gives $a^{p-1}(p-1)! \equiv (p-1)! \pmod p$, and since $(p-1)!$ is co-prime to $p$ it can be cancelled, leaving $a^{p-1} \equiv 1$.
+
+\textbf{Second version.} \imp{If $p$ is prime, then $a^p \equiv a \pmod p$ for every integer $a$.} This removes the condition on $a$. If $p \nmid a$, it is the first version multiplied by $a$; if $p \mid a$, both sides are $\equiv 0$.
+\begin{center}\small
+\begin{tabular}{@{}llll@{}}
+\toprule
+$p$, $a$ & Conditions & Working & Result\\
+\midrule
+5, 2 & prime, $5 \nmid 2$ & $2^4 = 16 = 3\cdot5 + 1$ & $\equiv 1$ \checkmark\\
+13, 11 & prime, $13 \nmid 11$ & $11 \equiv -2$, $(-2)^{12} = \big((-2)^4\big)^3 = 16^3 \equiv 3^3 = 27 \equiv 1$ & $\equiv 1$ \checkmark\\
+6, 2 & \textbf{6 not prime} & $2^5 = 32 = 5\cdot6 + 2$ & $\equiv 2 \ne 1$: theorem silent\\
+11, 5 (homework) & prime, $11 \nmid 5$ & $5^2 \equiv 3$, $5^4 \equiv 9$, $5^8 \equiv 81 \equiv 4$, $5^{10} = 5^8 \cdot 5^2 \equiv 4 \cdot 3 = 12$ & $\equiv 1$ \checkmark\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\textbf{Exponent reduction.} Since $a^{p-1} \equiv 1$, the powers of $a$ modulo $p$ repeat with period dividing $p - 1$. Writing the exponent as $b = q(p-1) + r$ with $r = b \bmod (p-1)$ gives
+\[
+a^b = \left(a^{p-1}\right)^q a^r \equiv 1^q \cdot a^r = a^{\,b \bmod (p-1)} \pmod p \qquad (p \text{ prime},\ p \nmid a).
+\]
+The slides' examples follow directly: $6^{10} \bmod 11 = 1$ because the exponent is exactly $p - 1$, and $3^{12} \bmod 11 = 3^{11} \cdot 3 \equiv 3 \cdot 3 = 9$ by the second version (equivalently $12 \bmod 10 = 2$ and $3^2 = 9$). In practice the base is reduced modulo $p$ first, then the exponent modulo $p - 1$, and the small power that remains is computed by repeated squaring.
+
+\begin{trap}[: what to reduce, and by what]
+The \textbf{base} is reduced modulo $p$; the \textbf{exponent} is reduced modulo $p - 1$, never modulo $p$. And the modulus must be prime: in $100^{95} \bmod 9$ the modulus $9 = 3^2$ is composite, so Fermat does not apply. There the base reduction alone finishes the job ($100 \equiv 1 \pmod 9$), or Euler's theorem with $\phi(9) = 6$ can be used.
+\end{trap}
+
+\begin{worked}[: exponent reduction by Fermat (Forouzan exercise)]
+\textbf{Q.} Using Fermat's little theorem, find (a) $5^{15} \bmod 13$ (b) $15^{18} \bmod 17$ (c) $456^{17} \bmod 17$.
+
+\textbf{A.}
+\begin{center}\small
+\begin{tabular}{@{}lllll@{}}
+\toprule
+ & Conditions & Base & Exponent & Result\\
+\midrule
+(a) & 13 prime, $13 \nmid 5$ & 5 & $15 = 1\cdot12 + 3 \to 3$ & $5^3 = 125 = 9\cdot13 + 8 \Rightarrow \mathbf{8}$\\
+(b) & 17 prime, $17 \nmid 15$ & $15 \equiv -2$ & $18 = 1\cdot16 + 2 \to 2$ & $(-2)^2 = \mathbf{4}$\\
+(c) & 17 prime & $456 = 26\cdot17 + 14 \to 14$ & second version: $a^{17} \equiv a$ & $\mathbf{14}$\\
+\bottomrule
+\end{tabular}
+\end{center}
+\textbf{Check} (by script): $5^{15} \bmod 13 = 8$, $15^{18} \bmod 17 = 4$, $456^{17} \bmod 17 = 14$.
+\end{worked}
+
+\textbf{Fermat as a primality test.} Read backwards, the theorem gives a test: if $a^{n-1} \not\equiv 1 \pmod n$ for some $a$ with $\gcd(a, n) = 1$, then $n$ is certainly composite (e.g.\ $2^{14} \bmod 15 = 4$). The converse fails: $2^{340} \equiv 1 \pmod{341}$ although $341 = 11 \cdot 31$. The Fermat test, Carmichael numbers and Miller--Rabin are covered in \S\ref{sec:primes}.
+
+\subsection{Euler's theorem \hot}
+\likely{Exponent reduction modulo $\phi(n)$ for a composite $n$, and ``why does RSA decryption work?'' (Euler is its basis).}
+Fermat's theorem needs a prime modulus, but RSA works modulo $n = pq$. Euler's theorem is the generalisation to any modulus. \textbf{First version:} \imp{if $\gcd(a, n) = 1$, then $a^{\phi(n)} \equiv 1 \pmod n$.} When $n = p$ is prime, $\phi(p) = p - 1$ and this is exactly Fermat's theorem.
+
+\textbf{Why it is true.} The proof is the same permutation argument, run over $\mathbb{Z}_n^*$ (\S\ref{sec:totient}) instead of $\{1, \dots, p-1\}$. Multiplying the $\phi(n)$ elements of $\mathbb{Z}_n^*$ by $a$ permutes them, because $a$ is invertible; for $n = 10$, $a = 3$ the set $\{1, 3, 7, 9\}$ becomes $\{3, 9, 1, 7\}$. Taking the product of all elements on both sides gives $a^{\phi(n)} \cdot \Pi \equiv \Pi$, and the product $\Pi$ is invertible, so $a^{\phi(n)} \equiv 1$.
+
+The co-prime condition is genuinely needed. If $\gcd(a, n) = d > 1$, every power of $a$ is a multiple of $d$, and so is every number $\equiv a^k \pmod n$; such a number can never be $\equiv 1$. The lecture homework $11^{20} \bmod 33$ shows this: the powers of 11 alternate $11, 22, 11, 22, \dots$, so $11^{20} \equiv 22 \ne 1$ although $\phi(33) = 20$.
+\begin{center}\small
+\begin{tabular}{@{}llll@{}}
+\toprule
+$a$, $n$ & $\gcd$ & Working & Result\\
+\midrule
+3, 10 & 1 & $\phi(10) = 4$; $3^4 = 81 = 8\cdot10 + 1$ & $\equiv 1$ \checkmark\\
+2, 10 & \textbf{2} & $2^4 = 16 \equiv 6$ & $\ne 1$: theorem silent\\
+10, 11 & 1 & $\phi(11) = 10$; $10 \equiv -1$, $(-1)^{10} = 1$ & $\equiv 1$ \checkmark\\
+6, 35 & 1 & $\phi(35) = 24$; slide example $6^{24} \bmod 35$ & $\equiv 1$ \checkmark\\
+11, 33 (homework) & \textbf{11} & $\phi(33) = 20$; powers alternate $11, 22$ & $11^{20} \equiv 22 \ne 1$\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\textbf{Exponent reduction.} Exactly as with Fermat, $\gcd(a, n) = 1$ and $b = q\phi(n) + r$ give $a^b \equiv a^{\,b \bmod \phi(n)} \pmod n$. The work is in computing $\phi(n)$, which needs the factorisation of $n$.
+
+\textbf{Second version.} \imp{For $n = pq$ (and more generally any squarefree $n$), $a^{k\phi(n)+1} \equiv a \pmod n$ for every integer $a$ and every $k \ge 0$.} This removes the co-prime condition, which RSA needs because a message $M$ might, by bad luck, share the factor $p$ with $n$. The proof works one prime at a time. Modulo $p$: if $p \nmid a$, then $a^{k\phi(n)} = \big(a^{p-1}\big)^{k(q-1)} \equiv 1$ by Fermat, so $a^{k\phi(n)+1} \equiv a$; if $p \mid a$, both sides are $\equiv 0$. The same holds modulo $q$. Since the distinct primes $p$ and $q$ both divide $a^{k\phi(n)+1} - a$, so does $pq$. For example $11^{21} = 11^{\phi(33)+1} \equiv 11 \pmod{33}$ although $\gcd(11, 33) \ne 1$. The argument breaks when a prime appears squared: for $n = 4$, $a = 2$, $k = 1$ the claim would be $2^3 \equiv 2$, but $2^3 = 8 \equiv 0 \pmod 4$.
+
+\textbf{Why RSA decryption works.} RSA picks $e$ and $d$ with $ed \equiv 1 \pmod{\phi(n)}$, i.e.\ $ed = k\phi(n) + 1$. Decrypting $C = M^e$ gives $C^d = M^{ed} = M^{k\phi(n)+1} \equiv M \pmod n$ by the second version, for every message $M < n$. In the example $n = 187$, $e = 7$, $d = 23$: $ed = 161 = 1 \cdot 160 + 1$, and indeed $88^7 \bmod 187 = 11$ and $11^{23} \bmod 187 = 88$.
+
+\begin{mustknow}
+\begin{center}\small
+\begin{tabular}{@{}lll@{}}
+\toprule
+ & First version & Second version (no co-prime condition)\\
+\midrule
+Fermat ($p$ prime) & $a^{p-1} \equiv 1 \pmod p$ if $p \nmid a$ & $a^p \equiv a \pmod p$\\
+Euler & $a^{\phi(n)} \equiv 1 \pmod n$ if $\gcd(a,n) = 1$ & $a^{k\phi(n)+1} \equiv a \pmod n$ ($n = pq$, squarefree)\\
+\midrule
+Reduction & \multicolumn{2}{l}{$a^b \equiv a^{\,b \bmod (p-1)} \pmod p$ \quad and \quad $a^b \equiv a^{\,b \bmod \phi(n)} \pmod n$ \quad (co-prime $a$)}\\
+Inverse & \multicolumn{2}{l}{$a^{-1} \equiv a^{p-2} \pmod p$ \quad and \quad $a^{-1} \equiv a^{\phi(n)-1} \pmod n$ \quad (co-prime $a$)}\\
+\bottomrule
+\end{tabular}
+\end{center}
+\end{mustknow}
+
+\begin{worked}[: exponent reduction by Euler]
+\textbf{Q.} Using Euler's theorem, find (a) $11^{2024} \bmod 35$ (b) the last two digits of $3^{1003}$ (c) $20^{62} \bmod 77$ (slide example).
+
+\textbf{A.}
+\begin{center}\small
+\begin{tabular}{@{}lllll@{}}
+\toprule
+ & $\gcd$, $\phi(n)$ & Exponent & Remaining power & Result\\
+\midrule
+(a) & $\gcd(11, 35) = 1$, $\phi(35) = 4 \cdot 6 = 24$ & $2024 = 84\cdot24 + 8$ & $11^2 = 121 \equiv 16$, $11^4 \equiv 16^2 = 256 \equiv 11$, $11^8 \equiv 11^2 \equiv 16$ & $\mathbf{16}$\\
+(b) & $\gcd(3, 100) = 1$, $\phi(100) = 40$ & $1003 = 25\cdot40 + 3$ & $3^3 = 27$ & $\mathbf{27}$\\
+(c) & $\gcd(20, 77) = 1$, $\phi(77) = 6 \cdot 10 = 60$ & $62 = 1\cdot60 + 2$ & $20^2 = 400 = 5\cdot77 + 15$ & $\mathbf{15}$\\
+\bottomrule
+\end{tabular}
+\end{center}
+For (b), ``last two digits'' means the residue modulo 100. \textbf{Check} (by script): $11^{2024} \bmod 35 = 16$, $3^{1003} \bmod 100 = 27$, $20^{62} \bmod 77 = 15$.
+\end{worked}
+
+\subsection{Multiplicative inverses via Fermat and Euler \hot}
+\asked{2024--25 Q5(iii): $7^{-1} \bmod 17$, $15^{-1} \bmod 99$ (does not exist).}
+The multiplicative inverse of $a$ modulo $n$ is the residue $a^{-1}$ with \imp{$a \cdot a^{-1} \equiv 1 \pmod n$; it exists if and only if $\gcd(a, n) = 1$} (derived in \S\ref{sec:totient}). It depends on the modulus as well as on $a$: $2^{-1}$ is 3 modulo 5 but 4 modulo 7. For small $n$ it can be found by trial, multiplying $a$ by $1, 2, 3, \dots$ until the product is $\equiv 1$:
+\begin{center}\small
+\begin{tabular}{@{}lllll@{}}
+\toprule
+$a \bmod n$ & $\gcd$ & Search & Inverse & Note\\
+\midrule
+$3 \bmod 5$ & 1 & $3\cdot2 = 6 \equiv 1$ & \textbf{2} & so $2^{-1} \bmod 5 = 3$ as well\\
+$2 \bmod 11$ & 1 & $2\cdot6 = 12 \equiv 1$ & \textbf{6} & \\
+$4 \bmod 5$ & 1 & $4\cdot4 = 16 \equiv 1$ & \textbf{4} & its own inverse ($4 \equiv -1$)\\
+$2 \bmod 7$ & 1 & $2\cdot4 = 8 \equiv 1$ & \textbf{4} & not 3: depends on $n$\\
+$5 \bmod 10$ & \textbf{5} & $5k \bmod 10 \in \{0, 5\}$ only & \textbf{none} & \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\textbf{Inverse by exponentiation.} Fermat's theorem already contains the inverse. If $p$ is prime and $p \nmid a$, then $a \cdot a^{p-2} = a^{p-1} \equiv 1$, so
+\[
+a^{-1} \equiv a^{p-2} \pmod p, \qquad\text{and in the same way}\qquad a^{-1} \equiv a^{\phi(n)-1} \pmod n \ \text{ if } \gcd(a, n) = 1.
+\]
+This replaces the extended Euclidean algorithm by one modular exponentiation, which is convenient when the modulus is prime or when $\phi(n)$ is known. The price is that for a composite $n$ the factorisation is needed to get $\phi(n)$. The slides' examples (L10-15 and L10-20), all checked by script:
+\begin{center}\small
+\begin{tabular}{@{}ll@{\qquad}lll@{}}
+\toprule
+\multicolumn{2}{@{}l}{Fermat ($n$ prime)} & \multicolumn{3}{l}{Euler ($n$ composite)}\\
+\midrule
+$8^{-1} \bmod 17 = 8^{15}$ & $= 15$ & $8^{-1} \bmod 77 = 8^{59}$ & $= 29$ & $\phi(77) = 60$\\
+$5^{-1} \bmod 23 = 5^{21}$ & $= 14$ & $7^{-1} \bmod 15 = 7^{7}$ & $= 13$ & $\phi(15) = 8$\\
+$60^{-1} \bmod 101 = 60^{99}$ & $= 32$ & $60^{-1} \bmod 187 = 60^{159}$ & $= 53$ & $\phi(187) = 160$\\
+$22^{-1} \bmod 211 = 22^{209}$ & $= 48$ & $71^{-1} \bmod 100 = 71^{39}$ & $= 31$ & $\phi(100) = 40$\\
+$2^{-1} \bmod 13 = 2^{11}$ & $= 7$ & $3^{-1} \bmod 20 = 3^{7}$ & $= 7$ & $\phi(20) = 8$\\
+\bottomrule
+\end{tabular}
+\end{center}
+Each answer is checked by one multiplication, e.g.\ $8 \cdot 15 = 120 = 7\cdot17 + 1$ and $7 \cdot 13 = 91 = 6\cdot15 + 1$.
+
+\begin{trap}[: the inverse may not exist]
+Before using any formula, compute $\gcd(a, n)$. If it is not 1 there is no inverse, and the exam expects exactly that answer with the reason. Blindly applying Euler's formula still produces a number, which is wrong: for $15^{-1} \bmod 99$, $\phi(99) = 60$ and $15^{59} \bmod 99 = 36$, but $15 \cdot 36 = 540 \equiv 45 \not\equiv 1 \pmod{99}$.
+\end{trap}
+
+\begin{worked}[: 2024--25 Q5(ii) and (iii), as it should be written]
+\textbf{Q.} (ii) Find the values of $100^{95} \bmod 9$, $658^{17} \bmod 17$ and $145^{102} \bmod 101$. (iii) Find the values of $7^{-1} \bmod 17$ and $15^{-1} \bmod 99$.
+
+\textbf{A.} (ii) \textbf{$100^{95} \bmod 9$.} The modulus 9 is not prime, so Fermat's theorem cannot be used; reduce the base instead. $100 = 11 \cdot 9 + 1$, so $100 \equiv 1 \pmod 9$ and $100^{95} \equiv 1^{95} = \mathbf{1}$. (Euler agrees: $\gcd(100, 9) = 1$, $\phi(9) = 6$, $95 \bmod 6 = 5$, $1^5 = 1$.)
+
+\textbf{$658^{17} \bmod 17$.} 17 is prime, so by the second version of Fermat's theorem $a^{17} \equiv a \pmod{17}$. $658 = 38 \cdot 17 + 12$, hence $658^{17} \equiv 658 \equiv \mathbf{12}$.
+
+\textbf{$145^{102} \bmod 101$.} 101 is prime and $101 \nmid 145$. Base: $145 \equiv 44$. Exponent: $102 = 1 \cdot 100 + 2$, and $44^{100} \equiv 1$ by Fermat. So $145^{102} \equiv 44^2 = 1936 = 19 \cdot 101 + 17$, i.e.\ $\mathbf{17}$.
+
+(iii) \textbf{$7^{-1} \bmod 17$.} 17 is prime and $17 \nmid 7$, so $7^{-1} \equiv 7^{17-2} = 7^{15} \pmod{17}$. With $15 = 8 + 4 + 2 + 1$:
+\begin{center}\small
+\begin{tabular}{@{}lllll@{}}
+\toprule
+$7^1$ & $7^2$ & $7^4$ & $7^8$ & $7^{15} = 7^8 \cdot 7^4 \cdot 7^2 \cdot 7$\\
+\midrule
+7 & $49 \equiv 15$ & $15^2 = 225 \equiv 4$ & $4^2 = 16$ & $16 \cdot 4 = 64 \equiv 13$;\; $13 \cdot 15 = 195 \equiv 8$;\; $8 \cdot 7 = 56 \equiv \mathbf{5}$\\
+\bottomrule
+\end{tabular}
+\end{center}
+So $7^{-1} \bmod 17 = \mathbf{5}$. Check: $7 \cdot 5 = 35 = 2 \cdot 17 + 1$ \checkmark.
+
+\textbf{$15^{-1} \bmod 99$.} $\gcd(99, 15)$: $99 = 6 \cdot 15 + 9$, $15 = 1 \cdot 9 + 6$, $9 = 1 \cdot 6 + 3$, $6 = 2 \cdot 3 + 0$, so $\gcd = 3 \ne 1$. Every number $15x - 99k$ is a multiple of 3 and can never equal 1, therefore \textbf{$15^{-1} \bmod 99$ does not exist}.
+\end{worked}
+
+\textbf{Which method?} All four methods give the same inverse when it exists; they differ in what they need. The summary below is the decision to make in an exam.
+\begin{center}\small
+\begin{tabularx}{\textwidth}{@{}l l X@{}}
+\toprule
+Method & Formula & When to use\\
+\midrule
+Trial & $a\cdot1, a\cdot2, \dots$ until $\equiv 1$ & Small $n$ only (mod 26 ciphers, GF(7) division).\\
+Fermat & $a^{-1} = a^{p-2} \bmod p$ & Prime modulus; compute with square-and-multiply.\\
+Euler & $a^{-1} = a^{\phi(n)-1} \bmod n$ & Composite $n$ whose factorisation (hence $\phi(n)$) is known.\\
+\textbf{Extended Euclid} & $sa + tn = 1 \Rightarrow a^{-1} = s \bmod n$ & The general method: works for any $n$ without factoring, and detects ``no inverse'' (final $\gcd \ne 1$). The past papers ask for it explicitly (2024--25 Q7, \S\ref{sec:exteuclid}); RSA uses it to find $d$.\\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\subsection{Order of an element \new}
+\likely{``Find the order of every element of $\mathbb{Z}_7^*$ / $\mathbb{Z}_{10}^*$'' (Forouzan), usually as the first step of a primitive-root question.}
+Euler's theorem says that $a^{\phi(n)} \equiv 1$ for every $a \in \mathbb{Z}_n^*$, but many elements return to 1 much earlier. \imp{The order of $a$ modulo $n$, $\operatorname{ord}(a)$, is the smallest positive integer $i$ with $a^i \equiv 1 \pmod n$.} It exists for every $a \in \mathbb{Z}_n^*$, and Euler's theorem guarantees $\operatorname{ord}(a) \le \phi(n)$. After $a^{\operatorname{ord}(a)} = 1$ the powers start over, so the sequence $a, a^2, a^3, \dots$ is periodic with period exactly $\operatorname{ord}(a)$.
+
+\textbf{The key property: $a^m \equiv 1 \iff \operatorname{ord}(a) \mid m$.} Write $m = q \cdot \operatorname{ord}(a) + r$ with $0 \le r < \operatorname{ord}(a)$. Then $a^m = \big(a^{\operatorname{ord}(a)}\big)^q a^r \equiv a^r$, and by the minimality of the order $a^r \equiv 1$ only for $r = 0$. Two consequences follow. First, since $a^{\phi(n)} \equiv 1$, \textbf{the order always divides $\phi(n)$} (this is Lagrange's theorem for the group $\mathbb{Z}_n^*$), so to find an order only the divisors of $\phi(n)$ need to be tried. Second, exponents can be reduced modulo $\operatorname{ord}(a)$, which is sharper than reducing modulo $\phi(n)$: $\operatorname{ord}(2) = 3$ modulo 7, so $2^{100} \equiv 2^{100 \bmod 3} = 2^1 = 2 \pmod 7$.
+
+The table lists $a^i \bmod 7$ for the whole group $\mathbb{Z}_7^*$ (slide L11-30); the shaded cell is the first 1 in each row, and its column is the order. Every order is a divisor of $\phi(7) = 6$, and only $a = 3$ and $a = 5$ reach the maximum 6.
+\begin{center}\small
+\begin{tabular}{@{}c|cccccc|c@{}}
+\toprule
+$a$ & $i=1$ & 2 & 3 & 4 & 5 & 6 & $\operatorname{ord}(a)$\\
+\midrule
+1 & \hl{1} & 1 & 1 & 1 & 1 & 1 & 1\\
+2 & 2 & 4 & \hl{1} & 2 & 4 & 1 & 3\\
+3 & 3 & 2 & 6 & 4 & 5 & \hl{1} & \textbf{6}\\
+4 & 4 & 2 & \hl{1} & 4 & 2 & 1 & 3\\
+5 & 5 & 4 & 6 & 2 & 3 & \hl{1} & \textbf{6}\\
+6 & 6 & \hl{1} & 6 & 1 & 6 & 1 & 2\\
+\bottomrule
+\end{tabular}
+\end{center}
+Two more slide examples (L11-27, L11-29): in $\mathbb{Z}_{10}^* = \{1, 3, 7, 9\}$ the orders are $1, 4, 4, 2$ ($3^2 = 9$, $3^4 = 81 \equiv 1$), and in $\mathbb{Z}_8^* = \{1, 3, 5, 7\}$ they are $1, 2, 2, 2$, because $3^2 = 9$, $5^2 = 25$ and $7^2 = 49$ are all $\equiv 1 \pmod 8$.
+
+\subsection{Primitive roots \new}
+\likely{``Find all primitive roots of 7 / 11 / 13'', ``is 3 a primitive root of 17?'', ``how many primitive roots does 17 have?'' (needed for Diffie--Hellman and ElGamal).}
+
+\textbf{The idea, for a prime $p$.} Take the multiplicative group $\mathbb{Z}_p^* = \{1, 2, \dots, p-1\}$, which is $\mathbb{Z}_p$ without 0. Pick an element $g$ and write down its powers $g^1, g^2, g^3, \dots \pmod p$. Two things can happen. Either the powers run through \emph{every} element of $\mathbb{Z}_p^*$ before returning to 1, or they hit 1 early and then repeat a smaller cycle. In the first case \imp{$g$ is called a primitive root of $p$: its powers $g^1, \dots, g^{p-1}$ produce each of $1, \dots, p-1$ exactly once.} Modulo 7, for example:
+\begin{center}\small
+\begin{tabular}{@{}lccccccl@{}}
+\toprule
+ & $g^1$ & $g^2$ & $g^3$ & $g^4$ & $g^5$ & $g^6$ & \\
+\midrule
+$g = 3$ & 3 & 2 & 6 & 4 & 5 & 1 & all six elements: \textbf{primitive root}\\
+$g = 2$ & 2 & 4 & 1 & 2 & 4 & 1 & only $\{2, 4, 1\}$: \textbf{not} a primitive root\\
+\bottomrule
+\end{tabular}
+\end{center}
+Since the powers start repeating as soon as they reach 1, the number of different powers equals the order of $g$. Producing all $p - 1$ elements therefore means exactly that \textbf{$\operatorname{ord}(g) = p - 1$}, the largest order possible. When such a $g$ exists, every element of the group is a power of it, so the group is \emph{cyclic} and $g$ is a \emph{generator}. Every element $y$ is then $g^x$ for exactly one $x \in \{1, \dots, p-1\}$, and that $x$ is the discrete logarithm of $y$ (\S\ref{sec:primes}).
+
+\textbf{Why cryptography needs them.} Diffie--Hellman and ElGamal publish $p$ and a base $g$, keep an exponent $x$ secret, and publish $g^x \bmod p$. If $g$ had a small order $d$, then $g^x$ could take only $d$ different values, and Eve could find a matching exponent by trying $d$ values. Choosing a primitive root makes all $p - 1$ values possible, so the search is as large as it can be.
+
+\textbf{The same idea for any $n$.} Nothing changes except the group. For a general $n$ the group is $\mathbb{Z}_n^*$, the numbers below $n$ that are coprime to $n$, and it has $\phi(n)$ elements instead of $p - 1$. So \imp{$g \in \mathbb{Z}_n^*$ is a primitive root of $n$ if $\operatorname{ord}(g) = \phi(n)$}, which means $g^1, \dots, g^{\phi(n)}$ produce every element of $\mathbb{Z}_n^*$ once each. Modulo 10, $\mathbb{Z}_{10}^* = \{1, 3, 7, 9\}$ and the powers of 3 are $3, 9, 7, 1$, so 3 is a primitive root of 10. The powers never produce 0, 2, 4, 5, 6 or 8, and they are not supposed to: a power of a number coprime to $n$ is itself coprime to $n$, so only $\mathbb{Z}_n^*$ can ever be generated, never all of $\mathbb{Z}_n$. For a prime this is the same statement as before, since $\mathbb{Z}_p^*$ is $\mathbb{Z}_p$ without 0 and $\phi(p) = p - 1$.
+
+Unlike primes, many composite $n$ have \emph{no} primitive root at all, because every element returns to 1 too early. Modulo 8, the group $\mathbb{Z}_8^* = \{1, 3, 5, 7\}$ has $\phi(8) = 4$ elements, but $3^2$, $5^2$ and $7^2$ are all $\equiv 1$, so no order reaches 4 (slide L11-28). Modulo 15, every element satisfies $a^4 \equiv 1$, because $a^2 \equiv 1 \pmod 3$ and $a^4 \equiv 1 \pmod 5$, so no order reaches $\phi(15) = 8$. The complete answer is a theorem worth memorising:
+
+\begin{mustknow}[: primitive roots]
+$g$ is a primitive root of $n$ $\iff$ $\operatorname{ord}(g) = \phi(n)$ $\iff$ the powers of $g$ produce all of $\mathbb{Z}_n^*$ (for a prime: all of $1, \dots, p-1$).\\
+Primitive roots exist \textbf{only} for $n = 2,\ 4,\ p^k,\ 2p^k$ ($p$ an odd prime). Every prime has them; 9, 10, 18 have them; 8, 12, 15 do not.\\
+When they exist there are exactly $\phi(\phi(n))$ of them; for a prime $p$ that is $\phi(p-1)$.
+\end{mustknow}
+
+\textbf{Test 1: list the powers.} Multiply by $g$ repeatedly, reducing each time; for example $3^4 \equiv 6 \cdot 3 = 18 \equiv 4 \pmod 7$, so you never need $3^6 = 729$. If a 1 appears before the $(p-1)$-th power, stop: $g$ is not a primitive root.
+\begin{center}\small
+\begin{tabular}{@{}lll@{}}
+\toprule
+Test & Powers $g^1, g^2, \dots \pmod p$ & Verdict\\
+\midrule
+2 mod 5 & 2, 4, 3, 1 & order 4 $= p - 1$: \textbf{yes}\\
+3 mod 5 & 3, 4, 2, 1 & \textbf{yes}\\
+4 mod 5 & 4, \textbf{1} & order 2: no\\
+3 mod 7 & 3, 2, 6, 4, 5, 1 & \textbf{yes}\\
+2 mod 7 & 2, 4, \textbf{1} & order 3: no\\
+2 mod 11 (homework) & 2, 4, 8, 5, 10, 9, 7, 3, 6, 1 & \textbf{yes}\\
+\bottomrule
+\end{tabular}
+\end{center}
+The homework ``primitive roots of 5'' is answered by the first three rows: 1 never works ($1^k = 1$), 2 and 3 do, and 4 does not, so the primitive roots of 5 are \textbf{2 and 3}.
+
+\textbf{Test 2: the fast test.} Listing takes up to $p - 1$ multiplications. It is faster to use the fact that the order of $g$ must divide $p - 1$: if $g$ is not a primitive root, its order is a proper divisor of $p - 1$, and every proper divisor divides $(p-1)/q$ for some prime factor $q$ of $p - 1$. So it is enough to check those few exponents:
+\begin{center}
+\imp{$g$ is a primitive root of $p$ $\iff$ $g^{(p-1)/q} \not\equiv 1 \pmod p$ for every prime $q$ dividing $p - 1$.}
+\end{center}
+For $p = 7$, $p - 1 = 6 = 2 \cdot 3$, so check $g^3$ and $g^2$. For $g = 3$: $3^3 = 27 \equiv 6$ and $3^2 = 9 \equiv 2$, neither is 1, so 3 is a primitive root. For $g = 2$: $2^3 = 8 \equiv 1$, so 2 is not.
+
+\textbf{Finding all of them from one.} Once one primitive root $g$ is known, the others are the powers $g^k$ with $\gcd(k, p-1) = 1$. The reason is that $g^k$ has order $\frac{p-1}{\gcd(k,\,p-1)}$, which equals $p - 1$ exactly when the gcd is 1. Counting those $k$ gives the $\phi(p-1)$ from the box: 5 has $\phi(4) = 2$ (2, 3), 7 has $\phi(6) = 2$ (3, 5), 11 has $\phi(10) = 4$ (2, 6, 7, 8), and 13 has $\phi(12) = 4$ (2, 6, 7, 11).
+
+\begin{worked}[: all primitive roots of a prime]
+\textbf{Q.} Find all the primitive roots of 11 (i.e.\ of the group $G = \langle \mathbb{Z}_{11}^*, \times \rangle$).
+
+\textbf{A.} $\phi(11) = 10 = 2 \cdot 5$, so a primitive root $g$ must satisfy $g^{10/2} = g^5 \not\equiv 1$ and $g^{10/5} = g^2 \not\equiv 1$. Try $g = 2$: $2^2 = 4 \ne 1$ and $2^5 = 32 = 2\cdot11 + 10 \equiv 10 \ne 1$, so \textbf{2 is a primitive root}. (For contrast, $g = 3$ fails: $3^5 = 243 = 22 \cdot 11 + 1 \equiv 1$.)
+
+The other primitive roots are $2^k$ with $\gcd(k, 10) = 1$, i.e.\ $k \in \{1, 3, 7, 9\}$:
+\begin{center}\small
+\begin{tabular}{@{}lcccc@{}}
+\toprule
+$k$ & 1 & 3 & 7 & 9\\
+$2^k \bmod 11$ & 2 & 8 & $128 = 11\cdot11 + 7 \to 7$ & $512 = 46\cdot11 + 6 \to 6$\\
+\bottomrule
+\end{tabular}
+\end{center}
+The primitive roots of 11 are \textbf{2, 6, 7, 8}. \textbf{Check:} their number is $\phi(10) = 4$ \checkmark, and the full list of powers of 2 is $2, 4, 8, 5, 10, 9, 7, 3, 6, 1$, all ten residues.
+\end{worked}
+
+\begin{worked}[: fast test and counting]
+\textbf{Q.} Show that 3 is a primitive root of 17 but 2 is not. How many primitive roots does 17 have? List them.
+
+\textbf{A.} $\phi(17) = 16 = 2^4$, whose only prime factor is 2, so $g$ is a primitive root iff $g^{16/2} = g^8 \not\equiv 1 \pmod{17}$.
+For $g = 3$: $3^2 = 9$, $3^4 = 81 \equiv 13$, $3^8 \equiv 13^2 = 169 \equiv 16 \ne 1$, so \textbf{3 is a primitive root}.
+For $g = 2$: $2^4 = 16$, $2^8 \equiv 16^2 = 256 = 15\cdot17 + 1 \equiv 1$, so \textbf{2 is not} (its order is 8).
+The number of primitive roots is $\phi(16) = \mathbf{8}$. They are $3^k$ for odd $k$: $3^1, 3^3, \dots, 3^{15} \equiv 3, 10, 5, 11, 14, 7, 12, 6$, i.e.\ \textbf{3, 5, 6, 7, 10, 11, 12, 14}.
+\end{worked}
+
+\begin{fixbox}
+\begin{itemize}
+  \item All values recomputed by script. The slides' inverse examples (L10-15: 15, 14, 32, 48; L10-20: 29, 13, 53, 31) and examples $6^{10} \bmod 11 = 1$, $3^{12} \bmod 11 = 9$, $6^{24} \bmod 35 = 1$, $20^{62} \bmod 77 = 15$ are correct. The video homework answers are correct: $5^{10} \equiv 1 \pmod{11}$, $11^{20} \equiv 22 \pmod{33}$, 2 is a primitive root of 11, the primitive roots of 5 are 2 and 3.
+  \item Slide L10-16 says the second version of Euler's theorem ``removes the condition that $a$ and $n$ should be coprime''. That is true only for squarefree $n$ (such as $n = pq$ in RSA). It fails for $n = 4$, $a = 2$: $2^{\phi(4)+1} = 2^3 = 8 \equiv 0 \not\equiv 2$.
+  \item Slide L10-18 solves $20^{62} \bmod 77$ with the second version, but $\gcd(20, 77) = 1$, so the first version already gives $20^{62} = 20^{60} \cdot 20^2 \equiv 400 \equiv 15$.
+  \item Video notation: ``$-2^{12}$'' and ``$-1^{10}$'' mean $(-2)^{12}$ and $(-1)^{10}$. Without brackets $-2^{12} = -(2^{12})$; write the brackets in the exam.
+  \item The general definition of a primitive root (any $n$) was stated in the video but not explained: only $n = 2, 4, p^k, 2p^k$ have primitive roots, and then there are $\phi(\phi(n))$ of them.
+\end{itemize}
+\end{fixbox}
+
+\subsection*{Check your understanding}
+\begin{enumerate}[leftmargin=1.5em]
+  \item \textbf{State both versions of Fermat's little theorem and the difference between them.} If $p$ is prime and $p \nmid a$, then $a^{p-1} \equiv 1 \pmod p$; for every $a$, $a^p \equiv a \pmod p$. The second version drops the condition $p \nmid a$, since for $p \mid a$ both sides are 0.
+  \item \textbf{Why is the exponent reduced modulo $p - 1$ and not modulo $p$?} Because the powers of $a$ repeat when the exponent grows by $p - 1$ ($a^{p-1} \equiv 1$), not by $p$. For example $2^{2026} \bmod 11$: $2026 \bmod 10 = 6$ and $2^6 = 64 \equiv \mathbf{9}$.
+  \item \textbf{Differentiate Fermat's and Euler's theorems.} Fermat needs a prime modulus and gives period $p - 1$; Euler allows any modulus $n$ with $\gcd(a, n) = 1$ and gives period $\phi(n)$. Fermat is the special case $n = p$ of Euler.
+  \item \textbf{Find $3^{-1} \bmod 20$ by Euler's theorem.} $\gcd(3, 20) = 1$, $\phi(20) = 8$, so $3^{-1} \equiv 3^7 = 2187 \equiv \mathbf{7}$; check $3 \cdot 7 = 21 \equiv 1$.
+  \item \textbf{Why does $15^{-1} \bmod 99$ not exist, and what goes wrong if Euler's formula is used anyway?} $\gcd(15, 99) = 3$, so $15x - 99k$ is always a multiple of 3. The formula gives $15^{59} \bmod 99 = 36$, but $15 \cdot 36 \equiv 45 \ne 1$.
+  \item \textbf{Why does RSA decryption recover the message?} $ed = k\phi(n) + 1$, so $(M^e)^d = M^{k\phi(n)+1} \equiv M \pmod n$ by the second version of Euler's theorem, which holds for $n = pq$ even if $\gcd(M, n) \ne 1$.
+  \item \textbf{What is the order of 2 modulo 13, and is 2 a primitive root?} The order divides 12; $2^4 \equiv 3$ and $2^6 = 64 \equiv 12$, so neither $12/3 = 4$ nor $12/2 = 6$ gives 1. Hence $\operatorname{ord}(2) = 12$ and 2 is a primitive root of 13. The others are $2^5 \equiv 6$, $2^7 \equiv 11$, $2^{11} \equiv 7$, so the primitive roots of 13 are 2, 6, 7, 11.
+  \item \textbf{How many primitive roots does 23 have, and is 5 one of them?} $\phi(22) = 10$. Since $22 = 2 \cdot 11$, check $5^{11} \equiv 22 \ne 1$ and $5^2 = 25 \equiv 2 \ne 1$, so 5 is a primitive root.
+  \item \textbf{Why does $\mathbb{Z}_8^*$ have no primitive root?} $\phi(8) = 4$, but $3^2$, $5^2$ and $7^2$ are all $\equiv 1 \pmod 8$, so no element has order 4.
+  \item \textbf{Why must the Diffie--Hellman base be a primitive root?} If $g$ had order $d < p - 1$, then $g^x$ would take only $d$ values and the secret exponent could be found among $d$ candidates; a primitive root makes $g^x$ range over all $p - 1$ residues.
+\end{enumerate}

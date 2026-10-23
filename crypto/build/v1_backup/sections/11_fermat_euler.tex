@@ -1,0 +1,141 @@
+% Videos: Fermat's little theorem, Euler's theorem, primitive roots, multiplicative inverse
+\section{Fermat, Euler, Primitive Roots and Inverses}\label{sec:fermat}
+
+\subsection{Fermat's little theorem}
+\begin{keybox}
+If $p$ is \textbf{prime} and $a$ is a positive integer \textbf{not divisible by $p$}, then
+\[
+a^{p-1} \equiv 1 \pmod p
+\]
+\end{keybox}
+\textbf{Check both conditions first.} If $p$ isn't prime, or $p \mid a$, the theorem says nothing.
+\begin{center}\small
+\begin{tabular}{@{}llll@{}}
+\toprule
+$p$, $a$ & Conditions & Working & Result\\
+\midrule
+5, 2 & prime, $5 \nmid 2$ & $2^4 = 16 = 3\cdot5 + 1$ & $\equiv 1$ \checkmark\\
+13, 11 & prime, $13 \nmid 11$ & $11 \equiv -2$: $(-2)^{12} = \big((-2)^4\big)^3 = 16^3 \equiv 3^3 = 27 \equiv 1$ & $\equiv 1$ \checkmark\\
+6, 2 & \textbf{6 not prime} & $2^5 = 32 = 5\cdot6 + 2$ & $\equiv 2 \ne 1$: doesn't apply\\
+11, 5 (homework) & prime, $11 \nmid 5$ & $5^2 \equiv 3$, $5^4 \equiv 9 \equiv -2$, $5^8 \equiv 4$, $5^{10} \equiv 4\cdot3 = 12$ & $\equiv 1$ \checkmark\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\textbf{Three ways the exam uses Fermat}:
+\begin{enumerate}[leftmargin=1.5em]
+  \item \textbf{Shrink a huge exponent}: $a^b \equiv a^{\,b \bmod (p-1)} \pmod p$ (when $p \nmid a$).
+  E.g.\ $145^{102} \bmod 101$: $102 \bmod 100 = 2$, so $44^2 \equiv 17$ (2024--25 paper, Q5).
+  \item \textbf{Find an inverse}: $a^{-1} \equiv a^{p-2} \pmod p$, because $a \cdot a^{p-2} = a^{p-1} \equiv 1$. E.g.\ $2^{-1} \bmod 13 = 2^{11} \bmod 13 = 7$ (check $2\cdot7 = 14 \equiv 1$).
+  \item \textbf{Second form}, true for \emph{every} $a$: $a^p \equiv a \pmod p$. E.g.\ $658^{17} \equiv 658 \equiv 12 \pmod{17}$ (same paper).
+\end{enumerate}
+\textbf{Fermat as a primality test, and its trap:} if $a^{n-1} \not\equiv 1 \pmod n$, then $n$ is \textbf{definitely composite} (e.g.\ $2^{14} \bmod 15 = 4$). But $a^{n-1} \equiv 1$ does \textbf{not} prove $n$ prime: $2^{340} \equiv 1 \pmod{341}$, yet $341 = 11\cdot31$.
+
+\subsection{Euler's theorem}
+\begin{keybox}
+For positive integers $a$ and $n$ that are \textbf{relatively prime} ($\gcd(a, n) = 1$):
+\[
+a^{\Phi(n)} \equiv 1 \pmod n
+\]
+$n$ need not be prime. When $n = p$ is prime, $\Phi(p) = p - 1$ and this \textbf{is} Fermat's theorem.
+\end{keybox}
+\begin{center}\small
+\begin{tabular}{@{}llll@{}}
+\toprule
+$a$, $n$ & $\gcd$ & Working & Result\\
+\midrule
+3, 10 & 1 & $\Phi(10) = 4$; $3^4 = 81 = 8\cdot10 + 1$ & $\equiv 1$ \checkmark\\
+2, 10 & \textbf{2} & $2^4 = 16 \equiv 6$ & $\ne 1$: doesn't apply\\
+10, 11 & 1 & $\Phi(11) = 10$; $10 \equiv -1$, $(-1)^{10} = 1$ & $\equiv 1$ \checkmark\\
+11, 33 (homework) & \textbf{11} & $\Phi(33) = 20$; $11^k \bmod 33$ alternates $11, 22, 11, 22, \dots$ & $11^{20} \equiv 22 \ne 1$\\
+\bottomrule
+\end{tabular}
+\end{center}
+In the homework, every power of 11 is a multiple of 11, so it can never be $\equiv 1 \pmod{33}$. That's \emph{why} $\gcd = 1$ is required.
+
+\textbf{The same three tools, for any $n$} (with $\gcd(a, n) = 1$):
+\begin{itemize}
+  \item Exponent reduction: $a^b \equiv a^{\,b \bmod \Phi(n)} \pmod n$. E.g.\ $11^{2024} \bmod 35$: $\Phi(35) = 24$, $2024 \bmod 24 = 8$, so $11^8 \equiv 16$.
+  \item Inverse: $a^{-1} \equiv a^{\Phi(n) - 1} \pmod n$. E.g.\ $7^{-1} \bmod 15 = 7^7 \bmod 15 = 13$ ($7 \cdot 13 = 91 = 6\cdot15 + 1$).
+  \item RSA works because of Euler: $e\cdot d \equiv 1 \pmod{\Phi(n)}$ gives $M^{ed} = M^{1 + k\Phi(n)} \equiv M \pmod n$.
+\end{itemize}
+
+\subsection{Primitive roots}
+Needed for \textbf{Diffie--Hellman key exchange}.
+\begin{keybox}
+$\alpha$ is a \textbf{primitive root} of the prime $p$ if $\;\alpha^1, \alpha^2, \dots, \alpha^{p-1} \pmod p\;$ are all \textbf{distinct}, i.e.\ they produce every number $1, \dots, p-1$ exactly once.
+(General form: every number co-prime to $n$ is a power of $\alpha$ mod $n$.)
+\end{keybox}
+\begin{center}\small
+\begin{tabular}{@{}lll@{}}
+\toprule
+Test & Powers $\alpha^1, \alpha^2, \dots$ (mod $p$) & Verdict\\
+\midrule
+2 mod 5 & 2, 4, 3, 1 & all distinct: \textbf{yes}\\
+3 mod 7 & 3, 2, 6, 4, 5, 1 & \textbf{yes}\\
+2 mod 7 & 2, 4, \textbf{1}, 2, 4, 1 & 1 at step 3, repeats: \textbf{no}\\
+2 mod 11 (homework) & 2, 4, 8, 5, 10, 9, 7, 3, 6, 1 & \textbf{yes}\\
+\bottomrule
+\end{tabular}
+\end{center}
+\textbf{Chain trick:} get each power from the previous one ($3^4 \equiv 6 \times 3 = 18 \equiv 4$); never compute $3^6 = 729$.
+\textbf{Early stop:} once you reach 1 (or any repeat) before $\alpha^{p-1}$, the powers start cycling, so it's not a primitive root.
+
+\textbf{Homework, primitive roots of 5:} 1 never works ($1^k = 1$). 2 works (above). $3$: 3, 4, 2, 1, so yes. $4$: 4, 1, 4, 1, so no. Answer: \textbf{2 and 3}.
+
+\subsubsection*{Going further (not in the lecture, but standard and useful)}
+\begin{itemize}
+  \item The \textbf{order} of $a$ mod $p$ is the smallest $k$ with $a^k \equiv 1$. A primitive root has order $p - 1$ (the maximum).
+  Mod 7 the orders are: 1$\to$1, 2$\to$3, \textbf{3$\to$6}, 4$\to$3, \textbf{5$\to$6}, 6$\to$2. The order always divides $p - 1$.
+  \item A prime $p$ has exactly $\boldsymbol{\Phi(p-1)}$ primitive roots: 5 has $\Phi(4) = 2$ (2, 3); 7 has 2 (3, 5); 11 has 4 (2, 6, 7, 8); 13 has 4 (2, 6, 7, 11).
+  \item \textbf{Fast test:} $\alpha$ is a primitive root of $p$ $\iff$ $\alpha^{(p-1)/q} \not\equiv 1$ for every prime $q \mid (p-1)$. E.g.\ 3 mod 17: $16 = 2^4$, so check only $3^8 \bmod 17 = 16 \ne 1$, and 3 \textbf{is} a primitive root.
+  \item Not every modulus has one: $\mathbb{Z}_8^* = \{1, 3, 5, 7\}$ has every order $\le 2$ but $\Phi(8) = 4$, so \textbf{none}. (Primitive roots exist only for $n = 2, 4, p^k, 2p^k$.)
+\end{itemize}
+
+\subsection{Multiplicative inverse mod $n$}
+\begin{keybox}
+$A^{-1}$ is the multiplicative inverse of $A$ mod $n$ if $\;A \times A^{-1} \equiv 1 \pmod n$.
+It \textbf{exists if and only if $\gcd(A, n) = 1$}, and it \textbf{depends on $n$}.
+\end{keybox}
+\begin{center}\small
+\begin{tabular}{@{}lllll@{}}
+\toprule
+$A \bmod n$ & $\gcd$ & Search & Inverse & Note\\
+\midrule
+$3 \bmod 5$ & 1 & $3\cdot2 = 6 \equiv 1$ & \textbf{2} & so $2^{-1} \bmod 5 = 3$ too\\
+$2 \bmod 11$ & 1 & $2\cdot6 = 12 \equiv 1$ & \textbf{6} & \\
+$4 \bmod 5$ & 1 & $4\cdot4 = 16 \equiv 1$ & \textbf{4} & its own inverse ($4 \equiv -1$)\\
+$2 \bmod 7$ & 1 & $2\cdot4 = 8 \equiv 1$ & \textbf{4} & not 3: depends on $n$!\\
+$5 \bmod 10$ & \textbf{5} & $5k \bmod 10 \in \{0, 5\}$ only & \textbf{none} & \\
+\bottomrule
+\end{tabular}
+\end{center}
+\textbf{Which method?}
+\begin{center}\small
+\begin{tabularx}{\textwidth}{@{}l X@{}}
+\toprule
+Trial ($A\cdot1, A\cdot2, \dots$) & small $n$ only\\
+Fermat: $A^{p-2} \bmod p$ & $n$ prime (use repeated squaring)\\
+Euler: $A^{\Phi(n)-1} \bmod n$ & you know $\Phi(n)$; e.g.\ $8^{-1} \bmod 77 = 8^{59} \bmod 77 = 29$\\
+\textbf{Extended Euclid} & the general method; also detects ``no inverse''. \textbf{This is what the exam asks} (Section~\ref{sec:pastpapers} method box; 2024--25 Q7)\\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\begin{examtip}
+\begin{itemize}
+  \item Fermat: $p$ prime and $p \nmid a$. Euler: $\gcd(a, n) = 1$. State the conditions before using either.
+  \item Reduce exponents mod $p - 1$ (Fermat) or mod $\Phi(n)$ (Euler), \emph{never} mod $p$ or $n$.
+  \item $a^{-1} \equiv a^{p-2} \pmod p$ and $a^{-1} \equiv a^{\Phi(n)-1} \pmod n$.
+  \item Primitive root table: chain-multiply by $\alpha$, stop at the first repeat. Count $= \Phi(p-1)$.
+  \item $a^{n-1} \not\equiv 1$ proves $n$ composite; $a^{n-1} \equiv 1$ proves nothing (341).
+\end{itemize}
+\end{examtip}
+
+\begin{fixbox}
+\begin{itemize}
+  \item All results checked by script; Gemini's homework answers are correct ($5^{10} \equiv 1 \pmod{11}$; $11^{20} \equiv 22 \pmod{33}$; 2 is a primitive root of 11; the primitive roots of 5 are 2 and 3).
+  \item Slide notation: ``$-2^{12}$'' and ``$-1^{10}$'' mean $(-2)^{12}$ and $(-1)^{10}$. Without brackets, $-2^{12} = -(2^{12})$. Write the brackets in exams.
+  \item The general definition of a primitive root (for any $n$) was given but not explained. Only $n = 2, 4, p^k, 2p^k$ have primitive roots ($\mathbb{Z}_8^*$ has none).
+\end{itemize}
+\end{fixbox}

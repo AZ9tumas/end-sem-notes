@@ -1,0 +1,101 @@
+% College Lecture 14: message integrity, birthday problems, hash attacks, iterated hashes, SHA-512, Whirlpool. Numbers verified by script.
+\section{Message Integrity and Hash Functions}
+
+Integrity without secrecy (a published will must not be altered). Electronic equivalent of document $+$ fingerprint: \textbf{message $+$ message digest}, the digest made by a \textbf{cryptographic hash function}. To check: recompute the digest and compare with the stored one.
+
+\subsection{Three criteria}
+\begin{center}\small
+\begin{tabularx}{\textwidth}{@{}l X X@{}}
+\toprule
+Criterion & Eve is given\dots & \dots and must not be able to find\\
+\midrule
+\textbf{Preimage resistance} & a digest $y = h(M)$ & any $M'$ with $h(M') = y$\\
+\textbf{Second preimage resistance} & $M$ and $h(M)$ & $M' \ne M$ with $h(M') = h(M)$ (forging a specific message)\\
+\textbf{Collision resistance} & nothing & any pair $M \ne M'$ with $h(M) = h(M')$\\
+\bottomrule
+\end{tabularx}
+\end{center}
+A lossless compressor isn't a hash (it's reversible); a checksum isn't (not preimage resistant).
+
+\subsection{The four birthday problems}
+$N$ equally likely values, $k$ samples; ``likely'' means $P \ge 1/2$.
+\begin{center}\small
+\begin{tabular}{@{}lllll@{}}
+\toprule
+Problem (find $k$ so it's likely that\dots) & $P$ & $k$ at $P = 1/2$ & $N = 365$ & Attack\\
+\midrule
+1. one sample equals a \emph{predefined} value & $1 - e^{-k/N}$ & $0.69N$ & 253 & preimage\\
+2. one equals a sample \emph{chosen from the set} & $1 - e^{-(k-1)/N}$ & $0.69N + 1$ & 254 & second preimage\\
+3. \textbf{any two} samples are equal (birthday paradox) & $1 - e^{-k(k-1)/2N}$ & $1.18\sqrt N$ & 23 & collision\\
+4. a sample of set 1 equals one of set 2 & $1 - e^{-k^2/N}$ & $0.83\sqrt N$ & 16 & alternate collision\\
+\bottomrule
+\end{tabular}
+\end{center}
+Constants: $0.69 = \ln 2$, $1.18 = \sqrt{2\ln 2}$, $0.83 = \sqrt{\ln 2}$. Problems 1, 2 grow like $N$; 3, 4 like $\sqrt N$, so \textbf{collisions are far easier to find than preimages}. (Exact: 23 people give $P = 0.507$.)
+
+\subsection{Random oracle model}
+An ideal hash: (1) a new message gets a fixed-length digest chosen \textbf{truly at random} (e.g.\ by coin flips), recorded in a table; (2) a repeated message gets its recorded digest; (3) each new digest is independent of all previous ones, so \textbf{no formula} may be used. Slide example: 16 flips \ttx{HHTHHHTTHTHHTTTH} (H $= 1$) $\to$ \ttx{1101110010110001} $=$ \ttx{DCB1}. A formula like $h(M) = M \bmod n$ fails rule 3: $h(M_1 + M_2) = [h(M_1) + h(M_2)] \bmod n$ is predictable.
+
+\subsection{Attacks on an $n$-bit digest ($N = 2^n$)}
+\begin{center}\small
+\begin{tabular}{@{}llll@{}}
+\toprule
+Attack & Eve's algorithm & $k$ for $P = 1/2$ & Order\\
+\midrule
+Preimage & hash $k$ random messages, compare with $D$ & $0.69 \times 2^n$ & $2^n$\\
+Second preimage & hash $k - 1$ messages, compare with $D = h(M)$ & $0.69 \times 2^n + 1$ & $2^n$\\
+Collision & hash $k$ messages, compare all pairs & $1.18 \times 2^{n/2}$ & $2^{n/2}$\\
+Alternate collision & $k$ meaningful variants of $M$ and of bogus $M'$, compare across & $0.83 \times 2^{n/2}$ & $2^{n/2}$\\
+\bottomrule
+\end{tabular}
+\end{center}
+\textbf{64-bit digest}: preimage needs $0.69 \times 2^{64}$ digests; at $2^{30}$/s that is $0.69 \times 2^{34}$ s $\approx$ \textbf{376 years} (secure). Collision needs $1.18 \times 2^{32}$; at $2^{20}$/s, $1.18 \times 2^{12}$ s $\approx$ \textbf{1.3 hours} (\textbf{not} secure). Hence digests $\ge 160$ bits; MD5's 128 bits gives only $2^{64}$ collision security.
+\textbf{Alternate collision}: real attacks need \emph{meaningful} pairs, so Eve makes variants (extra spaces, synonyms) of both the genuine and the fake message.
+
+\subsection{Iterated hash functions}
+A fixed-size \textbf{compression function} $f$ applied repeatedly. \textbf{Merkle--Damg\aa rd}: append padding and the length; split into $t$ blocks of $n$ bits; $H_0 = $ IV; $H_i = f(H_{i-1}, M_i)$; digest $= H_t$. Collision resistant if $f$ is.
+\begin{itemize}
+  \item \textbf{From scratch}: MD family (MD2, MD4, \textbf{MD5}: 512-bit blocks, 128-bit digest, too short against collisions); SHA family.
+  \item \textbf{From a block cipher}: \textbf{Rabin} ($H_i = E_{M_i}(H_{i-1})$: block as key, previous digest as plaintext; digest size $=$ cipher block, only 64 bits with DES; vulnerable to meet-in-the-middle); \textbf{Davies--Meyer} (Rabin $+$ feed-forward: $H_i = E_{M_i}(H_{i-1}) \oplus H_{i-1}$); \textbf{Miyaguchi--Preneel} (plaintext, key and ciphertext all XORed together; used by Whirlpool).
+\end{itemize}
+\begin{center}\small
+\begin{tabular}{@{}lccccc@{}}
+\toprule
+ & SHA-1 & SHA-224 & SHA-256 & SHA-384 & SHA-512\\
+\midrule
+Max message & $2^{64} - 1$ & $2^{64} - 1$ & $2^{64} - 1$ & $2^{128} - 1$ & $2^{128} - 1$\\
+Block & 512 & 512 & 512 & 1024 & 1024\\
+Digest & 160 & 224 & 256 & 384 & 512\\
+Rounds & 80 & 64 & 64 & 80 & 80\\
+Word & 32 & 32 & 32 & 64 & 64\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection{SHA-512}
+\begin{itemize}
+  \item 1024-bit blocks, 512-bit digest, word $=$ 64 bits; digest $=$ 8 words A--H (initialised from fixed constants).
+  \item \textbf{Padding} (Forouzan): padding (a 1 then 0s) plus a \textbf{128-bit length field} make the length a multiple of 1024: $|P| = (-|M| - 128) \bmod 1024$, so $0 \le |P| \le 1023$. $|M| = 2590 \Rightarrow |P| = 354$, total $3 \times 1024$. A message that is already a multiple of 1024 still needs padding (for the length field). (The real standard always adds at least the single 1 bit, so $|M| = 896$ needs a whole extra block.)
+  \item \textbf{Word expansion}: 16 words $\to$ 80: $W_i = W_{i-16} \oplus \mathrm{RotShift}_{1\text{-}8\text{-}7}(W_{i-15}) \oplus W_{i-7} \oplus \mathrm{RotShift}_{19\text{-}61\text{-}6}(W_{i-2})$, where $\mathrm{RotShift}_{l\text{-}m\text{-}n}(x) = \mathrm{RotR}_l(x) \oplus \mathrm{RotR}_m(x) \oplus \mathrm{ShL}_n(x)$.
+  \item \textbf{Compression}: 80 rounds, each mixing A--H with $W_i$ and a constant $K_i$ using \textbf{Majority}$(x,y,z) = (x \wedge y) \oplus (y \wedge z) \oplus (z \wedge x)$, \textbf{Conditional}$(x,y,z) = (x \wedge y) \oplus (\bar x \wedge z)$, \textbf{Rotate}$(x) = \mathrm{RotR}_{28}(x) \oplus \mathrm{RotR}_{34}(x) \oplus \mathrm{RotR}_{39}(x)$; then \textbf{final adding} of the saved A--H (mod $2^{64}$).
+\end{itemize}
+\textbf{Class exercises} (slides use a 128-bit $x$ = \ttx{1234 5678 ABCD 2345 3456 5678 ABCD 2468}; verified):
+\begin{center}\small
+\begin{tabular}{@{}ll@{}}
+$\mathrm{RotR}_{12}(x)$ & \ttx{4681 2345 678A BCD2 3453 4565 678A BCD2}\\
+$\mathrm{ShL}_{12}(x)$ & \ttx{4567 8ABC D234 5345 6567 8ABC D246 8000}\\
+Conditional$(x, y, z)$, $y$, $z$ start with 2, 3 & \ttx{2234 5678 \dots} (first digit: Cond$(1,2,3) = 0010 = 2$)\\
+Majority$(x, y, z)$ & \ttx{3234 5678 \dots} (first digit: Maj$(1,2,3) = 0011 = 3$)\\
+Rotate$(x)$ & \ttx{6776 95D3 F7EC 1AB8 6776 E6C4 8218 5EB8}\\
+\end{tabular}
+\end{center}
+
+\textbf{Whirlpool} (NESSIE): iterated hash based on \textbf{Miyaguchi--Preneel}, using a \textbf{modified AES} block cipher as the compression function; 512-bit blocks and digest; the message is padded to an odd multiple of 256 bits plus a 256-bit length field.
+
+\begin{fixbox}
+\begin{itemize}
+  \item Slide 27: ``0.69 $\times 2^{34}$ seconds or more than 500 years'': $0.69 \times 2^{34}$ s $\approx 376$ years ($2^{34}$ s alone is $\approx 544$). The conclusion (secure) stands.
+  \item Slides 54--55 swap the binary for the first digit: Conditional$(0001, 0010, 0011) = 0010 = 2$ and Majority $= 0011 = 3$ (the slide prints them the other way round, though the hex results 2 and 3 are right).
+  \item The exercise $x$ is 128 bits, though real SHA-512 words are 64 bits; the rotations on the slide are done on 128 bits.
+\end{itemize}
+\end{fixbox}

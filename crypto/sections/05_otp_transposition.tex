@@ -1,0 +1,313 @@
+% Videos: one-time pad, rail fence, row column transposition
+\newcommand{\railfence}[1]{%
+  \foreach \l/\r [count=\i] in {#1}{\node[font=\small] (rf\i) at (\i*0.5,-\r*0.6) {\l};}}
+
+\section{One-Time Pad \hot}\label{sec:otp}
+\asked{2025--26 Q1 (8 marks): OTP-Vigen\`ere with key stream 9 0 1 7 23 15 21 14 11 11 2 8 9 (Stallings 2.x). Part (b), finding a key that maps the ciphertext to another plaintext, is exactly why an OTP is unbreakable: every plaintext of the same length is possible.}
+
+The last substitution technique. It is an \textbf{improvement to the Vernam cipher}:
+\begin{keybox}[title=One-time pad]
+\begin{itemize}
+  \item The key is \textbf{random} and \textbf{as long as the message}, so it never repeats.
+  \item The key is used to encrypt and decrypt \textbf{a single message}, then \textbf{discarded}. Each new message needs a new key of the same length.
+  \item Such a scheme is \textbf{unbreakable}: ``the ultimate in security''.
+\end{itemize}
+\end{keybox}
+
+\subsection{How it grew out of the earlier ciphers}
+\begin{center}\small
+\begin{tabularx}{\textwidth}{@{}l X X@{}}
+\toprule
+Cipher & Key & What goes wrong\\
+\midrule
+Vigen\`ere & short keyword, \textbf{repeated} & repeats every $m$ letters $\Rightarrow$ split into Caesar ciphers\\
+Autokey & keyword + plaintext & key is English $\Rightarrow$ has English letter frequencies\\
+Vernam & long key stream (paper tape) & tape loops, so the key \textbf{eventually repeats}\\
+\textbf{One-time pad} & \textbf{truly random}, \textbf{same length} as message, \textbf{used once} & nothing to exploit\\
+\bottomrule
+\end{tabularx}
+\end{center}
+The OTP is a Vigen\`ere/Vernam cipher whose key \emph{never} repeats and has \emph{no} pattern. The formulas don't change:
+\[
+C_i = (P_i + K_i) \bmod 26,\quad P_i = (C_i - K_i) \bmod 26 \quad\text{(letters)}\qquad\qquad C_i = P_i \oplus K_i,\quad P_i = C_i \oplus K_i \quad\text{(bits)}
+\]
+
+\subsection{Example 1: letters}
+Plaintext \ttx{attackatdawn}, random key \ttx{qvhzmxkbplwe} (12 letters for 12 letters):
+\begin{center}\small\setlength{\tabcolsep}{4.5pt}
+\begin{tabular}{@{}l*{12}{c}@{}}
+\toprule
+Plain & a&t&t&a&c&k&a&t&d&a&w&n\\
+$P$ & 0&19&19&0&2&10&0&19&3&0&22&13\\
+Key & q&v&h&z&m&x&k&b&p&l&w&e\\
+$K$ & 16&21&7&25&12&23&10&1&15&11&22&4\\
+$P+K$ & 16&\hl{40}&\hl{26}&25&14&\hl{33}&10&20&18&11&\hl{44}&17\\
+$\bmod 26$ & 16&14&0&25&14&7&10&20&18&11&18&17\\
+Cipher & \textbf{Q}&\textbf{O}&\textbf{A}&\textbf{Z}&\textbf{O}&\textbf{H}&\textbf{K}&\textbf{U}&\textbf{S}&\textbf{L}&\textbf{S}&\textbf{R}\\
+\bottomrule
+\end{tabular}
+\end{center}
+Ciphertext \textbf{\ttx{QOAZOHKUSLSR}}. The receiver computes $(C - K) \bmod 26$ letter by letter to get \ttx{attackatdawn} back, then destroys the key.
+Note the two \ttx{t}'s in \ttx{att} became \ttx{O} and \ttx{A}. The two \ttx{S}'s in the ciphertext came from different letters (\ttx{d}, \ttx{w}).
+
+\subsection{Example 2: bits}
+``HI'' in 8-bit ASCII, XOR a random key:
+\begin{center}\small\ttfamily
+\begin{tabular}{@{}r@{\quad}l@{\quad}l@{}}
+\rmfamily Plaintext (H, I) & 01001000 & 01001001\\
+\rmfamily Key & 10110101 & 01101100\\
+\midrule
+\rmfamily Ciphertext $P\oplus K$ & 11111101 & 00100101\\
+\rmfamily $C \oplus K$ & 01001000 & 01001001 \rmfamily\;= ``HI'' again\\
+\end{tabular}
+\end{center}
+
+\subsection{Why it can't be broken}
+\begin{itemize}
+  \item It produces random output with \textbf{no statistical relationship to the plaintext}.
+  \item The ciphertext contains \textbf{no information whatsoever} about the plaintext, so there is simply no way to break the code.
+  \item The security comes \textbf{entirely from the randomness of the key}.
+\end{itemize}
+
+\textbf{Look at one letter.} The attacker sees \ttx{Q}. Every plaintext letter could have produced it, each with exactly one key letter:
+\begin{center}\small\setlength{\tabcolsep}{5pt}
+\begin{tabular}{@{}l*{7}{c}@{}}
+\toprule
+If the plaintext was & a & b & c & d & e & \dots & z\\
+then the key was & q & p & o & n & m & \dots & r\\
+\bottomrule
+\end{tabular}
+\end{center}
+The key is random, so all 26 cases are \textbf{equally likely}. Seeing \ttx{Q} tells the attacker nothing.
+
+\textbf{Look at the whole message.} The same ciphertext decrypts to anything of the same length, depending on the key:
+\begin{center}\small
+\begin{tabular}{@{}lll@{}}
+\toprule
+Ciphertext & Key tried & Result\\
+\midrule
+\ttx{QOAZOHKUSLSR} & \ttx{qvhzmxkbplwe} & \textbf{attack at dawn}\\
+\ttx{QOAZOHKUSLSR} & \ttx{zkhikhruztku} & \textbf{retreat at six}\\
+\ttx{KXFUDM} & \ttx{kemubc} & \textbf{attack}\\
+\ttx{KXFUDM} & \ttx{htaqqj} & \textbf{defend}\\
+\bottomrule
+\end{tabular}
+\end{center}
+Brute force produces \emph{every} meaningful message of that length, and there is nothing to say which one is right. (Compare Caesar: only one of the 25 tries made sense, GERMANY.)
+
+\subsection{The rules, and what breaks if you bend them}
+\begin{keybox}[title=Rule 1: never reuse a key (the ``two-time pad'')]
+Encrypt a second message \ttx{holdposition} with the \emph{same} key \ttx{qvhzmxkbplwe}: $C_2 = $ \ttx{XJSCBLCJITKR}.
+\begin{itemize}
+  \item Subtracting the ciphertexts cancels the key: $C_1 - C_2 = (P_1 + K) - (P_2 + K) = P_1 - P_2$ \;(\ttx{TFIXNWILKSIA} both ways). What's left is two English texts mixed together, which has structure the attacker can attack.
+  \item Worse: if the attacker knows or guesses $P_1$ (``attack at dawn'' is a common phrase), then $K = C_1 - P_1 =$ \ttx{qvhzmxkbplwe}, and $P_2 = C_2 - K =$ \textbf{hold position}.
+\end{itemize}
+With bits it is the same: $C_1 \oplus C_2 = P_1 \oplus P_2$.
+\end{keybox}
+\begin{keybox}[title=Rule 2: the key must be truly random]
+If the key is text from a book (a ``running key''), it has English letter frequencies, and it can be attacked like the autokey. If it comes from a formula or a short seed, it is really a stream cipher: at best \emph{computationally} secure, not perfect.
+\end{keybox}
+\begin{keybox}[title=Rule 3: the key must be at least as long as the message]
+A shorter key has to repeat, and then you're back to Vigen\`ere/Vernam and their weaknesses.
+\end{keybox}
+\textbf{Known plaintext doesn't hurt an OTP.} If the attacker learns one plaintext and its ciphertext, they get $K = C - P$, but only for that message. That key is never used again.
+
+\subsection{Two fundamental difficulties}
+\begin{enumerate}[leftmargin=1.5em]
+  \item \textbf{Making large quantities of random keys.} Every message needs fresh random key material of the same size.
+  \item Even more daunting: \textbf{key distribution and protection}. Both sides need the same huge key, delivered and stored securely. (If you had a secure way to send that much key, you could send the message that way instead.)
+\end{enumerate}
+So the one-time pad is of \textbf{limited use}. It suits \textbf{low-bandwidth channels that need very high security}.
+
+\subsection{Perfect secrecy}
+\begin{keybox}
+The one-time pad is the \textbf{only} cryptosystem with \textbf{perfect secrecy}: the ciphertext reveals \textbf{absolutely nothing} about the plaintext.
+\end{keybox}
+This is exactly the \textbf{unconditionally secure} idea from Section~\ref{sec:schemes}: no amount of ciphertext or computing power helps. (Formally, $P(\text{plaintext} \mid \text{ciphertext}) = P(\text{plaintext})$, a definition due to Shannon.)
+Everything else in this course (AES, RSA, \dots) is only \textbf{computationally} secure: breaking it is possible in principle, just too slow or too costly.
+
+\section{Transposition Ciphers}
+
+\begin{keybox}
+Some sort of \textbf{permutation} is applied to the plaintext letters. Letters are \textbf{not replaced}; only their \textbf{positions} change. The simplest such cipher is the \textbf{rail fence}.
+\end{keybox}
+
+\subsection{Rail fence}
+Write the plaintext \textbf{down and up along diagonals} over $D$ rows (the \textbf{depth}), then \textbf{read off row by row}. Spaces and punctuation are dropped.
+
+\textbf{Example:} ``neso academy is the best'', depth 2 (20 letters):
+\begin{center}
+\begin{tikzpicture}
+  \railfence{n/0,e/1,s/0,o/1,a/0,c/1,a/0,d/1,e/0,m/1,y/0,i/1,s/0,t/1,h/0,e/1,b/0,e/1,s/0,t/1}
+  \foreach \i in {1,...,19}{\pgfmathtruncatemacro{\j}{\i+1}\draw[gray!50] (rf\i) -- (rf\j);}
+  \node[font=\scriptsize,anchor=east] at (0.2,0) {row 1};
+  \node[font=\scriptsize,anchor=east] at (0.2,-0.6) {row 2};
+\end{tikzpicture}
+\end{center}
+Row 1: \ttx{NSAAEYSHBS}\quad Row 2: \ttx{EOCDMITEET}\quad $\Rightarrow$\quad \textbf{\ttx{NSAAEYSHBSEOCDMITEET}}
+
+\textbf{Depth 3}, ``Thank you very much'' (16 letters). The path goes 1, 2, 3, 2, 1, 2, 3, \dots\ (repeats every $2(D-1) = 4$ letters):
+\begin{center}
+\begin{tikzpicture}
+  \railfence{t/0,h/1,a/2,n/1,k/0,y/1,o/2,u/1,v/0,e/1,r/2,y/1,m/0,u/1,c/2,h/1}
+  \foreach \i in {1,...,15}{\pgfmathtruncatemacro{\j}{\i+1}\draw[gray!50] (rf\i) -- (rf\j);}
+\end{tikzpicture}
+\end{center}
+Rows: \ttx{TKVM} + \ttx{HNYUEYUH} + \ttx{AORC} $\Rightarrow$ \textbf{\ttx{TKVMHNYUEYUHAORC}}
+
+\textbf{Homework} (``neso academy is the best'', depth 3): rows \ttx{NAESB} + \ttx{EOCDMITEET} + \ttx{SAYHS}\\ $\Rightarrow$ \textbf{\ttx{NAESBEOCDMITEETSAYHS}}.
+
+\subsection{Decrypting a rail fence}
+The receiver knows the depth $D$. The problem is that they don't know where one row ends and the next begins in the ciphertext. So first work out \textbf{how many letters each row holds}.
+\begin{keybox}[title={Rail fence decryption, step by step}]
+\begin{enumerate}[leftmargin=1.5em]
+  \item Count the letters $L$. The zig-zag pattern of rows repeats every $2(D-1)$ letters.
+  \item Write the \textbf{row number of every position} (1, 2, \dots, $D$, \dots, 2, 1, 2, \dots) and \textbf{count} how many times each row appears.
+  \item \textbf{Cut} the ciphertext into pieces of those lengths: the first piece is row 1, the next is row 2, and so on.
+  \item Put each piece back into its row's positions, left to right. Then \textbf{read along the zig-zag} (position 1, 2, 3, \dots).
+\end{enumerate}
+\end{keybox}
+
+\textbf{Example 1: depth 2.} \ttx{NSAAEYSHBSEOCDMITEET} (20 letters). Pattern 1 2 1 2 \dots\ so each row has 10 letters:
+row 1 $=$ \ttx{NSAAEYSHBS}, row 2 $=$ \ttx{EOCDMITEET}. Take letters alternately from row 1 and row 2:
+\ttx{N}\textbf{\ttx{E}}\ttx{S}\textbf{\ttx{O}}\ttx{A}\textbf{\ttx{C}}\dots\ $\Rightarrow$ \textbf{nesoacademyisthebest}.
+(Depth-2 shortcut: split in half and interleave. With an odd length, row 1 gets the extra letter.)
+
+\textbf{Example 2: depth 3.} \ttx{TKVMHNYUEYUHAORC} (16 letters). The pattern repeats every $2(3-1) = 4$:
+\begin{center}\small\setlength{\tabcolsep}{4pt}
+\begin{tabular}{@{}l*{16}{c}@{}}
+\toprule
+Position & 1&2&3&4&5&6&7&8&9&10&11&12&13&14&15&16\\
+Row & 1&2&3&2&1&2&3&2&1&2&3&2&1&2&3&2\\
+\bottomrule
+\end{tabular}
+\end{center}
+Row 1 appears 4 times, row 2 8 times, row 3 4 times. Cut: \ttx{TKVM | HNYUEYUH | AORC}.
+Fill the row-1 positions (1, 5, 9, 13) with T K V M, the row-2 positions with H N Y U E Y U H, and the row-3 positions with A O R C. Reading positions 1 to 16 gives \textbf{thankyouverymuch}.
+
+\textbf{Example 3: depth 4, unequal rows} (the tricky case). \ttx{CGIRORYSYTAHFNPPU} (17 letters). The pattern repeats every $2(4-1) = 6$:
+\begin{center}\small\setlength{\tabcolsep}{4pt}
+\begin{tabular}{@{}l*{17}{c}@{}}
+\toprule
+Position & 1&2&3&4&5&6&7&8&9&10&11&12&13&14&15&16&17\\
+Row & 1&2&3&4&3&2&1&2&3&4&3&2&1&2&3&4&3\\
+\bottomrule
+\end{tabular}
+\end{center}
+Counts: row 1 $= 3$, row 2 $= 5$, row 3 $= 6$, row 4 $= 3$ (total 17 \checkmark). Cut: \ttx{CGI | RORYS | YTAHFN | PPU}. Put the pieces back:
+\begin{center}
+\begin{tikzpicture}
+  \railfence{C/0,R/1,Y/2,P/3,T/2,O/1,G/0,R/1,A/2,P/3,H/2,Y/1,I/0,S/1,F/2,U/3,N/2}
+  \foreach \i in {1,...,16}{\pgfmathtruncatemacro{\j}{\i+1}\draw[gray!50] (rf\i) -- (rf\j);}
+  \node[font=\scriptsize,anchor=east] at (0.2,0) {row 1: CGI};
+  \node[font=\scriptsize,anchor=east] at (0.2,-0.6) {row 2: RORYS};
+  \node[font=\scriptsize,anchor=east] at (0.2,-1.2) {row 3: YTAHFN};
+  \node[font=\scriptsize,anchor=east] at (0.2,-1.8) {row 4: PPU};
+\end{tikzpicture}
+\end{center}
+Read along the line: \textbf{cryptographyisfun} (``cryptography is fun'').
+\emph{Trap:} don't assume the rows are equal, or that the middle rows are equal to each other. Here rows 2 and 3 have different lengths because the message stops partway through a cycle.
+
+\textbf{Check yourself:} decrypt the homework answer \ttx{NAESBEOCDMITEETSAYHS} (depth 3). The counts are 5, 10, 5.
+
+\subsection{Row--column transposition}
+\begin{keybox}[title=A more complex scheme]
+\textbf{Write} the message into a rectangle \textbf{row by row}. \textbf{Read} it \textbf{column by column}. The \textbf{key} is the \textbf{order of the columns}. Fill leftover cells with filler letters (e.g.\ \ttx{x y z}).
+\end{keybox}
+
+\textbf{Example:} ``Kill Corona Virus at twelve am tomorrow'' (33 letters), 7 columns $\times$ 5 rows = 35 cells, so 2 fillers (\ttx{y}, \ttx{z}). Key \textbf{4 3 1 2 5 6 7}.
+\begin{center}\small
+\begin{minipage}[c]{0.4\textwidth}\centering
+\begin{tabular}{|*{7}{c|}}
+\multicolumn{1}{c}{4}&\multicolumn{1}{c}{3}&\multicolumn{1}{c}{\textbf{1}}&\multicolumn{1}{c}{2}&\multicolumn{1}{c}{5}&\multicolumn{1}{c}{6}&\multicolumn{1}{c}{7}\\
+\hline
+k&i&\cellcolor{warn!18}l&l&c&o&r\\ \hline
+o&n&\cellcolor{warn!18}a&v&i&r&u\\ \hline
+s&a&\cellcolor{warn!18}t&t&w&e&l\\ \hline
+v&e&\cellcolor{warn!18}a&m&t&o&m\\ \hline
+o&r&\cellcolor{warn!18}r&o&w&\textit{y}&\textit{z}\\ \hline
+\end{tabular}\\[2pt]
+{\footnotesize numbers above = read order}
+\end{minipage}
+\begin{minipage}[c]{0.5\textwidth}
+\begin{tabular}{@{}lll@{}}
+\toprule
+Order & Column & Letters\\
+\midrule
+1 & col 3 & LATAR\\
+2 & col 4 & LVTMO\\
+3 & col 2 & INAER\\
+4 & col 1 & KOSVO\\
+5 & col 5 & CIWTW\\
+6 & col 6 & OREOY\\
+7 & col 7 & RULMZ\\
+\bottomrule
+\end{tabular}
+\end{minipage}
+\end{center}
+Answer: \textbf{\ttx{LATARLVTMOINAERKOSVOCIWTWOREOYRULMZ}}
+
+\subsection{Two stages: more complex}
+A single transposition leaves patterns that can be pieced back together. So \textbf{feed the ciphertext back in} and transpose again with the same key:
+\begin{center}\small
+\begin{minipage}[c]{0.4\textwidth}\centering
+\begin{tabular}{|*{7}{c|}}
+\multicolumn{1}{c}{4}&\multicolumn{1}{c}{3}&\multicolumn{1}{c}{\textbf{1}}&\multicolumn{1}{c}{2}&\multicolumn{1}{c}{5}&\multicolumn{1}{c}{6}&\multicolumn{1}{c}{7}\\
+\hline
+L&A&\cellcolor{warn!18}T&A&R&L&V\\ \hline
+T&M&\cellcolor{warn!18}O&I&N&A&E\\ \hline
+R&K&\cellcolor{warn!18}O&S&V&O&C\\ \hline
+I&W&\cellcolor{warn!18}T&W&O&R&E\\ \hline
+O&Y&\cellcolor{warn!18}R&U&L&M&Z\\ \hline
+\end{tabular}
+\end{minipage}
+\begin{minipage}[c]{0.5\textwidth}
+Read columns 3, 4, 2, 1, 5, 6, 7:\\[2pt]
+\ttx{TOOTR AISWU AMKWY LTRIO RNVOL LAORM VECEZ}
+\end{minipage}
+\end{center}
+Answer: \textbf{\ttx{TOOTRAISWUAMKWYLTRIORNVOLLAORMVECEZ}}.
+The full key is now: the rectangle size, the column order and the number of stages.
+
+{\small\emph{Decrypting (not shown in the lecture):} the receiver knows the rectangle size, so each column has 5 letters. Write the ciphertext \emph{into columns} in key order, then read the rows. For two stages, do this twice.}
+
+\section{Classical Ciphers at a Glance}
+\begin{center}\small
+\begin{tabularx}{\textwidth}{@{}l l l X@{}}
+\toprule
+Cipher & Type & Key & Main weakness\\
+\midrule
+Caesar & substitution, 1 letter & shift 3 (fixed) & algorithm known, no real key\\
+Shift & substitution, 1 letter & shift 1--25 & only 25 keys: brute force\\
+Monoalphabetic & substitution, 1 letter & permutation ($26!$) & letter frequencies preserved\\
+Playfair & substitution, 2 letters & 5$\times$5 keyword matrix & same pair $\to$ same output\\
+Hill & substitution, $m$ letters & invertible $m\times m$ matrix & linear (known plaintext)\\
+Vigen\`ere & polyalphabetic & repeating keyword & key repeats: split into Caesars\\
+Autokey & polyalphabetic & keyword + plaintext & key has English frequencies\\
+Vernam & polyalphabetic, bits (XOR) & key stream & tape key repeated\\
+One-time pad & substitution & random, once, message length & none (perfect secrecy); key generation and distribution\\
+Rail fence & transposition & depth & few possibilities\\
+Row--column & transposition & column order (+ stages) & one stage can be reconstructed\\
+\bottomrule
+\end{tabularx}
+\end{center}
+Transposition ciphers keep the letter frequencies of the plaintext unchanged (only positions move).
+
+\begin{examtip}
+\begin{itemize}
+  \item OTP: random key, same length as message, used once then discarded $\Rightarrow$ unbreakable, perfect secrecy.
+  \item Reusing an OTP key: $C_1 - C_2 = P_1 - P_2$ (or $C_1\oplus C_2 = P_1\oplus P_2$), so the key cancels out. One known plaintext then reveals the other message.
+  \item Know the two difficulties word for word: (1) making large quantities of random keys; (2) key distribution and protection.
+  \item Substitution changes letters; transposition changes positions.
+  \item Rail fence: draw the zig-zag, then read row by row. State the depth.
+  \item Row--column: draw the grid with the key above it, pad the last row, and read columns in key order. Two stages = do it again on the ciphertext.
+\end{itemize}
+\end{examtip}
+
+\begin{fixbox}
+\begin{itemize}
+  \item ``Thank you very much'', depth 3, is \ttx{TKVMHNYUEYUH}\textbf{\ttx{AORC}}. The notes' final string ends in \ttx{AORE}, but their own row reading gives \ttx{AORC}.
+  \item Row--column: the speaker says ``R U L M C'' for column 7, but the grid (and slide) give \ttx{RULMZ}. All other results were checked by script and are correct.
+  \item The OTP formulas, Shannon and $P(M\mid C) = P(M)$ come from Gemini's notes, not the slides. They are standard and correct.
+\end{itemize}
+\end{fixbox}

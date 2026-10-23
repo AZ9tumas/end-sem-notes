@@ -1,0 +1,284 @@
+% Exam-pattern drill bank: questions written in the MNNIT CSN15403 mid-sem style, grouped by question type
+\clearpage
+\section{Exam-Pattern Drill Bank}
+Every question type that appeared in the 2024--25 and 2025--26 papers, several times over, with new numbers.
+Do each group until the method is automatic. Marks follow the papers. Answers are in Section~\ref{sec:drillans}.
+
+\newcounter{dq}
+\newcommand{\dq}[1]{\refstepcounter{dq}\par\medskip\noindent\textbf{E\thedq.} \emph{[#1]}\ }
+
+\subsection*{Type 1: cipher behaviour and attack types (2--3 marks)}
+\dq{2} What is the maximum number of characters that change in the ciphertext if a single plaintext character is changed? (a) one-time pad (b) Hill cipher with a $3\times3$ key (c) keyed transposition (d) auto-key ($k_1 = k$, $k_i = P_{i-1}$).
+
+\dq{2} A single \emph{ciphertext} character is corrupted in transit. How many plaintext characters are wrong after decryption? (a) Vigen\`ere (b) Hill ($2\times2$) (c) auto-key ($k_i = P_{i-1}$) (d) Playfair.
+
+\dq{2} Name the attack: (a) Eve only listens to the channel. (b) Eve finds an old printout with a plaintext and its ciphertext. (c) Eve borrows Alice's encryption device for an hour. (d) Eve tricks Bob into decrypting a ciphertext she made up.
+
+\dq{3} Eve uses Alice's computer, types ``abcdefghijkl'' and sees ``DFACEBJLGIKH''. Alice uses a keyed transposition cipher.
+(a) What type of attack is this? (b) What is the key size? (c) Find the encryption and decryption keys. (d) Decrypt ``AKATCTANADWT''.
+
+\dq{2} Encrypt ``enemy attacks tonight'' with the keyed transposition key (3 1 4 5 2), padding with ``z''.
+
+\subsection*{Type 2: Playfair (3--4 marks)}
+\dq{4} Use the Playfair cipher to encipher ``We meet at the bridge at midnight Jack''. The key is made by filling the first rows with ``CRYPTOGRAPHY'' and the rest with the remaining alphabet (I/J together, filler X).
+
+\dq{3} Encrypt ``Balloon pops at noon'' with this key matrix:
+\begin{center}\small\ttfamily
+\begin{tabular}{ccccc}K&E&Y&W&O\\R&D&A&B&C\\F&G&H&I/J&L\\M&N&P&Q&S\\T&U&V&X&Z\end{tabular}
+\end{center}
+
+\dq{3} The Playfair key is ``SECURITY''. Decrypt \ttx{DAFSAFCFPMHSLGCSAFRTSBFHUV}.
+
+\subsection*{Type 3: GF$(2^8)$ arithmetic (4 marks)}
+For all of these, $m(x) = x^8 + x^4 + x^3 + x + 1$.
+
+\dq{4} Find the multiplicative inverse of $x^2$ in GF$(2^8)$ mod $m(x)$.
+
+\dq{4} Find the multiplicative inverse of $(x^3 + 1)$ in GF$(2^8)$ mod $m(x)$.
+
+\dq{4} Find the multiplicative inverse of $x^4$ in GF$(2^8)$ mod $m(x)$.
+
+\dq{4} Find the multiplicative inverse of $x^6$ in GF$(2^8)$ mod $m(x)$.
+
+\dq{3} In GF$(2^8)$: (a) add $(x^6 + x^4 + x^2 + x + 1)$ and $(x^7 + x + 1)$; (b) multiply them mod $m(x)$.
+
+\subsection*{Type 4: GF$(p)$, modular exponentiation, inverses (3 marks)}
+\dq{3} (i) In GF(13) find $4 \div 7$, and in GF(17) find $3 \div 5$.
+(ii) Find $999^{999} \bmod 10$, $7^{1000} \bmod 13$ and $1234^{4321} \bmod 5$.
+(iii) Find, if they exist, $13^{-1} \bmod 47$, $12^{-1} \bmod 30$ and $5^{-1} \bmod 28$.
+
+\dq{3} Find $777^{333} \bmod 7$, $2^{1000} \bmod 7$, $11^{500} \bmod 12$ and $46^{47} \bmod 47$.
+
+\subsection*{Type 5: extended Euclidean algorithm (5 marks)}
+\dq{5} Find $17^{-1}$ in $\mathbb{Z}_{43}$ with the extended Euclidean algorithm. State the number of iterations, the remainder in iteration 3, and $t$ in iteration 2.
+
+\dq{5} Mr X wants $38^{-1}$ in $\mathbb{Z}_{180}$. Run the extended Euclidean algorithm and explain what the final row tells him. Which elements of $\{36, 37, 38, 39\}$ \emph{do} have inverses in $\mathbb{Z}_{180}$?
+
+\dq{5} Find $550^{-1} \bmod 1769$. How many iterations are needed? Comment on the answer.
+
+\subsection*{Type 6: linear Diophantine equations (3 marks)}
+\dq{3} Solve, or show there is no solution: (i) $21x + 14y = 35$ \quad (ii) $40x + 15y = 110$ \quad (iii) $12x + 18y = 25$.
+
+\dq{3} A shop sells pens for Rs.\,19 and notebooks for Rs.\,13. A student spends exactly Rs.\,220. How many of each did they buy? Is the answer unique?
+
+\subsection*{Type 7: one-time pad / Vigen\`ere with a key stream (8 marks)}
+\dq{8} One-time-pad Vigen\`ere: each plaintext letter is shifted by the next number of the key stream.
+(a) Encrypt ``meetmeatnoon'' with the key stream 3 19 5 0 24 11 7 2 14 9 25 8.
+(b) Using your ciphertext, find a key stream that makes it decrypt to ``holdposition''.
+(c) Why does (b) show that Eve can't break this cipher by brute force?
+
+\dq{3} Encrypt ``polyalphabetic'' with the Vigen\`ere keyword ``LEMON''.
+
+\subsection*{Type 8: AES state operations (6 marks)}
+\dq{6} AES state (rows) $S = \begin{pmatrix}\mathtt{32}&\mathtt{88}&\mathtt{31}&\mathtt{E0}\\\mathtt{43}&\mathtt{5A}&\mathtt{31}&\mathtt{37}\\\mathtt{F6}&\mathtt{30}&\mathtt{98}&\mathtt{07}\\\mathtt{A8}&\mathtt{8D}&\mathtt{A2}&\mathtt{34}\end{pmatrix}$, key $K = \begin{pmatrix}\mathtt{2B}&\mathtt{28}&\mathtt{AB}&\mathtt{09}\\\mathtt{7E}&\mathtt{AE}&\mathtt{F7}&\mathtt{CF}\\\mathtt{15}&\mathtt{D2}&\mathtt{15}&\mathtt{4F}\\\mathtt{16}&\mathtt{A6}&\mathtt{88}&\mathtt{3C}\end{pmatrix}$.
+(a) Apply ShiftRows to $S$. (b) Apply AddRoundKey to $S$ (the original) with $K$.
+
+\dq{3} After ShiftRows the state is $\begin{pmatrix}\mathtt{D4}&\mathtt{E0}&\mathtt{B8}&\mathtt{1E}\\\mathtt{27}&\mathtt{BF}&\mathtt{B4}&\mathtt{41}\\\mathtt{11}&\mathtt{98}&\mathtt{5D}&\mathtt{52}\\\mathtt{AE}&\mathtt{F1}&\mathtt{E5}&\mathtt{30}\end{pmatrix}$. What was it before ShiftRows?
+
+\dq{3} $\bigstar$ (MixColumns, one byte.) A state column is $(\mathtt{87}, \mathtt{6E}, \mathtt{46}, \mathtt{A6})$. Compute the first byte of its MixColumns output, $\mathtt{02}\cdot\mathtt{87} \oplus \mathtt{03}\cdot\mathtt{6E} \oplus \mathtt{46} \oplus \mathtt{A6}$, in GF$(2^8)$.
+
+\subsection*{Type 9: DES (5 marks)}
+\dq{2} DES S-box $S_1$ (below). Find the output for the 6-bit inputs (a) \ttx{100011} (b) \ttx{011011} (c) \ttx{110110}.
+\begin{center}\scriptsize\setlength{\tabcolsep}{2.5pt}
+\begin{tabular}{c|*{16}{c}}
+$S_1$ & 0&1&2&3&4&5&6&7&8&9&10&11&12&13&14&15\\\hline
+0 & 14&4&13&1&2&15&11&8&3&10&6&12&5&9&0&7\\
+1 & 0&15&7&4&14&2&13&1&10&6&12&11&9&5&3&8\\
+2 & 4&1&14&8&13&6&2&11&15&12&9&7&3&10&5&0\\
+3 & 15&12&8&2&4&9&1&7&5&11&3&14&10&0&6&13
+\end{tabular}
+\end{center}
+
+\dq{3} DES key schedule. (a) By how many bits in total have $C$ and $D$ been rotated after rounds 2, 9 and 16? (b) Why is the total after round 16 important? (c) How many bits does PC-1 discard, and why?
+
+\dq{5} Explain with a diagram why a Feistel cipher can decrypt with the \emph{same} round function even if $f$ is not invertible. Given one round's output $(L_1, R_1)$ and $K_1$, write $L_0$ and $R_0$.
+
+
+\subsection*{Type 10: Fermat, Euler, primitive roots (3--4 marks)}
+\dq{3} Using Fermat's little theorem, find (i) $6^{10} \bmod 11$ (ii) $3^{12} \bmod 11$ (iii) $2^{-1} \bmod 13$ (iv) $7^{-1} \bmod 19$.
+
+\dq{4} Using Euler's theorem, find the multiplicative inverses: (i) $3^{-1} \bmod 20$ (ii) $7^{-1} \bmod 15$ (iii) $8^{-1} \bmod 77$ (iv) $60^{-1} \bmod 187$ (v) $71^{-1} \bmod 100$.
+
+\dq{3} Find (i) $7^{222} \bmod 11$ (ii) $4^{532} \bmod 11$ (iii) $11^{2024} \bmod 35$.
+
+\dq{4} (i) Show that 3 is a primitive root of 17. (ii) Find all primitive roots of 11. (iii) How many primitive roots does 23 have? Given that 5 is one, find another without building a table.
+
+\dq{3} Find the order of every element of $\mathbb{Z}_7^*$ and identify its primitive roots. Does $\mathbb{Z}_8^*$ have a primitive root? Justify.
+
+\dq{3} Evaluate, stating whether Fermat's theorem applies: (i) $12^{16} \bmod 17$ (ii) $17^{16} \bmod 17$ (iii) $2^{14} \bmod 15$: what does this tell you about 15? (iv) $2^{340} \bmod 341$ turns out to be 1. Is 341 prime?
+
+% ===============================================================
+\clearpage
+\subsection{Drill bank: model answers}\label{sec:drillans}
+\setcounter{dq}{0}
+\newcommand{\da}{\refstepcounter{dq}\par\medskip\noindent\textbf{E\thedq.}\ }
+
+\da (a) \textbf{1} (b) \textbf{3}: the whole block can change (c) \textbf{1}: letters only move, so one letter (at a new position) changes (d) \textbf{2}: $C_i$, and $C_{i+1}$ because $P_i$ is the key for the next letter.
+
+\da (a) \textbf{1} (b) \textbf{2}: the whole block decrypts wrongly (c) \textbf{every character from there on}: wrong $P_i$ becomes the key for $P_{i+1}$, which is then wrong, and so on (d) \textbf{2}: one digram.
+
+\da (a) ciphertext-only (b) known-plaintext (c) chosen-plaintext (d) chosen-ciphertext.
+
+\da (a) \textbf{Chosen-plaintext}. (b) \ttx{abcdef}$\to$\ttx{DFACEB} and \ttx{ghijkl}$\to$\ttx{JLGIKH}: the same pattern, so the \textbf{key size is 6}. (It can't be 3: the first output letter, \ttx{d}, comes from outside \ttx{abc}.)
+(c) Encryption key \textbf{(4 6 1 3 5 2)}: output $j$ takes input key[$j$]. Decryption key = inverse \textbf{(3 6 4 1 5 2)}.
+(d) Blocks \ttx{AKATCT | ANADWT}, taking positions 3, 6, 4, 1, 5, 2 of each: \textbf{attack at dawn}.
+
+\da 19 letters, padded to 20 with one \ttx{z}, in blocks of 5: \ttx{enemy}, \ttx{attac}, \ttx{kston}, \ttx{ightz}. Each block is output as positions 3, 1, 4, 5, 2:
+\ttx{enemy}$\to$\ttx{EEMYN}, \ttx{attac}$\to$\ttx{TAACT}, \ttx{kston}$\to$\ttx{TKONS}, \ttx{ightz}$\to$\ttx{HITZG}. Answer: \textbf{\ttx{EEMYNTAACTTKONSHITZG}} (Forouzan's own example).
+
+\da Matrix: \ttx{C R Y P T / O G A H B / D E F I K / L M N Q S / U V W X Z}.
+Text: \ttx{we meet at the bridge at midnight iack} (J$\to$I). The \ttx{ee} and \ttx{tt} split across pairs, so no filler is needed; the length is odd, so pad with \ttx{x}:
+\ttx{we me et at th eb ri dg ea tm id ni gh ti ac kx}\\
+$\to$ \ttx{VF VM KR BY PB KG PE EO FG RS KE QF AB PK OY IZ} \;(\ttx{me}: column; \ttx{id}, \ttx{gh}: rows).\\
+Answer: \textbf{\ttx{VFVMKRBYPBKGPEEOFGRSKEQFABPKOYIZ}}.
+
+\da \ttx{balloonpopsatnoon}: \ttx{ba}, then \ttx{ll} is a double, so \ttx{lx} and re-pair: \ttx{lo on po ps at no on}. Even length now, so no padding.
+\ttx{ba lx lo on po ps at no on} $\to$ \textbf{\ttx{CB IZ SC ES SY QM RV SE ES}}.
+\emph{Trap:} after \ttx{lx}, the \ttx{oo} falls across \ttx{lo | on}, so no second filler is needed.
+
+\da Matrix: \ttx{S E C U R / I T Y A B / D F G H K / L M N O P / Q V W X Z}. Decrypt (row: left; column: up; rectangle: same rule):
+\ttx{hi de th eg ol du nd er th eb ri dg ex} $\to$ remove the final filler: \textbf{``hide the gold under the bridge''}.
+
+\da $q$, $r_1$, $r_2$, $r$, $t_1$, $t_2$, $t$:
+\begin{center}\small\setlength{\tabcolsep}{3pt}
+\begin{tabular}{@{}lllllll@{}}
+\toprule
+$x^6{+}x^2{+}x$ & $m$ & $x^2$ & $x{+}1$ & 0 & 1 & $x^6{+}x^2{+}x$\\
+$x{+}1$ & $x^2$ & $x{+}1$ & 1 & 1 & $x^6{+}x^2{+}x$ & $x^7{+}x^6{+}x^3{+}x{+}1$\\
+$x{+}1$ & $x{+}1$ & 1 & 0 & $x^6{+}x^2{+}x$ & $x^7{+}x^6{+}x^3{+}x{+}1$ & $m$\\
+\bottomrule
+\end{tabular}
+\end{center}
+$(x^2)^{-1} = \mathbf{x^7 + x^6 + x^3 + x + 1}$ (\ttx{CB}). Row 1: $m \div x^2$ gives $q = x^6{+}x^2{+}x$, $r = x{+}1$.
+
+\da
+\begin{center}\small\setlength{\tabcolsep}{3pt}
+\begin{tabular}{@{}lllllll@{}}
+\toprule
+$x^5{+}x^2{+}x{+}1$ & $m$ & $x^3{+}1$ & $x^2$ & 0 & 1 & $x^5{+}x^2{+}x{+}1$\\
+$x$ & $x^3{+}1$ & $x^2$ & 1 & 1 & $x^5{+}x^2{+}x{+}1$ & $x^6{+}x^3{+}x^2{+}x{+}1$\\
+$x^2$ & $x^2$ & 1 & 0 & $x^5{+}x^2{+}x{+}1$ & $x^6{+}x^3{+}x^2{+}x{+}1$ & $m$\\
+\bottomrule
+\end{tabular}
+\end{center}
+$(x^3{+}1)^{-1} = \mathbf{x^6 + x^3 + x^2 + x + 1}$ (\ttx{4F}).
+
+\da
+\begin{center}\small\setlength{\tabcolsep}{3pt}
+\begin{tabular}{@{}lllllll@{}}
+\toprule
+$x^4{+}1$ & $m$ & $x^4$ & $x^3{+}x{+}1$ & 0 & 1 & $x^4{+}1$\\
+$x$ & $x^4$ & $x^3{+}x{+}1$ & $x^2{+}x$ & 1 & $x^4{+}1$ & $x^5{+}x{+}1$\\
+$x{+}1$ & $x^3{+}x{+}1$ & $x^2{+}x$ & 1 & $x^4{+}1$ & $x^5{+}x{+}1$ & $x^6{+}x^5{+}x^4{+}x^2$\\
+$x^2{+}x$ & $x^2{+}x$ & 1 & 0 & $x^5{+}x{+}1$ & $x^6{+}x^5{+}x^4{+}x^2$ & $m$\\
+\bottomrule
+\end{tabular}
+\end{center}
+$(x^4)^{-1} = \mathbf{x^6 + x^5 + x^4 + x^2}$ (\ttx{74}).
+
+\da
+\begin{center}\small\setlength{\tabcolsep}{3pt}
+\begin{tabular}{@{}lllllll@{}}
+\toprule
+$x^2$ & $m$ & $x^6$ & $x^4{+}x^3{+}x{+}1$ & 0 & 1 & $x^2$\\
+$x^2{+}x{+}1$ & $x^6$ & $x^4{+}x^3{+}x{+}1$ & 1 & 1 & $x^2$ & $x^4{+}x^3{+}x^2{+}1$\\
+$x^4{+}x^3{+}x{+}1$ & $x^4{+}x^3{+}x{+}1$ & 1 & 0 & $x^2$ & $x^4{+}x^3{+}x^2{+}1$ & $m$\\
+\bottomrule
+\end{tabular}
+\end{center}
+$(x^6)^{-1} = \mathbf{x^4 + x^3 + x^2 + 1}$ (\ttx{1D}).
+\emph{Pattern:} in the first row, $x^k \cdot q$ is always the top part of $m$; the remainder is the low part $x^4{+}x^3{+}x{+}1$ whenever $k \ge 5$.
+
+\da (a) Addition is XOR, so equal terms cancel: $(x^6{+}x^4{+}x^2{+}x{+}1) + (x^7{+}x{+}1) = \mathbf{x^7 + x^6 + x^4 + x^2}$ (\ttx{57} $\oplus$ \ttx{83} $=$ \ttx{D4}).
+(b) The product is $x^{13}{+}x^{11}{+}x^9{+}x^8{+}x^6{+}x^5{+}x^4{+}x^3{+}1$. Reduce with $x^8 = x^4{+}x^3{+}x{+}1$ (and $x^9, \dots, x^{13}$ likewise) to get $\mathbf{x^7 + x^6 + 1}$ (\ttx{C1}). This is Stallings' worked example $\{57\}\cdot\{83\} = \{C1\}$.
+
+\da (i) $7^{-1} \bmod 13 = 2$ ($14 \equiv 1$), so $4 \div 7 = 8$. \;$5^{-1} \bmod 17 = 7$ ($35 \equiv 1$), so $3 \div 5 = 21 \equiv 4$. Answers: \textbf{8, 4}.
+(ii) $999 \equiv -1 \pmod{10}$, odd power: $\mathbf{9}$. \;$7^{12} \equiv 1 \pmod{13}$ and $1000 = 83\cdot12 + 4$: $7^4 = 2401 \equiv \mathbf{9}$. \;$1234 \equiv -1 \pmod 5$, odd power: $\mathbf{4}$.
+(iii) $13^{-1} \bmod 47 = \mathbf{29}$ ($377 = 8\cdot47 + 1$). $12^{-1} \bmod 30$: $\gcd = 6$, \textbf{does not exist}. $5^{-1} \bmod 28 = \mathbf{17}$ ($85 = 3\cdot28 + 1$).
+
+\da $777 = 111\cdot7 \equiv 0$, so the answer is $\mathbf{0}$. (\emph{Trap:} Fermat needs $\gcd(a, p) = 1$; you can't conclude ``$\equiv 1$''.)
+$2^3 \equiv 1 \pmod 7$ and $1000 = 333\cdot3 + 1$, so the answer is $\mathbf{2}$. \;$11 \equiv -1 \pmod{12}$, even power: $\mathbf{1}$. \;$46 \equiv -1 \pmod{47}$, odd power: $\mathbf{46}$ (or by Fermat, $a^p \equiv a$).
+
+\da
+\begin{center}\small
+\begin{tabular}{@{}cccccccc@{}}
+\toprule Iter. & $q$ & $r_1$ & $r_2$ & $r$ & $t_1$ & $t_2$ & $t$\\\midrule
+1 & 2 & 43 & 17 & 9 & 0 & 1 & $-2$\\
+2 & 1 & 17 & 9 & 8 & 1 & $-2$ & $\mathbf{3}$\\
+3 & 1 & 9 & 8 & \textbf{1} & $-2$ & 3 & $-5$\\
+4 & 8 & 8 & 1 & 0 & 3 & $-5$ & 43\\
+ & & 1 & 0 & & $-5$ & & \\\bottomrule
+\end{tabular}
+\end{center}
+\textbf{4 iterations}; remainder in iteration 3 $= \mathbf{1}$; $t$ in iteration 2 $= \mathbf{3}$. \;$17^{-1} = -5 \equiv \mathbf{38}$ (check: $17 \cdot 38 = 646 = 15\cdot43 + 1$ \checkmark).
+
+\da Table: $q = 4, 1, 2, 1, 4$; remainders $28, 10, 8, 2, 0$. The final row has $r_1 = \mathbf{2}$, not 1, so $\gcd(180, 38) = 2$ and \textbf{38 has no inverse} in $\mathbb{Z}_{180}$. The algorithm itself detects the failure.
+$180 = 2^2\cdot3^2\cdot5$, so only numbers co-prime to 2, 3 and 5 have inverses: 36 (no), \textbf{37 (yes)}, 38 (no), 39 (no, divisible by 3).
+
+\da Quotients $3, 4, 1, 1, 1, 1, 1, 4, 3$, so \textbf{9 iterations}. The final $t_1 = \mathbf{550}$: $550^{-1} \equiv 550 \pmod{1769}$. \emph{550 is its own inverse}: $550^2 = 302500 = 171\cdot1769 + 1$. (Stallings' example; a surprising answer worth checking rather than doubting.)
+
+\da (i) $\gcd(21, 14) = 7$ and $7 \mid 35$. Divide by 7: $3x + 2y = 5$. Here $x = 1, y = 1$ works, so \textbf{$x = 1 + 2k$, $y = 1 - 3k$}.
+(ii) $\gcd(40, 15) = 5$ and $5 \mid 110$. Divide: $8x + 3y = 22$; $x = 2, y = 2$ works, so \textbf{$x = 2 + 3k$, $y = 2 - 8k$}.
+(iii) $\gcd(12, 18) = 6$ and $6 \nmid 25$: \textbf{no solution}.
+
+\da $19x + 13y = 220$, $\gcd = 1$. From Euclid, $19(-2) + 13(3) = 1$, so $x_0 = -440$, $y_0 = 660$, and in general $x = -440 + 13k$, $y = 660 - 19k$.
+Both must be $\ge 0$: $k \ge 33.9$ and $k \le 34.7$, so $k = 34$: \textbf{2 pens and 14 notebooks} ($38 + 182 = 220$). The non-negative answer is \textbf{unique}.
+
+\da (a) $P + K$: $12{+}3,\allowbreak\ 4{+}19,\allowbreak\ 4{+}5,\allowbreak\ 19{+}0,\allowbreak\ 12{+}24,\allowbreak\ 4{+}11,\allowbreak\ 0{+}7,\allowbreak\ 19{+}2,\allowbreak\ 13{+}14,\allowbreak\ 14{+}9,\allowbreak\ 14{+}25,\allowbreak\ 13{+}8 = 15,\allowbreak\ 23,\allowbreak\ 9,\allowbreak\ 19,\allowbreak\ 36,\allowbreak\ 15,\allowbreak\ 7,\allowbreak\ 21,\allowbreak\ 27,\allowbreak\ 23,\allowbreak\ 39,\allowbreak\ 21$. Mod 26: \textbf{\ttx{PXJTKPHVBXNV}}.
+(b) $K = C - P \pmod{26}$ with $P$ = \ttx{holdposition}: \textbf{8 9 24 16 21 1 15 13 8 15 25 8}.
+(c) Every 12-letter message is reachable from this ciphertext with some key, and every key is equally likely, so the ciphertext gives no information (perfect secrecy).
+
+\da Key \ttx{LEMONLEMONLEMO}: \textbf{\ttx{ASXMNWTTOOPXUQ}}.
+
+\da (a) Rotate row $r$ left by $r$: $\begin{pmatrix}\mathtt{32}&\mathtt{88}&\mathtt{31}&\mathtt{E0}\\\mathtt{5A}&\mathtt{31}&\mathtt{37}&\mathtt{43}\\\mathtt{98}&\mathtt{07}&\mathtt{F6}&\mathtt{30}\\\mathtt{34}&\mathtt{A8}&\mathtt{8D}&\mathtt{A2}\end{pmatrix}$.
+(b) XOR with $K$: $\begin{pmatrix}\mathtt{19}&\mathtt{A0}&\mathtt{9A}&\mathtt{E9}\\\mathtt{3D}&\mathtt{F4}&\mathtt{C6}&\mathtt{F8}\\\mathtt{E3}&\mathtt{E2}&\mathtt{8D}&\mathtt{48}\\\mathtt{BE}&\mathtt{2B}&\mathtt{2A}&\mathtt{08}\end{pmatrix}$ (e.g.\ $\mathtt{32}\oplus\mathtt{2B} = 0011\,0010 \oplus 0010\,1011 = 0001\,1001 = \mathtt{19}$).
+These are the official AES (FIPS-197) test values: the initial AddRoundKey of round 0.
+
+\da InvShiftRows rotates row $r$ \textbf{right} by $r$: $\begin{pmatrix}\mathtt{D4}&\mathtt{E0}&\mathtt{B8}&\mathtt{1E}\\\mathtt{BF}&\mathtt{B4}&\mathtt{41}&\mathtt{27}\\\mathtt{5D}&\mathtt{52}&\mathtt{11}&\mathtt{98}\\\mathtt{30}&\mathtt{AE}&\mathtt{F1}&\mathtt{E5}\end{pmatrix}$.
+
+\da $\mathtt{02}\cdot b$ (``xtime''): shift left 1; if a 1 falls off the top, XOR with $\mathtt{1B}$. \;$\mathtt{03}\cdot b = (\mathtt{02}\cdot b) \oplus b$.
+$\mathtt{02}\cdot\mathtt{87}$: $1000\,0111 \to 0000\,1110 \oplus 0001\,1011 = \mathtt{15}$. \;$\mathtt{02}\cdot\mathtt{6E} = \mathtt{DC}$ (no overflow), so $\mathtt{03}\cdot\mathtt{6E} = \mathtt{DC} \oplus \mathtt{6E} = \mathtt{B2}$.
+$\mathtt{15} \oplus \mathtt{B2} \oplus \mathtt{46} \oplus \mathtt{A6} = \mathtt{A7} \oplus \mathtt{46} \oplus \mathtt{A6} = \mathtt{E1} \oplus \mathtt{A6} = \mathbf{47}$. That is exactly the \ttx{47} in the 2025--26 paper's ``after MixColumns'' state.
+
+\da Row $=$ (first bit, last bit), column $=$ the middle 4 bits.
+(a) \ttx{1}\,\ttx{0001}\,\ttx{1}: row 3, column 1 $\to$ 12 $=$ \textbf{\ttx{1100}}.
+(b) \ttx{0}\,\ttx{1101}\,\ttx{1}: row 1, column 13 $\to$ 5 $=$ \textbf{\ttx{0101}}.
+(c) \ttx{1}\,\ttx{1011}\,\ttx{0}: row 2, column 11 $\to$ 7 $=$ \textbf{\ttx{0111}}.
+
+\da (a) The shifts are 1, 1, 2, 2, 2, 2, 2, 2, 1, 2, 2, 2, 2, 2, 2, 1. Running totals: after round 2 $= \mathbf{2}$, after round 9 $= \mathbf{15}$, after round 16 $= \mathbf{28}$.
+(b) 28 is the length of each half, so after round 16 $C$ and $D$ are back where they started. Decryption can then generate the keys in reverse with right shifts.
+(c) PC-1 drops \textbf{8 parity bits} (every 8th bit): $64 \to 56$. They are for error checking, not secrecy, so the real key size is 56 bits.
+
+\da One round: $L_1 = R_0$, \;$R_1 = L_0 \oplus f(R_0, K_1)$. To go back:
+\[
+R_0 = L_1, \qquad L_0 = R_1 \oplus f(L_1, K_1) \quad\text{(since } R_1 \oplus f(R_0, K_1) = L_0 \oplus f \oplus f = L_0\text{)}.
+\]
+We only ever \emph{recompute} $f$ (on $L_1 = R_0$, which we know) and XOR it away; we never invert $f$. So $f$ can be any function (DES's S-boxes aren't invertible). Diagram: two halves, $f$ box fed by the right half and $K_i$, XOR into the left half, then a swap (see the 2024--25 Q6 answer above).
+
+\da (i) $p = 11$, $11 \nmid 6$: $6^{10} \equiv \mathbf{1}$ directly.
+(ii) $3^{12} = 3^{10}\cdot3^2 \equiv 1 \cdot 9 = \mathbf{9}$.
+(iii) $2^{-1} \equiv 2^{13-2} = 2^{11} = 2048 = 157\cdot13 + 7$, so $\mathbf{7}$ (check $2\cdot7 = 14 \equiv 1$).
+(iv) $7^{-1} \equiv 7^{17} \bmod 19 = \mathbf{11}$ (check $7\cdot11 = 77 = 4\cdot19 + 1$).
+
+\da Use $a^{-1} \equiv a^{\Phi(n) - 1}$.
+(i) $\Phi(20) = 8$: $3^7$; since $3^4 = 81 \equiv 1$, $3^7 \equiv 3^3 = 27 \equiv \mathbf{7}$.
+(ii) $\Phi(15) = 8$: $7^7$; powers 7, 4, 13, 1, so $7^4 \equiv 1$ and $7^7 \equiv 7^3 \equiv \mathbf{13}$.
+(iii) $\Phi(77) = 60$: $8^{59}$, with $59 = 32 + 16 + 8 + 2 + 1$. Table mod 77: $8^1 = 8$, $8^2 = 64$, $8^4 = 15$, $8^8 = 71$, $8^{16} = 36$, $8^{32} = 64$.
+Product: $64\cdot36 \to 71$, $\times71 \to 36$, $\times64 \to 71$, $\times8 \to \mathbf{29}$ (check $8\cdot29 = 232 = 3\cdot77 + 1$).
+(iv) $\Phi(187) = 160$: $60^{159} \equiv \mathbf{53}$ (check $60\cdot53 = 3180 = 17\cdot187 + 1$).
+(v) $\Phi(100) = 40$: $71^{39} \equiv \mathbf{31}$ (check $71\cdot31 = 2201$).
+(These are Forouzan's examples. In the exam, extended Euclid is usually faster; Euler is the method they ask for when they name it.)
+
+\da (i) $222 \bmod 10 = 2$, so $7^2 = 49 \equiv \mathbf{5}$. (ii) $532 \bmod 10 = 2$, so $4^2 = 16 \equiv \mathbf{5}$.
+(iii) $\gcd(11, 35) = 1$, $\Phi(35) = 24$, $2024 \bmod 24 = 8$, so $11^8$: $11^2 = 121 \equiv 16$, $11^4 \equiv 256 \equiv 11$, $11^8 \equiv 11^2 \equiv \mathbf{16}$. (In fact $11^3 \equiv 1$, and $2024 = 3\cdot674 + 2$.)
+
+\da (i) Chain mod 17: 3, 9, 10, 13, 5, 15, 11, 16, 14, 8, 7, 4, 12, 2, 6, 1. All 16 distinct, so \textbf{yes}. (Fast test: $16 = 2^4$, so only check $3^8 \equiv 16 \ne 1$.)
+(ii) $10 = 2\cdot5$: $a$ is a primitive root iff $a^5 \not\equiv 1$ and $a^2 \not\equiv 1$. That gives \textbf{2, 6, 7, 8} ($\Phi(10) = 4$ of them).
+(iii) $\Phi(22) = \mathbf{10}$. Every primitive root is $5^k$ with $\gcd(k, 22) = 1$: e.g.\ $5^3 = 125 = 5\cdot23 + 10$, so \textbf{10}. ($5^2 = 2$ is \emph{not} one, since $\gcd(2, 22) \ne 1$.)
+
+\da Orders in $\mathbb{Z}_7^*$: $\mathrm{ord}(1) = 1$, $\mathrm{ord}(2) = 3$, $\mathrm{ord}(3) = 6$, $\mathrm{ord}(4) = 3$, $\mathrm{ord}(5) = 6$, $\mathrm{ord}(6) = 2$. Primitive roots (order $6 = \Phi(7)$): \textbf{3 and 5}.
+$\mathbb{Z}_8^* = \{1, 3, 5, 7\}$: $3^2 = 9 \equiv 1$, $5^2 = 25 \equiv 1$, $7^2 = 49 \equiv 1$. Every order is $\le 2 < \Phi(8) = 4$, so there is \textbf{no primitive root}.
+
+\da (i) 17 is prime and $17 \nmid 12$: $\mathbf{1}$. (ii) $17 \mid 17$, so Fermat does \textbf{not} apply: $17^{16} \equiv \mathbf{0}$.
+(iii) $2^4 = 16 \equiv 1 \pmod{15}$, so $2^{14} = 2^{12}\cdot2^2 \equiv 4 \ne 1$. If 15 were prime, Fermat would force 1, so \textbf{15 is composite} (Fermat test).
+(iv) \textbf{No}: $341 = 11\cdot31$. Passing the Fermat test doesn't prove primality; 341 is a \emph{pseudoprime} to base 2.

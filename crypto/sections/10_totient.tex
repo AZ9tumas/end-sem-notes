@@ -1,0 +1,164 @@
+% Lecture 4 (Z_n*), Lecture 10 (Euler's phi-function) + videos. All numbers recomputed by script (scratchpad/euler/verify.py).
+\section{Relatively Prime Numbers, Euler's Totient and $\mathbb{Z}_n^*$}\label{sec:totient}
+
+\subsection{Relatively prime (co-prime) numbers}
+Two positive integers $a$ and $b$ are \imp{relatively prime (co-prime) if $\gcd(a, b) = 1$}, that is, if their only common positive divisor is 1. Neither number has to be prime: the condition is about the pair, not about each number. Since $12 = 2^2 \cdot 3$ and $77 = 7 \cdot 11$ share no prime factor, they are co-prime although both are composite, while $15 = 3 \cdot 5$ and $21 = 3 \cdot 7$ are not, because 3 divides both. If $p$ is prime, every integer from 1 to $p - 1$ is co-prime to $p$, since the only divisors of $p$ are 1 and $p$ itself.
+
+Cryptography cares about this property for one reason: \textbf{$a$ has a multiplicative inverse modulo $n$ exactly when $\gcd(a, n) = 1$}. If $ax \equiv 1 \pmod n$, then $ax - kn = 1$ for some integer $k$, so any common divisor of $a$ and $n$ divides 1. Conversely, if $\gcd(a, n) = 1$, the extended Euclidean algorithm (\S\ref{sec:exteuclid}) produces $s, t$ with $sa + tn = 1$, and reducing modulo $n$ gives $sa \equiv 1$. Co-primality is therefore always checked with the Euclidean algorithm, never by eye.
+\begin{center}\small
+\begin{tabular}{@{}lllcl@{}}
+\toprule
+$a$, $b$ & Divisors / Euclid steps & GCD & Co-prime? & Note\\
+\midrule
+4, 13 & $\{1,2,4\}$, $\{1,13\}$ & 1 & yes & composite + prime\\
+15, 21 & $\{1,3,5,15\}$, $\{1,3,7,21\}$ & 3 & \textbf{no} & share the factor 3\\
+11, 17 & & 1 & yes & both prime\\
+11, 21 & & 1 & yes & prime + composite ($21 = 3\cdot7$)\\
+12, 77 & & 1 & yes & \textbf{both composite}\\
+83, 19 & $83 = 4\cdot19 + 7$, $19 = 2\cdot7 + 5$, $7 = 5 + 2$, $5 = 2\cdot2 + 1$ & 1 & yes & \\
+790, 121 & $790 = 6\cdot121 + 64$, $121 = 64 + 57$, $64 = 57 + 7$, $57 = 8\cdot7 + 1$ & 1 & yes & lecture homework\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection{Euler's totient function \texorpdfstring{$\phi(n)$}{phi(n)} \hot}
+\likely{$\phi(n)$ for a given $n$ (Forouzan: ``find $\phi(29)$, $\phi(32)$, $\phi(80)$, $\phi(100)$, $\phi(101)$''), and $\phi(n) = (p-1)(q-1)$ inside every RSA question.}
+Many results in public-key cryptography (Euler's theorem, RSA key generation, inverses by exponentiation) need to know \emph{how many} residues modulo $n$ are invertible. Since invertibility is the same as being co-prime to $n$, this count gets its own name. \imp{Euler's totient (phi) function $\phi(n)$ is the number of integers in $\{1, 2, \dots, n-1\}$ that are relatively prime to $n$.} Zero and negative numbers are not counted. The lecture videos write it as $\Phi(n)$; Forouzan and the slides write $\phi(n)$.
+
+By hand, $\phi(n)$ is found by computing $\gcd(k, n)$ for every $k$ from 1 to $n - 1$ and counting the 1s. For $n = 8$:
+\begin{center}\small\setlength{\tabcolsep}{5pt}
+\begin{tabular}{@{}l*{7}{c}l@{}}
+\toprule
+$k$ & 1&2&3&4&5&6&7&\\
+$\gcd(k, 8)$ & 1&2&1&4&1&2&1&\\
+co-prime? & \checkmark&$\times$&\checkmark&$\times$&\checkmark&$\times$&\checkmark& $\Rightarrow \phi(8) = \mathbf{4}$\\
+\bottomrule
+\end{tabular}
+\end{center}
+In the same way $\phi(5) = 4$ and $\phi(11) = 10$, since every number below a prime is co-prime to it. This direct count needs $n - 1$ GCDs, which is useless for $n = 1000$ and hopeless for a 1024-bit RSA modulus, so in practice $\phi(n)$ is always computed from the prime factorisation of $n$ using the rules below.
+
+\subsection{Computing \texorpdfstring{$\phi(n)$}{phi(n)}: the four rules \hot}
+The slides (following Forouzan) give four rules. Each one follows from counting which numbers \emph{fail} to be co-prime to $n$, and the derivations are short enough to reproduce in an exam.
+
+\textbf{Rule 1: $\phi(1) = 1$ by convention} (the slides write $\phi(1) = 0$; see the corrections box). It never matters in practice.
+
+\textbf{Rule 2: for a prime $p$, $\phi(p) = p - 1$.} The only divisors of $p$ are 1 and $p$, so none of $1, \dots, p - 1$ shares a factor with $p$. For example $\phi(7) = 6$, $\phi(13) = 12$, $\phi(31) = 30$.
+
+\textbf{Rule 3: for a prime power, $\phi(p^k) = p^k - p^{k-1}$.} A number shares a factor with $p^k$ exactly when it is a multiple of $p$, because $p$ is the only prime in $p^k$. Among $1, \dots, p^k$ the multiples of $p$ are $p, 2p, \dots, p^{k-1}\cdot p$, which is $p^{k-1}$ numbers, and removing them leaves $p^k - p^{k-1} = p^{k-1}(p-1)$. For example $\phi(8) = 8 - 4 = 4$, $\phi(25) = 25 - 5 = 20$, and $\phi(49) = 49 - 7 = 42$.
+
+\textbf{Rule 4: if $\gcd(m, n) = 1$, then $\phi(mn) = \phi(m)\,\phi(n)$} (the function is \emph{multiplicative}). By the Chinese remainder theorem (\S\ref{sec:primes}), each $x$ modulo $mn$ corresponds to exactly one pair $(x \bmod m,\ x \bmod n)$, and $x$ is co-prime to $mn$ exactly when it is co-prime to both $m$ and $n$. The co-prime $x$ therefore correspond to pairs chosen from $\phi(m)$ values and $\phi(n)$ values, giving $\phi(m)\phi(n)$ of them. The condition $\gcd(m, n) = 1$ is essential: $\phi(4) = 2$ but $\phi(2)\phi(2) = 1$.
+
+\textbf{Two distinct primes: $\phi(pq) = (p-1)(q-1)$.} This is the RSA case, and it is worth deriving directly. Among $1, \dots, pq$, the numbers sharing a factor with $pq$ are the multiples of $p$ (there are $q$ of them: $p, 2p, \dots, qp$) and the multiples of $q$ (there are $p$ of them). The number $pq$ itself is in both lists and has been removed twice, so
+\[
+\phi(pq) = pq - q - p + 1 = (p-1)(q-1).
+\]
+For example $\phi(21) = 2 \cdot 6 = 12$, $\phi(77) = 6 \cdot 10 = 60$, and $\phi(187) = \phi(11 \cdot 17) = 10 \cdot 16 = 160$.
+
+\textbf{General formula.} Combining rules 3 and 4, if $n = p_1^{e_1} p_2^{e_2} \cdots p_k^{e_k}$ with distinct primes $p_i$, then
+\[
+\phi(n) = \left(p_1^{e_1} - p_1^{e_1-1}\right)\left(p_2^{e_2} - p_2^{e_2-1}\right)\cdots\left(p_k^{e_k} - p_k^{e_k-1}\right)
+= n\left(1 - \tfrac{1}{p_1}\right)\left(1 - \tfrac{1}{p_2}\right)\cdots\left(1 - \tfrac{1}{p_k}\right).
+\]
+The second form works for every $n$ and contains rules 2 and 3 and the $pq$ formula as special cases. Only the \emph{distinct} primes appear in the product; the exponents are already accounted for by the factor $n$. As a consequence, computing $\phi(n)$ is exactly as hard as factoring $n$, which is the reason RSA can publish $n$ but must keep $\phi(n)$ secret.
+
+\begin{mustknow}
+\[
+\phi(p) = p - 1, \qquad \phi(p^k) = p^k - p^{k-1}, \qquad \phi(pq) = (p-1)(q-1)\ (p \ne q), \qquad
+\phi(n) = n\prod_{p \mid n}\left(1 - \tfrac1p\right).
+\]
+$\phi(mn) = \phi(m)\phi(n)$ \textbf{only when $\gcd(m, n) = 1$}. Always factorise $n$ completely first.
+\end{mustknow}
+
+\textbf{Example: $\phi(35)$}, with $35 = 5 \times 7$: $(5-1)(7-1) = 4 \times 6 = \mathbf{24}$. The grid below checks it by crossing out the multiples of 5 and of 7 among $1, \dots, 34$; none is a multiple of both, since the first common multiple is 35.
+\begin{center}
+\begin{tikzpicture}[x=5.6mm,y=5.6mm]
+  \foreach \k in {1,...,34}{
+    \pgfmathtruncatemacro{\col}{mod(\k-1,17)}
+    \pgfmathtruncatemacro{\row}{(\k-1)/17}
+    \pgfmathtruncatemacro{\mf}{mod(\k,5)}
+    \pgfmathtruncatemacro{\ms}{mod(\k,7)}
+    \ifnum\mf=0 \fill[warn!30] (\col,-\row) rectangle ++(1,-1);\fi
+    \ifnum\ms=0 \fill[acc!30] (\col,-\row) rectangle ++(1,-1);\fi
+    \draw[gray!60] (\col,-\row) rectangle ++(1,-1);
+    \node[font=\scriptsize] at (\col+0.5,-\row-0.5) {\k};
+  }
+\end{tikzpicture}\\[2pt]
+{\footnotesize red = multiple of 5 (6 numbers), blue = multiple of 7 (4 numbers); $34 - 10 = 24$ white cells}
+\end{center}
+
+\begin{trap}[: repeated prime factors]
+$25 = 5 \times 5$ is \textbf{not} a product of two distinct primes, so $(5-1)(5-1) = 16$ is wrong. Use rule 3: $\phi(25) = 25 - 5 = \mathbf{20}$. (Check: among $1, \dots, 24$ only 5, 10, 15, 20 share a factor with 25, leaving $24 - 4 = 20$.) The slides make the same point with $\phi(49)$: writing $\phi(49) = \phi(7)\phi(7) = 36$ is wrong because 7 and 7 are not co-prime; the correct value is $49 - 7 = 42$.
+\end{trap}
+
+\begin{worked}[: $\phi(n)$ from the factorisation (Forouzan / slide style)]
+\textbf{Q.} Find (a) $\phi(29)$ (b) $\phi(32)$ (c) $\phi(80)$ (d) $\phi(100)$ (e) $\phi(101)$ (f) $\phi(240)$ (g) $\phi(1000)$ (h) $\phi(7000)$.
+
+\textbf{A.} Factorise first, then apply the rules.
+\begin{center}\small
+\begin{tabular}{@{}llll@{}}
+\toprule
+$n$ & Factorisation & Working & $\phi(n)$\\
+\midrule
+29 & prime & $29 - 1$ & \textbf{28}\\
+32 & $2^5$ & $2^5 - 2^4 = 32 - 16$ & \textbf{16}\\
+80 & $2^4 \cdot 5$ & $(2^4 - 2^3)(5 - 1) = 8 \cdot 4$ & \textbf{32}\\
+100 & $2^2 \cdot 5^2$ & $(4 - 2)(25 - 5) = 2 \cdot 20$ & \textbf{40}\\
+101 & prime & $101 - 1$ & \textbf{100}\\
+240 & $2^4 \cdot 3 \cdot 5$ & $(16 - 8)(3 - 1)(5 - 1) = 8 \cdot 2 \cdot 4$ & \textbf{64}\\
+1000 & $2^3 \cdot 5^3$ & $1000 \cdot \frac12 \cdot \frac45$ \;(or $\phi(8)\phi(125) = 4 \cdot 100$) & \textbf{400}\\
+7000 & $2^3 \cdot 5^3 \cdot 7$ & $7000 \cdot \frac12 \cdot \frac45 \cdot \frac67 = 7000 \cdot \frac{24}{70}$ & \textbf{2400}\\
+\bottomrule
+\end{tabular}
+\end{center}
+\textbf{Check:} a direct count of the co-prime $k < n$ by script gives the same eight values. Lecture homework: $\phi(369) = \phi(3^2)\phi(41) = 6 \cdot 40 = \mathbf{240}$ and $\phi(372) = \phi(2^2)\phi(3)\phi(31) = 2 \cdot 2 \cdot 30 = \mathbf{120}$.
+\end{worked}
+
+\textbf{$\phi(n)$ is even for every $n > 2$.} If $\gcd(k, n) = 1$ then also $\gcd(n - k, n) = 1$, so the co-prime numbers below $n$ come in pairs $\{k, n-k\}$. The two members of a pair can only coincide if $n = 2k$, but then $\gcd(k, n) = k$, which equals 1 only for $n = 2$. Hence for $n > 2$ the co-prime numbers split into disjoint pairs and their count is even; in $\mathbb{Z}_{14}^*$ the pairs are $\{1, 13\}$, $\{3, 11\}$, $\{5, 9\}$.
+
+\subsection{The sets $\mathbb{Z}_n$ and $\mathbb{Z}_n^*$}
+$\mathbb{Z}_n = \{0, 1, \dots, n-1\}$ is the set of residues modulo $n$. Every element has an additive inverse in it ($a + (n - a) \equiv 0$), but not every element has a multiplicative inverse. Since cryptosystems such as the affine cipher, Hill cipher and RSA need to \emph{divide}, they work in the smaller set
+\[
+\mathbb{Z}_n^* = \{\, a \in \mathbb{Z}_n : \gcd(a, n) = 1 \,\},
+\]
+which is exactly the set of residues that have multiplicative inverses. By definition its size is $|\mathbb{Z}_n^*| = \phi(n)$. The slide's rule of thumb: \imp{use $\mathbb{Z}_n$ when additive inverses are needed and $\mathbb{Z}_n^*$ when multiplicative inverses are needed.}
+
+$\mathbb{Z}_n^*$ is closed under multiplication modulo $n$, because a product of two numbers co-prime to $n$ is again co-prime to $n$ (no prime factor of $n$ can appear in it). Together with the inverses this makes $\langle \mathbb{Z}_n^*, \times \rangle$ a group of order $\phi(n)$ (\S\ref{sec:algebra}), and the theorems of the next section are statements about this group. The slides single out the two sets with a \emph{prime} modulus, $\mathbb{Z}_p$ and $\mathbb{Z}_p^*$. When $n = p$ is prime, $\mathbb{Z}_p^* = \{1, 2, \dots, p-1\}$ contains every non-zero residue (e.g.\ $\mathbb{Z}_{13}^* = \{1, \dots, 12\}$), so every non-zero element of $\mathbb{Z}_p$ can be divided by, which is what makes $\mathbb{Z}_p$ the field GF$(p)$.
+\begin{center}\small
+\begin{tabular}{@{}lll@{}}
+\toprule
+$n$ & $\mathbb{Z}_n^*$ & $|\mathbb{Z}_n^*| = \phi(n)$\\
+\midrule
+6 & $\{1, 5\}$ & $\phi(2)\phi(3) = 2$\\
+7 & $\{1, 2, 3, 4, 5, 6\}$ & $7 - 1 = 6$\\
+10 & $\{1, 3, 7, 9\}$ & $\phi(2)\phi(5) = 4$\\
+14 & $\{1, 3, 5, 9, 11, 13\}$ & $\phi(2)\phi(7) = 1 \cdot 6 = 6$ \;(slide Example 5)\\
+21 & $\{1, 2, 4, 5, 8, 10, 11, 13, 16, 17, 19, 20\}$ & $\phi(3)\phi(7) = 2 \cdot 6 = 12$\\
+26 & the 12 odd numbers except 13 & $\phi(2)\phi(13) = 12$ \;(valid keys/determinants mod 26)\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection{Why cryptography cares about \texorpdfstring{$\phi(n)$}{phi(n)}}
+Three later topics rest on $\phi(n)$. First, Euler's theorem (\S\ref{sec:fermat}) states that $a^{\phi(n)} \equiv 1 \pmod n$ for every $a \in \mathbb{Z}_n^*$, which allows exponents to be reduced modulo $\phi(n)$ and inverses to be computed as $a^{\phi(n)-1}$. Second, RSA chooses $n = pq$ and computes $\phi(n) = (p-1)(q-1)$; the keys satisfy $ed \equiv 1 \pmod{\phi(n)}$, and Euler's theorem then makes decryption undo encryption. In the standard example $n = 187 = 11 \cdot 17$, $\phi(187) = 160$ and $7 \cdot 23 = 161 \equiv 1 \pmod{160}$, which is why $88^7 \bmod 187 = 11$ and $11^{23} \bmod 187 = 88$ undo each other. Third, the number of primitive roots of a prime $p$ is $\phi(p - 1)$, which matters for Diffie--Hellman and ElGamal.
+
+\textbf{Security.} Knowing $\phi(n)$ for an RSA modulus is equivalent to knowing its factors. From $n = pq$ and $\phi(n) = n - (p + q) + 1$ one gets $p + q = n - \phi(n) + 1$, and $p, q$ are then the roots of $z^2 - (p+q)z + n = 0$. For $n = 143$ and $\phi(n) = 120$: $p + q = 24$, $pq = 143$, so $p, q = \mathbf{11, 13}$. This is why $\phi(n)$ is part of the private key.
+
+\begin{fixbox}
+\begin{itemize}
+  \item All values recomputed by script: $\phi(5) = 4$, $\phi(8) = 4$, $\phi(11) = 10$, $\phi(35) = 24$, $\phi(25) = 20$, $\phi(49) = 42$, $\phi(240) = 64$, $\phi(1000) = 400$, $\phi(7000) = 2400$, $|\mathbb{Z}_{14}^*| = 6$, $|\mathbb{Z}_{21}^*| = 12$. The homework answers in the old notes ($\phi(369) = 240$, $\phi(372) = 120$) are correct.
+  \item Slide L10-06 gives $\phi(1) = 0$, which follows Forouzan's ``integers smaller than $n$'' wording. The standard convention is $\phi(1) = 1$ (count $1 \le k \le n$). It only affects $n = 1$ and never matters in RSA.
+  \item The lecture video's ``case 3'' (``either or both numbers composite'') makes the product formula $n\prod(1 - 1/p)$ look like a last resort. It actually works for every $n$, and the prime and $pq$ formulas are special cases of it.
+\end{itemize}
+\end{fixbox}
+
+\subsection*{Check your understanding}
+\begin{enumerate}[leftmargin=1.5em]
+  \item \textbf{Define $\phi(n)$ and explain why $\phi(p) = p - 1$ for a prime $p$.} $\phi(n)$ is the number of integers in $1, \dots, n-1$ co-prime to $n$. A prime has no divisors other than 1 and itself, so all $p - 1$ numbers below it are co-prime to it.
+  \item \textbf{Why is $\phi(49) \ne \phi(7) \cdot \phi(7)$?} Multiplicativity needs co-prime factors, and $\gcd(7, 7) = 7$. Rule 3 gives $\phi(49) = 49 - 7 = 42$, not 36.
+  \item \textbf{Find $\phi(36)$ and $\phi(60)$.} $36 = 2^2 \cdot 3^2$, so $\phi = 2 \cdot 6 = 12$. $60 = 2^2 \cdot 3 \cdot 5$, so $\phi = 2 \cdot 2 \cdot 4 = 16$.
+  \item \textbf{Derive $\phi(pq) = (p-1)(q-1)$.} Of $1, \dots, pq$, the $q$ multiples of $p$ and the $p$ multiples of $q$ are not co-prime to $pq$, and $pq$ is counted in both lists, so $\phi(pq) = pq - p - q + 1 = (p-1)(q-1)$.
+  \item \textbf{List $\mathbb{Z}_{15}^*$ and state its size.} $\{1, 2, 4, 7, 8, 11, 13, 14\}$, which has $\phi(15) = 2 \cdot 4 = 8$ elements.
+  \item \textbf{Why is $\phi(n)$ even for $n > 2$?} The co-prime residues pair up as $k \leftrightarrow n - k$, and the two members of a pair are never equal when $n > 2$.
+  \item \textbf{An RSA modulus is $n = 143$ and someone learns $\phi(n) = 120$. What can they do?} They get $p + q = n - \phi(n) + 1 = 24$ and $pq = 143$, so $p = 11$, $q = 13$; the modulus is broken. Hence $\phi(n)$ must stay secret.
+  \item \textbf{What is the difference between $\mathbb{Z}_n$ and $\mathbb{Z}_n^*$?} $\mathbb{Z}_n$ contains all residues $0, \dots, n-1$ and is used where addition and additive inverses are needed. $\mathbb{Z}_n^*$ contains only the $\phi(n)$ residues co-prime to $n$, which are exactly those with multiplicative inverses.
+\end{enumerate}

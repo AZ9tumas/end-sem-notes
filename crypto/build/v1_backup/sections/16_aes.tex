@@ -1,0 +1,74 @@
+% College Lecture 9: AES. S-box values, MixColumns and key expansion computed by script (checked against FIPS-197).
+\section{Advanced Encryption Standard (AES)}\label{sec:aes}
+
+NIST, December 2001 (Rijndael). \textbf{Non-Feistel}, 128-bit block, round keys always 128 bits.
+\begin{center}\small
+\begin{tabular}{@{}cccc@{}}
+\toprule
+Version & Key & Rounds $N_r$ & Round keys / words\\
+\midrule
+AES-128 & 128 & 10 & 11 / 44\\
+AES-192 & 192 & 12 & 13 / 52\\
+AES-256 & 256 & 14 & 15 / 60\\
+\bottomrule
+\end{tabular}
+\end{center}
+Number of round keys $= N_r + 1$ (one extra AddRoundKey before round 1). Data units: bit, byte, word (4 bytes), block (16 bytes), \textbf{state} ($4 \times 4$ bytes).
+
+\textbf{Block $\to$ state}: filled \textbf{column by column}: $s_{r,c} = b_{r + 4c}$.
+\textbf{Example}: \ttx{AES USES A MATRIX} $\to$ \ttx{AESUSESAMATRIXZZ} (two fillers), letters as 0--25:
+\[
+\text{State} = \begin{pmatrix}00&12&0C&08\\04&04&00&17\\12&12&13&19\\14&00&11&19\end{pmatrix}_{16}
+\quad\xrightarrow{\text{SubBytes}}\quad
+\begin{pmatrix}63&C9&FE&30\\F2&F2&63&F0\\C9&C9&7D&D4\\FA&63&82&D4\end{pmatrix}
+\quad\xrightarrow{\text{ShiftRows}}\quad
+\begin{pmatrix}63&C9&FE&30\\F2&63&F0&F2\\7D&D4&C9&C9\\D4&FA&63&82\end{pmatrix}
+\]
+
+\subsection{Structure}
+Encryption: AddRoundKey($w_0..w_3$); rounds 1 to $N_r - 1$: \textbf{SubBytes, ShiftRows, MixColumns, AddRoundKey}; last round: SubBytes, ShiftRows, AddRoundKey (\textbf{no MixColumns}). Decryption uses the inverse transformations (InvSubBytes, InvShiftRows, InvMixColumns, AddRoundKey) with round keys in reverse order.
+
+\subsection{The four transformations}
+\begin{itemize}
+  \item \textbf{SubBytes} (substitution, \textbf{intrabyte}): each byte through the same S-box: first row hex digit selects the row, second the column. Same byte in $\to$ same byte out (two \ttx{04}s both become \ttx{F2}). Mathematically: multiplicative inverse in GF$(2^8)$ ($00 \mapsto 00$), then an affine transform with constant \ttx{63}. \ttx{5A} $\to$ \ttx{BE} and \ttx{5B} $\to$ \ttx{39}: inputs differing in 1 bit give outputs differing in 4. InvSubBytes is the inverse table.
+  \item \textbf{ShiftRows} (permutation, \textbf{byte exchange}): row $r$ rotates left by $r$ bytes (row 0 unchanged). Byte-level, unlike DES's bit-level permutations. InvShiftRows rotates right.
+  \item \textbf{MixColumns} (\textbf{interbyte} mixing): each column is multiplied in GF$(2^8)$ by a constant matrix; inverse uses the inverse matrix.
+  \[
+  \begin{pmatrix}02&03&01&01\\01&02&03&01\\01&01&02&03\\03&01&01&02\end{pmatrix}
+  \qquad\text{inverse:}\qquad
+  \begin{pmatrix}0E&0B&0D&09\\09&0E&0B&0D\\0D&09&0E&0B\\0B&0D&09&0E\end{pmatrix}
+  \]
+  $02 \cdot b$ $=$ left shift, XOR \ttx{1B} if the top bit was 1; \;$03 \cdot b = (02 \cdot b) \oplus b$. FIPS test column \ttx{db 13 53 45} $\to$ \ttx{8e 4d a1 bc}: first byte $= 02{\cdot}db \oplus 03{\cdot}13 \oplus 53 \oplus 45$ $= \ttx{ad} \oplus \ttx{35} \oplus \ttx{53} \oplus \ttx{45} = \ttx{8e}$. (Column 0 of the example state above $\to$ \ttx{62 cf 0c 99}.)
+  \item \textbf{AddRoundKey}: XOR each column with a round-key word, $s_c \leftarrow s_c \oplus w_{4\cdot\text{round} + c}$. Self-inverse.
+\end{itemize}
+
+\subsection{Key expansion (AES-128)}
+\[
+w_0..w_3 = \text{cipher key};\qquad
+w_i = \begin{cases} w_{i-4} \oplus w_{i-1} & i \bmod 4 \ne 0\\ w_{i-4} \oplus t,\ \ t = \text{SubWord}(\text{RotWord}(w_{i-1})) \oplus \text{RCon}[i/4] & i \bmod 4 = 0\end{cases}
+\]
+\textbf{RotWord}: rotate the 4 bytes left by one. \textbf{SubWord}: S-box on each byte. \textbf{RCon}: $(x^{j-1} \bmod m(x), 00, 00, 00)$: \ttx{01 02 04 08 10 20 40 80 1B 36} for rounds 1--10.\\
+FIPS-197 key \ttx{2b7e1516 28aed2a6 abf71588 09cf4f3c} $\to$ $w_4..w_7 =$ \ttx{a0fafe17 88542cb1 23a33939 2a6c7605} (verified; $w_{43} =$ \ttx{b6630ca6}).
+
+\subsection{Analysis}
+Brute force: $2^{128}$ vs.\ DES's $2^{56}$ ($2^{72}$ times harder); no weak keys; strong diffusion and confusion defeat statistical attacks; designed with differential/linear cryptanalysis in mind; simple and cheap to implement.
+
+\begin{center}\small
+\begin{tabularx}{\textwidth}{@{}l X X@{}}
+\toprule
+ & DES & AES\\
+\midrule
+Structure & Feistel & non-Feistel (all invertible)\\
+Block / key & 64 / 56 & 128 / 128, 192, 256\\
+Rounds & 16 & 10, 12, 14\\
+Works on & bits & bytes (GF$(2^8)$)\\
+Permutation & bit-level P-boxes & byte-level ShiftRows\\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\begin{fixbox}
+\begin{itemize}
+  \item Example \#1 on the slide writes X as \ttx{23}. X is letter 23 in \emph{decimal}, which is \ttx{17} in hex (the slide correctly converts M $= 12 \to$ \ttx{0C} and R $= 17 \to$ \ttx{11}). With \ttx{17}, SubBytes gives \ttx{F0}; the slide's \ttx{26} is the S-box of \ttx{23}. If the exam reuses the slide's state, say which value you used.
+\end{itemize}
+\end{fixbox}

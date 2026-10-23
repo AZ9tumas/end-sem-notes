@@ -1,0 +1,65 @@
+% College Lecture 5 topics not in the Neso videos: multiplicative/affine, cryptanalysis of Vigenere/Hill/affine, rotor, keyed transposition, stream vs block
+\section{Traditional Ciphers: Remaining Topics (Lecture 5)}\label{sec:classextra}
+
+\subsection{Multiplicative and affine ciphers}
+\begin{center}\small
+\begin{tabular}{@{}lll@{}}
+\toprule
+Cipher & Encrypt & Decrypt / key space\\
+\midrule
+Additive (shift) & $C = (P + k) \bmod 26$ & $P = (C - k) \bmod 26$; \; 26 keys\\
+Multiplicative & $C = (P \times k) \bmod 26$ & $P = (C \times k^{-1}) \bmod 26$; \; $k \in \mathbb{Z}_{26}^*$: \textbf{12 keys}\\
+Affine & $C = (P k_1 + k_2) \bmod 26$ & $P = ((C - k_2) k_1^{-1}) \bmod 26$; \; $12 \times 26 = \mathbf{312}$ keys\\
+\bottomrule
+\end{tabular}
+\end{center}
+$\mathbb{Z}_{26}^* = \{1, 3, 5, 7, 9, 11, 15, 17, 19, 21, 23, 25\}$ (odd and not 13).
+\begin{itemize}
+  \item Multiplicative, $k = 7$: \ttx{hello} $= 7, 4, 11, 11, 14 \to 49, 28, 77, 77, 98 \bmod 26 = 23, 2, 25, 25, 20 =$ \ttx{XCZZU}.
+  \item Affine, $(k_1, k_2) = (7, 2)$: \ttx{hello} $\to$ \ttx{ZEBBW}. Decrypt with $7^{-1} = 15$: $(25 - 2) \cdot 15 = 345 \equiv 7 = h$, etc.
+\end{itemize}
+
+\textbf{Chosen-plaintext attack on affine} (slide example): Eve encrypts \ttx{et} on Alice's machine with two candidate algorithms and gets \ttx{WC} and \ttx{WF}.
+\begin{itemize}
+  \item \ttx{et}$\to$\ttx{WC}: $4k_1 + k_2 \equiv 22$, $19k_1 + k_2 \equiv 2$. Subtract: $15k_1 \equiv -20 \equiv 6$ $\Rightarrow k_1 = 16$: \textbf{rejected} ($\gcd(16, 26) \ne 1$).
+  \item \ttx{et}$\to$\ttx{WF}: $15k_1 \equiv 5 - 22 \equiv 9$, $15^{-1} = 7$, $k_1 = 63 \bmod 26 = \mathbf{11}$, $k_2 = 22 - 44 \equiv \mathbf{4}$. Decrypting the intercepted text gives ``best time of the year is spring when flowers bloom''.
+\end{itemize}
+
+\subsection{Cryptanalysis of Vigen\`ere: the Kasiski test}
+\begin{enumerate}[leftmargin=1.5em]
+  \item Find repeated segments ($\ge 3$ letters) in the ciphertext; note the distances $d_1, d_2, \dots$
+  \item The key length $m$ divides $\gcd(d_1, d_2, \dots)$.
+  \item Split the ciphertext into $m$ interleaved pieces (letters $1, m{+}1, 2m{+}1, \dots$); each piece is a plain shift cipher, so break each by frequency analysis.
+\end{enumerate}
+Slide example: JSU (100), SUM (48), VWV (60), MPH (8): $\gcd = 4$ $\Rightarrow$ try $m = 4$. Each piece keeps single-letter frequencies even though the whole ciphertext doesn't.
+
+\subsection{Cryptanalysis of Hill: known-plaintext}
+Brute force is hopeless ($26^{m \times m}$ keys) and Hill hides single-letter, digram and trigram statistics. But with $m$ known plaintext/ciphertext blocks, stack them as rows of $P$ and $C$: since $C = PK$, \;$\boxed{K = P^{-1}C}$ (if $P$ is invertible mod 26; otherwise use other blocks).
+\[
+P = \begin{pmatrix}5&7&10\\13&17&7\\0&5&4\end{pmatrix},\;
+C = \begin{pmatrix}3&6&0\\14&16&9\\3&17&11\end{pmatrix},\;
+\det P \equiv 9,\;
+P^{-1} = \begin{pmatrix}21&14&1\\0&8&25\\13&3&8\end{pmatrix},\;
+K = P^{-1}C = \begin{pmatrix}2&3&7\\5&7&9\\1&2&11\end{pmatrix}
+\]
+(All entries mod 26, verified.)
+
+\subsection{Rotor ciphers and Enigma}
+A \textbf{rotor cipher} is a monoalphabetic substitution whose mapping \textbf{changes after every character} (the rotor turns one position). \textbf{Enigma} (Scherbius; German army, WWII): keyboard, plugboard, three rotors (slow, middle, fast) and a reflector; the wiring changes as you type.
+
+\subsection{Transposition: keyless, keyed, combined}
+\begin{itemize}
+  \item \textbf{Keyless}: rail fence (\ttx{meetmeatthepark} $\to$ \ttx{MEMATEAKETETHPR}), or write row by row into 4 columns and read column by column ($\to$ \ttx{MMTAEEHREAEKTTP}).
+  \item \textbf{Keyed (block) transposition}: split into blocks and permute each with the key. \ttx{enemy attac kston ightz}, encryption key \ttx{3 1 4 5 2} (output position $i$ takes input character key[$i$]) $\to$ \ttx{EEMYN TAACT TKONS HITZG}.
+  \item \textbf{Keyed columnar (combined)}: write row by row, permute columns with the key, read column by column $\to$ \ttx{ETTHEAKIMAOTYCNZNTSG}.
+  \item \textbf{Key inversion}: for each index $i$, \ttx{DecKey[EncKey[i]] = i}. Encryption key \ttx{3 1 4 5 2} $\to$ decryption key \ttx{2 5 1 3 4}; \;\ttx{2 6 3 1 4 7 5} $\to$ \ttx{4 1 3 5 7 2 6}.
+  \item \textbf{As matrices}: the key is a permutation matrix (one 1 in each row and column); $C = PK$, and $K^{-1} = K^{T}$, so decryption just transposes the key matrix.
+  \item \textbf{Cryptanalysis}: single-letter frequencies survive (statistical attack); brute force over $1! + 2! + \dots + L!$ keys, but the column count must divide $L$ ($L = 20 \Rightarrow 2, 4, 5, 10$); \textbf{pattern attack} on the regular position pattern (03 08 13 18 01 06 \dots). \textbf{Double transposition} (repeat the whole thing, usually with the same key) destroys the regular pattern.
+\end{itemize}
+
+\subsection{Stream vs.\ block ciphers}
+\textbf{Stream}: one symbol at a time with a key stream, $c_i = E_{k_i}(p_i)$: additive, monoalphabetic, Vigen\`ere, OTP. \textbf{Block}: $m > 1$ symbols encrypted together with one key; each ciphertext block depends on the whole plaintext block: Playfair, Hill.
+
+\begin{trap}[: Vigen\`ere is a stream cipher]
+Even though the key repeats every $m$ letters, Vigen\`ere encrypts one character at a time, each with its own key element: a \textbf{stream} cipher. Playfair works on pairs, Hill on $m$-letter blocks: \textbf{block} ciphers.
+\end{trap}

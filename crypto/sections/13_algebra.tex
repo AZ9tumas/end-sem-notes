@@ -1,0 +1,538 @@
+% College Lecture 6: groups, rings, fields, GF(p), GF(2^n). Every number, table and division below was
+% recomputed by script (scratchpad/algebra/gf.py, gen.py, perm.py, extra.py).
+\section{Algebraic Structures: Groups, Rings, Fields \hothot}\label{sec:algebra}
+
+Every cipher so far has done arithmetic on a set of integers: the additive cipher adds mod 26, and the multiplicative cipher multiplies mod 26 and needs an inverse to decrypt. Modern ciphers such as AES work on bytes, and they need to add, multiply and divide bytes without ever leaving the set of bytes. A set together with the operations defined on it is called an \textbf{algebraic structure}. Three of them matter here: a \textbf{group} has one operation that can always be undone, a \textbf{ring} has two operations of which only the first can always be undone, and a \textbf{field} has two operations that can both be undone (except division by zero). This section builds up to the finite fields GF$(p)$ and GF$(2^n)$, because AES does all its byte arithmetic in GF$(2^8)$, and the GF$(2^8)$ inverse was asked in both past papers (8 marks in total).
+
+\subsection{Groups}
+A \textbf{group} $G = \langle S, \bullet \rangle$ is a set $S$ with one binary operation $\bullet$ (a rule that combines any two elements into a third) satisfying four properties:
+\begin{enumerate}[nosep]
+  \item \textbf{Closure}: if $a, b \in G$, then $a \bullet b \in G$.
+  \item \textbf{Associativity}: $(a \bullet b) \bullet c = a \bullet (b \bullet c)$ for all $a, b, c$.
+  \item \textbf{Identity}: there is an element $e$ with $e \bullet a = a \bullet e = a$ for every $a$.
+  \item \textbf{Inverse}: every $a$ has an element $a'$ with $a \bullet a' = a' \bullet a = e$.
+\end{enumerate}
+If in addition $a \bullet b = b \bullet a$ for all $a, b$ (\textbf{commutativity}), the group is called \textbf{abelian} or commutative.
+
+The inverse property is the reason groups matter in cryptography: it gives a second operation for free. ``Undo $b$'' is just $a \bullet b'$. In a group under addition, $b'$ is $-b$ and the derived operation is subtraction; in a group under multiplication, $b'$ is $b^{-1}$ and the derived operation is division. A group therefore supports one \emph{pair} of operations, $(+, -)$ or $(\times, \div)$, which is exactly the shape of an encryption/decryption pair.
+
+\textbf{$\langle \mathbb{Z}_n, + \rangle$ is an abelian group.} Closure holds because the result is reduced mod $n$ and so lands back in $\mathbb{Z}_n = \{0, \dots, n-1\}$; associativity and commutativity are inherited from ordinary addition; the identity is 0; and the inverse of $a$ is $n - a$, since $a + (n - a) = n \equiv 0$. For example, in $\mathbb{Z}_{10}$ the inverse of 3 is 7, so $4 - 3$ is computed as $4 + 7 = 11 \equiv 1$.
+
+\textbf{$\langle \mathbb{Z}_n^*, \times \rangle$ is an abelian group.} $\mathbb{Z}_n^*$ is the set of residues that are coprime to $n$, for example $\mathbb{Z}_{10}^* = \{1, 3, 7, 9\}$. Closure holds because a product of two numbers coprime to $n$ is again coprime to $n$; the identity is 1; and every element has an inverse because $\gcd(a, n) = 1$ lets the extended Euclidean algorithm (Section~\ref{sec:exteuclid}) find $s, t$ with $sn + ta = 1$, i.e.\ $ta \equiv 1 \pmod n$. Plain $\mathbb{Z}_n$ under $\times$ is \emph{not} a group: 0 has no inverse, and neither does any $a$ sharing a factor with $n$ (in $\mathbb{Z}_{10}$, $2y$ is always even and so never $\equiv 1$). Removing exactly these elements is what the star in $\mathbb{Z}_n^*$ does.
+
+\textbf{Reading an operation table.} For a small set, the operation can be given as a table whose entry in row $x$, column $y$ is $x \bullet y$. Closure means every entry belongs to the set. The identity is the element whose row repeats the column header. The inverse of $x$ is the column in which the identity appears in row $x$. Commutativity means the table is symmetric about its main diagonal. Associativity cannot be seen at a glance and has to be checked on triples.
+\begin{center}\small
+\begin{minipage}[c]{0.25\textwidth}\centering
+\begin{tabular}{c|cccc}
+$\bullet$ & $a$ & $b$ & $c$ & $d$\\\hline
+$a$ & \cellcolor{gold!25}$a$ & $b$ & $c$ & $d$\\
+$b$ & $b$ & $c$ & $d$ & \cellcolor{gold!25}$a$\\
+$c$ & $c$ & $d$ & \cellcolor{gold!25}$a$ & $b$\\
+$d$ & $d$ & \cellcolor{gold!25}$a$ & $b$ & $c$\\
+\end{tabular}
+\end{minipage}%
+\begin{minipage}[c]{0.72\textwidth}
+In the slide's table on $\{a, b, c, d\}$, every entry is in the set, so closure holds. Row $a$ copies the header, so $a$ is the identity. The identity appears (shaded) in row $b$ under $d$, in row $c$ under $c$ and in row $d$ under $b$, giving the inverse pairs $(a, a)$, $(b, d)$, $(c, c)$. The table is symmetric, so the group is abelian, and all 64 triples are associative (e.g.\ $(a \bullet b) \bullet c = a \bullet (b \bullet c) = d$). It is in fact $\langle \mathbb{Z}_4, + \rangle$ with $a, b, c, d = 0, 1, 2, 3$.
+\end{minipage}
+\end{center}
+
+\textbf{Permutation group.} The set is all $3! = 6$ permutations of three positions, and the operation $\circ$ is \textbf{composition}: apply one permutation, then the other. Write $[a\ b\ c]$ for the permutation sending $1 \to a$, $2 \to b$, $3 \to c$. Composition is read right to left, so $[3\ 1\ 2] \circ [1\ 3\ 2]$ means ``first $[1\ 3\ 2]$, then $[3\ 1\ 2]$'': $1 \to 1 \to 3$, $2 \to 3 \to 2$, $3 \to 2 \to 1$, which gives $[3\ 2\ 1]$ (the slide's example). Closure holds because two rearrangements in a row are again a rearrangement; composition of functions is associative; the identity is $[1\ 2\ 3]$; and every permutation can be undone, so it has an inverse. The group is \textbf{not abelian}: $[1\ 3\ 2] \circ [2\ 1\ 3] = [3\ 1\ 2]$, but $[2\ 1\ 3] \circ [1\ 3\ 2] = [2\ 3\ 1]$.
+
+\textbf{Why a double transposition is no stronger.} A keyed transposition cipher with block length $k$ encrypts each block by applying a key permutation $\pi$. Applying a second transposition $\pi_2$ (same block length) after $\pi_1$ is, by closure, the same as applying the single permutation $\pi_2 \circ \pi_1$, which is again one of the $k!$ possible keys. The attacker never needs to find $\pi_1$ and $\pi_2$ separately: recovering the one equivalent permutation breaks the cipher, and the key space is still $k!$. The same closure argument shows that two additive (shift) ciphers in a row are just one shift cipher.
+
+\subsection{Order, subgroups and cyclic subgroups}
+A group is \textbf{finite} if its set has finitely many elements, and its \textbf{order} $|G|$ is that number of elements: $|\mathbb{Z}_6| = 6$, $|\mathbb{Z}_{10}^*| = 4$.
+
+A \textbf{subgroup} $H$ of $G$ is a subset of $G$ that is itself a group under the \emph{same} operation as $G$. It follows that the two share the same identity, that $a \bullet b$ of two members of $H$ stays in $H$, and that the inverse of a member of $H$ is in $H$. The trivial group $\langle \{e\}, \bullet \rangle$ and $G$ itself are always subgroups of $G$. ``Same operation'' is the condition that catches students: $\mathbb{Z}_{10}$ is a subset of $\mathbb{Z}_{12}$, but $\langle \mathbb{Z}_{10}, + \rangle$ is \textbf{not} a subgroup of $\langle \mathbb{Z}_{12}, + \rangle$, because one adds mod 10 and the other mod 12 (e.g.\ $7 + 5$ is 2 in one and 0 in the other).
+
+\textbf{Cyclic subgroups.} In a group, the power $a^k$ means $a \bullet a \bullet \dots \bullet a$ ($k$ times), with $a^0 = e$; in an additive group, $a^k$ therefore means $k \cdot a \bmod n$. In a finite group, the powers $a^0, a^1, a^2, \dots$ cannot all be different, so they eventually return to $e$ and then repeat. The set of powers is closed under the operation and contains each member's inverse, so it is a subgroup, called the \textbf{cyclic subgroup generated by $a$}. If it is the whole of $G$, then $G$ is a \textbf{cyclic group} and $a$ is a \textbf{generator}.
+\begin{center}\small
+\begin{tabular}{@{}lll|lll@{}}
+\toprule
+\multicolumn{3}{c|}{$\langle \mathbb{Z}_6, + \rangle$ (powers $= k \cdot a \bmod 6$)} & \multicolumn{3}{c}{$\langle \mathbb{Z}_{10}^*, \times \rangle$ (powers $= a^k \bmod 10$)}\\
+$a$ & generated subgroup & ord$(a)$ & $a$ & $a^0, a^1, a^2, \dots$ & ord$(a)$\\
+\midrule
+0 & $\{0\}$ & 1 & 1 & $1$ & 1\\
+1 & $\{0, 1, 2, 3, 4, 5\} = G$ & 6 & 3 & $1, 3, 9, 7 \;(= G)$ & 4\\
+2 & $\{0, 2, 4\}$ & 3 & 7 & $1, 7, 9, 3 \;(= G)$ & 4\\
+3 & $\{0, 3\}$ & 2 & 9 & $1, 9$ & 2\\
+4 & $\{0, 4, 2\}$ & 3 & & & \\
+5 & $\{0, 5, 4, 3, 2, 1\} = G$ & 6 & & & \\
+\bottomrule
+\end{tabular}
+\end{center}
+So $\langle \mathbb{Z}_6, + \rangle$ has four cyclic subgroups, $\{0\}$, $\{0, 2, 4\}$, $\{0, 3\}$ and $G$, and is cyclic with generators 1 and 5. $\langle \mathbb{Z}_{10}^*, \times \rangle$ has three, $\{1\}$, $\{1, 9\}$ and $G$, and is cyclic with generators 3 and 7.
+
+\textbf{Lagrange's theorem and the order of an element.} \imp{If $H$ is a subgroup of a finite group $G$, then $|H|$ divides $|G|$.} The table agrees: the subgroup sizes 1, 2, 3, 6 all divide 6, and 1, 2, 4 divide 4. The \textbf{order of an element}, ord$(a)$, is the order of the cyclic subgroup it generates, which is the smallest $k \ge 1$ with $a^k = e$. Applying Lagrange to that subgroup shows ord$(a)$ divides $|G|$, and therefore $a^{|G|} = e$ for every $a$. With $G = \mathbb{Z}_n^*$ and $|G| = \phi(n)$ this is exactly Euler's theorem $a^{\phi(n)} \equiv 1 \pmod n$ (Section~\ref{sec:fermat}). Lagrange also rules out orders: $\mathbb{Z}_7^*$ has 6 elements, so no element can have order 4 or 5 (the actual orders of $1, \dots, 6$ are $1, 3, 6, 3, 6, 2$).
+
+\subsection{Rings and fields}
+A \textbf{ring} $R = \langle \{\dots\}, +, \times \rangle$ has two operations. The first must satisfy all five properties (it is an abelian group), the second only closure and associativity, and the second must \textbf{distribute} over the first: $a \times (b + c) = (a \times b) + (a \times c)$ and $(a + b) \times c = (a \times c) + (b \times c)$. If the second operation is also commutative, the ring is a \textbf{commutative ring}. $\langle \mathbb{Z}, +, \times \rangle$ is a commutative ring: addition satisfies all five properties, multiplication satisfies closure, associativity and commutativity, and $5 \times (3 + 2) = (5 \times 3) + (5 \times 2) = 25$. A ring supports $(+, -)$ and $\times$, but not division: $12 \div 5 = 2.4$ is not in $\mathbb{Z}$, so most elements of $\mathbb{Z}$ have no multiplicative inverse.
+
+A \textbf{field} $F = \langle \{\dots\}, +, \times \rangle$ is a commutative ring in which the second operation also satisfies all five properties, \imp{except that the identity of the first operation (0) has no inverse under the second.} A field therefore supports both pairs, $(+, -)$ and $(\times, \div)$, with the single exception of division by 0. The exception cannot be avoided: distributivity gives $0 \times a = (0 + 0) \times a = 0 \times a + 0 \times a$, so $0 \times a = 0$ for every $a$, and nothing multiplies 0 into 1.
+
+\begin{mustknow}[: which properties each structure needs]
+\small
+\begin{tabularx}{\linewidth}{@{}l X X l l@{}}
+\toprule
+Structure & First operation ($+$) & Second operation ($\times$) & Supports & Typical set\\
+\midrule
+Group & closure, associativity, identity, inverse (+ commutativity: abelian) & -- & $(+,-)$ or $(\times,\div)$ & $\mathbb{Z}_n$; $\mathbb{Z}_n^*$\\
+Ring & all 5 & closure, associativity (+ commutativity: commutative ring); distributes over $+$ & $(+,-)$ and $\times$ & $\mathbb{Z}$\\
+Field & all 5 & all 5, except 0 has no inverse; distributes over $+$ & $(+,-)$ and $(\times,\div)$ & $\mathbb{Z}_p$, GF$(2^n)$\\
+\bottomrule
+\end{tabularx}
+\end{mustknow}
+
+\subsection{Finite fields: why the size must be $p^n$}
+\textbf{Zero divisors kill inverses.} Suppose $a \times b = 0$ with $a \ne 0$ and $b \ne 0$. If $a$ had an inverse $a^{-1}$, then $b = a^{-1} \times (a \times b) = a^{-1} \times 0 = 0$, a contradiction; so $a$ has no inverse. This one argument explains every ``not a field'' result in this chapter. For a composite $n = ab$ with $1 < a, b < n$, we get $a \times b \equiv 0 \pmod n$, so $\mathbb{Z}_n$ is only a commutative ring. For a prime $p$ no such factorisation exists, every non-zero element is coprime to $p$ and has an inverse, and $\mathbb{Z}_p$ is a field.
+
+\textbf{Galois' result.} \imp{A finite field must have $p^n$ elements, $p$ prime and $n \ge 1$}; it is written GF$(p^n)$ (Galois field). The reason is short. Add 1 to itself repeatedly: $1, 1 + 1, 1 + 1 + 1, \dots$. The field is finite, so some sum $k \cdot 1$ must equal 0; let $p$ be the smallest such $k$. This $p$ must be prime, because $p = ab$ with $a, b < p$ would give $(a \cdot 1)(b \cdot 1) = 0$ with both factors non-zero, which the zero-divisor argument forbids. So the field contains a copy of $\mathbb{Z}_p$. Every element can then be written uniquely as $a_0 e_0 + a_1 e_1 + \dots + a_{n-1} e_{n-1}$ with coefficients $a_i \in \mathbb{Z}_p$ for some fixed basis $e_0, \dots, e_{n-1}$ (the field is an $n$-dimensional vector space over $\mathbb{Z}_p$). There are $p$ choices for each of the $n$ coefficients, giving $p^n$ elements. For GF$(2^n)$ the basis will be $1, x, \dots, x^{n-1}$ and the coefficients will be bits, which is exactly the polynomial representation used below.
+
+\subsection{GF$(p)$ arithmetic and division \hot}
+\asked{2024--25 Q5(i): $5 \div 3$ in GF(7).}
+GF$(p)$ is the set $\mathbb{Z}_p = \{0, 1, \dots, p - 1\}$ with addition and multiplication mod $p$. Subtraction is addition of the additive inverse, $a - b = a + (p - b)$, and division is multiplication by the multiplicative inverse, $a \div b = a \times b^{-1}$, which exists for every $b \ne 0$ because $p$ is prime. The inverse is found with the extended Euclidean algorithm, by inspection for small $p$ (look for $b \cdot y \equiv 1$), or by Fermat as $b^{-1} \equiv b^{p-2}$.
+
+The smallest field, \textbf{GF(2)} $= \{0, 1\}$, is the one every bit lives in: addition and subtraction are both \textbf{XOR} ($1 + 1 = 0$, and $-1 = 1$), multiplication is \textbf{AND}, and 1 is its own inverse under both operations. In \textbf{GF(5)} the additive inverse pairs are $(1, 4), (2, 3)$ and the multiplicative ones $(1, 1), (2, 3), (4, 4)$; in \textbf{GF(7)} they are $(1, 6), (2, 5), (3, 4)$ and $(1, 1), (2, 4), (3, 5), (6, 6)$.
+
+\begin{worked}[: 2024--25 Q5(i), ``In the field GF(7), find the result of $5 \div 3$.'']
+Division in a field means multiplication by the inverse: $5 \div 3 = 5 \times 3^{-1} \bmod 7$.\\
+\textbf{Inverse of 3.} Extended Euclid with $r_1 = 7$, $r_2 = 3$:
+\begin{center}\small
+\begin{tabular}{@{}r|rrr|rrr@{}}
+\toprule
+$q$ & $r_1$ & $r_2$ & $r$ & $t_1$ & $t_2$ & $t$\\
+\midrule
+2 & 7 & 3 & 1 & 0 & 1 & $-2$\\
+3 & 3 & 1 & 0 & 1 & $-2$ & 7\\
+ & \textbf{1} & 0 & & $\mathbf{-2}$ & 7 & \\
+\bottomrule
+\end{tabular}
+\end{center}
+$\gcd = 1$, so the inverse exists: $3^{-1} \equiv -2 \equiv 5 \pmod 7$ (check $3 \times 5 = 15 = 2 \cdot 7 + 1$; Fermat agrees, $3^5 = 243 \equiv 5$).\\
+\textbf{Divide.} $5 \div 3 = 5 \times 5 = 25 = 3 \cdot 7 + 4 \equiv \mathbf{4}$.\\
+\textbf{Check}: $4 \times 3 = 12 \equiv 5 \pmod 7$ \checkmark.\\[2pt]
+A second one in the same style: in GF(13), $4 \div 9 = 4 \times 9^{-1} = 4 \times 3 = \mathbf{12}$, since $9 \times 3 = 27 \equiv 1$; check $12 \times 9 = 108 = 8 \cdot 13 + 4$ \checkmark.
+\end{worked}
+
+\begin{trap}[: ``$\div$'' is not integer division]
+$5 \div 3$ in GF(7) is not 1.67 and not 1; it is the element $y$ with $3y \equiv 5$. The same past-paper question then asked for $15^{-1} \bmod 99$, which does not exist because $\gcd(15, 99) = 3$: $\mathbb{Z}_{99}$ is not a field, so the inverse is only guaranteed in GF$(p)$.
+\end{trap}
+
+\subsection{Why GF$(2^n)$ instead of $\mathbb{Z}_{2^n}$}
+Computers store numbers as $n$-bit words ($n = 8, 16, 32, \dots$), so the natural set is $\{0, \dots, 2^n - 1\}$ with modulus $2^n$. But $2^n$ is not prime, so $\mathbb{Z}_{2^n}$ has zero divisors and is not a field. In $\mathbb{Z}_{256}$, for example, $2 \times 128 = 256 \equiv 0$, and indeed no even byte has an inverse, because $2y$ stays even mod 256 and can never be 1. Half of all bytes could not be divided by.
+
+There are two ways out. The first is to use GF$(p)$ with $p$ the largest prime below $2^n$. This works but wastes values: for $n = 4$ the prime is 13, so 13, 14 and 15 are unusable, and for $n = 8$ it is 251, so 251--255 are unusable; an arbitrary byte of data could not even be represented. The second, which AES uses, is to keep all $2^n$ words and \emph{redefine} addition and multiplication so that the field properties hold. Galois guarantees that a field of size $2^n$ exists ($p = 2$), and it is built from polynomials.
+
+\subsection{Polynomial representation and addition}
+An $n$-bit word $a_{n-1} \dots a_1 a_0$ stands for the polynomial $a_{n-1}x^{n-1} + \dots + a_1 x + a_0$, whose coefficients are bits, i.e.\ elements of GF(2). The term $x^i$ is the $i$-th term and the bit $a_i$ is its coefficient, so the word records which powers of $x$ are present. For example, \ttx{10011001} $= x^7 + x^4 + x^3 + 1$. In the other direction, $x^5 + x^2 + x$ as an 8-bit word is found by supplying the missing terms, $0x^7 + 0x^6 + 1x^5 + 0x^4 + 0x^3 + 1x^2 + 1x + 0$, which is \ttx{00100110}. There are therefore two levels of arithmetic: the coefficients are combined in GF(2), and the polynomials are combined modulo a fixed polynomial in GF$(2^n)$.
+
+\textbf{Addition and subtraction} add the coefficients of equal powers in GF(2), so $x^k + x^k = 0$. Because $-1 \equiv 1 \pmod 2$, we have $-B = B$, so $A - B = A + B$: addition and subtraction are the same operation. Adding two polynomials of degree at most $n - 1$ never raises the degree, so no reduction is needed. Since adding coefficients mod 2 bit by bit is exactly XOR, \imp{addition in GF$(2^n)$ is the XOR of the two words}, every element is its own additive inverse ($a \oplus a = 0$), and the identity is 0. Slide example: $(x^5 + x^2 + x) \oplus (x^3 + x^2 + 1) = x^5 + x^3 + x + 1$, because the two $x^2$ terms cancel; in bits, \ttx{00100110} $\oplus$ \ttx{00001101} $=$ \ttx{00101011}.
+
+\subsection{Irreducible polynomials: the modulus}
+Multiplying two polynomials of degree at most $n - 1$ can produce degree up to $2n - 2$, which no longer fits in $n$ bits. So, as with integers mod $p$, the product is divided by a fixed polynomial $m(x)$ of degree $n$ and only the remainder (degree $< n$) is kept. The modulus must be \textbf{irreducible}: it cannot be written as a product of two polynomials of lower degree (at least 1) with coefficients in GF(2). An irreducible polynomial plays the role of a prime. If instead $m = f \cdot g$, then $f \otimes g \equiv 0 \pmod m$ with $f, g \ne 0$, and the zero-divisor argument shows $f$ has no inverse, so the structure would only be a ring.
+
+For degree 2 or 3, a polynomial is reducible exactly when it has a factor of degree 1, i.e.\ a root in GF(2). It has the root 0 if it has no constant term, and it has the root 1 if it has an even number of terms. So $x^2 + 1 = (x + 1)^2$ is reducible (two terms), while $x^2 + x + 1$ (constant term, three terms) is irreducible. From degree 4 on, a product of two irreducible quadratics also has to be ruled out, e.g.\ $x^4 + x^2 + 1 = (x^2 + x + 1)^2$ has no root but is still reducible.
+\begin{center}\small
+\begin{tabular}{@{}cl@{}}
+\toprule
+Degree & Irreducible polynomials over GF(2)\\
+\midrule
+1 & $x$, \ $x + 1$\\
+2 & $x^2 + x + 1$\\
+3 & $x^3 + x + 1$, \ $x^3 + x^2 + 1$\\
+4 & $x^4 + x + 1$, \ $x^4 + x^3 + 1$, \ $x^4 + x^3 + x^2 + x + 1$\\
+5 & $x^5 + x^2 + 1$, \ $x^5 + x^3 + 1$, \ $x^5 + x^3 + x^2 + x + 1$, \ $x^5 + x^4 + x^2 + x + 1$,\\
+  & $x^5 + x^4 + x^3 + x + 1$, \ $x^5 + x^4 + x^3 + x^2 + 1$\\
+\bottomrule
+\end{tabular}
+\end{center}
+AES uses $\boxed{m(x) = x^8 + x^4 + x^3 + x + 1}$, the bit pattern \ttx{1 0001 1011} $=$ \ttx{0x11B}, one of the 30 irreducible polynomials of degree 8.
+
+\subsection{Polynomial long division over GF(2) \hot}
+\asked{Every row of the GF$(2^8)$ inverse table (2024--25 Q4, 2025--26 Q2) is one such division, and so is the verification step. This is where marks are lost.}
+Long division of polynomials over GF(2) is ordinary long division in which every subtraction is an XOR. Terms of equal power cancel, there are no borrows and no negative coefficients, and no fractions appear because every leading coefficient is 1. The procedure is:
+\begin{enumerate}[nosep]
+  \item Write the dividend and the divisor in descending powers, and write the dividend in columns, one column per power, leaving gaps for missing powers.
+  \item Divide the leading term of the current dividend by the leading term of the divisor, $x^a / x^b = x^{a-b}$. This is the next term of the quotient.
+  \item Multiply the \emph{whole} divisor by $x^{a-b}$ (add $a - b$ to every exponent) and write it under the current line, each term in the column of its power.
+  \item XOR the two lines: a power present in both lines cancels, and a power present in only one line drops down. The leading term always cancels.
+  \item Repeat on the new line while its degree is at least the degree of the divisor. The last line is the \textbf{remainder}, and the quotient is the sum of the terms found in step 2.
+\end{enumerate}
+
+\begin{worked}[: reduce $x^{12} + x^7 + x^2$ modulo $m(x) = x^8 + x^4 + x^3 + x + 1$ (Forouzan)]
+\[
+\renewcommand{\arraystretch}{1.3}\begin{array}{@{}*{13}{@{\;}r}@{\qquad}l@{}}
+x^{12} &  &  &  &  & {}+x^{7} &  &  &  &  & {}+x^{2} &  &  & \text{dividend}\\
+x^{12} &  &  &  & {}+x^{8} & {}+x^{7} &  & {}+x^{5} & {}+x^{4} &  &  &  &  & \oplus\ x^{4}\cdot m\\
+\cline{1-13}
+ &  &  &  & x^{8} &  &  & {}+x^{5} & {}+x^{4} &  & {}+x^{2} &  &  & \\
+ &  &  &  & x^{8} &  &  &  & {}+x^{4} & {}+x^{3} &  & {}+x & {}+1 & \oplus\ 1\cdot m\\
+\cline{5-13}
+ &  &  &  &  &  &  & x^{5} &  & {}+x^{3} & {}+x^{2} & {}+x & {}+1  & \text{remainder}\\
+\end{array}
+\]
+Quotient $x^4 + 1$, \textbf{remainder $x^5 + x^3 + x^2 + x + 1$}. In the first step $x^{12} / x^8 = x^4$, so $m$ is shifted up by 4; the $x^{12}$ and $x^7$ terms cancel, and $x^8, x^5, x^4$ come down together with the untouched $x^2$. In the second step $x^8 / x^8 = 1$.\\[2pt]
+\textbf{The same division in bits} (shift \ttx{100011011} under the leading 1 and XOR; a fast way to check):\\
+\ttx{1000010000100} $\oplus$ \ttx{1000110110000} $=$ \ttx{100110100}; \quad \ttx{100110100} $\oplus$ \ttx{100011011} $=$ \ttx{000101111} $=$ \ttx{0x2F}.
+\end{worked}
+
+\begin{trap}[: the usual slips in GF(2) division]
+Shifting only the leading term of the divisor instead of all of it; aligning terms by position on the page instead of by power; writing $x^k + x^k = 2x^k$ instead of 0; and stopping when the remainder is 0 rather than when its degree is below the divisor's.
+\end{trap}
+
+\subsection{Multiplication in GF$(2^n)$ \hot}
+\likely{``Multiply $\{57\}$ by $\{83\}$'' or ``find $\{02\} \cdot \{87\}$'' (Stallings/FIPS-197, needed for AES MixColumns), or Forouzan's $P_1 \otimes P_2$.}
+To multiply, expand the product term by term ($x^i \cdot x^j = x^{i+j}$, and coefficient products in GF(2) are AND), add all the partial products with XOR so that equal powers cancel in pairs, and then reduce modulo $m(x)$ by long division; the remainder is the answer.
+
+\begin{worked}[: $(x^5 + x^2 + x) \otimes (x^7 + x^4 + x^3 + x^2 + x)$ in GF$(2^8)$, long method]
+Let $P_1 = x^5 + x^2 + x$ and $P_2 = x^7 + x^4 + x^3 + x^2 + x$. One partial product per term of $P_1$:
+\[
+\begin{array}{@{}r@{\;=\;}l@{}}
+x^5 \cdot P_2 & x^{12} + x^9 + x^8 + x^7 + x^6\\
+x^2 \cdot P_2 & x^9 + x^6 + x^5 + x^4 + x^3\\
+x \cdot P_2 & x^8 + x^5 + x^4 + x^3 + x^2
+\end{array}
+\]
+XOR: $x^9, x^8, x^6, x^5, x^4, x^3$ each appear twice and cancel, leaving $x^{12} + x^7 + x^2$. Reducing this modulo $m(x)$ was the long division above, so
+$P_1 \otimes P_2 = \mathbf{x^5 + x^3 + x^2 + x + 1}$, i.e.\ $\{26\} \otimes \{9E\} = \{2F\}$.
+\end{worked}
+
+\textbf{The shortcut: multiply by $x$ repeatedly.} Multiplying a polynomial by $x$ raises every exponent by one, which is a left shift of the word by one bit. If the top bit ($x^7$) was 0, the result still has degree at most 7 and nothing else is needed. If the top bit was 1, the result contains $x^8$, which must be reduced. Since $m(x) = x^8 + (x^4 + x^3 + x + 1) \equiv 0$ and minus equals plus, \imp{$x^8 \equiv x^4 + x^3 + x + 1$}, so the reduction is: drop the overflow bit and XOR with \ttx{00011011} $=$ \ttx{0x1B}. This step is called \textbf{xtime}. Any product $a \otimes b$ is then the XOR of $a \otimes x^i$ over the 1-bits $i$ of $b$, and $a \otimes x^i$ is obtained by applying xtime $i$ times. Because every intermediate result is reduced straight away, no number ever exceeds 8 bits, which is why this is the version used in software and hardware.
+
+\begin{worked}[: the same product by the shortcut (slide table)]
+Build $x^i \otimes P_2$ for $i = 0, \dots, 5$, each row being xtime of the row above:
+\begin{center}\small
+\begin{tabular}{@{}llllc@{}}
+\toprule
+Power & Operation & Result & Byte & Reduced?\\
+\midrule
+$x^0 \otimes P_2$ & & $x^7 + x^4 + x^3 + x^2 + x$ & \ttx{9E} & No\\
+$x^1 \otimes P_2$ & $x \otimes (x^7 + x^4 + x^3 + x^2 + x)$ & $x^5 + x^2 + x + 1$ & \ttx{27} & Yes\\
+$x^2 \otimes P_2$ & $x \otimes (x^5 + x^2 + x + 1)$ & $x^6 + x^3 + x^2 + x$ & \ttx{4E} & No\\
+$x^3 \otimes P_2$ & $x \otimes (x^6 + x^3 + x^2 + x)$ & $x^7 + x^4 + x^3 + x^2$ & \ttx{9C} & No\\
+$x^4 \otimes P_2$ & $x \otimes (x^7 + x^4 + x^3 + x^2)$ & $x^5 + x + 1$ & \ttx{23} & Yes\\
+$x^5 \otimes P_2$ & $x \otimes (x^5 + x + 1)$ & $x^6 + x^2 + x$ & \ttx{46} & No\\
+\bottomrule
+\end{tabular}
+\end{center}
+Row 1 in bits: \ttx{10011110} shifted is \ttx{1 00111100}, the top bit overflowed, so \ttx{00111100} $\oplus$ \ttx{00011011} $=$ \ttx{00100111} (\ttx{27}). Row 4 likewise: \ttx{00111000} $\oplus$ \ttx{00011011} $=$ \ttx{00100011} (\ttx{23}).\\
+$P_1 = x^5 + x^2 + x$ uses rows 5, 2 and 1:
+$(x^6 + x^2 + x) \oplus (x^6 + x^3 + x^2 + x) \oplus (x^5 + x^2 + x + 1) = \mathbf{x^5 + x^3 + x^2 + x + 1}$, i.e.\ \ttx{46} $\oplus$ \ttx{4E} $\oplus$ \ttx{27} $=$ \ttx{2F} \checkmark\ (same as the long method).
+\end{worked}
+
+\begin{worked}[: $\{57\} \bullet \{83\}$ and $\{57\} \bullet \{13\}$ in GF$(2^8)$ (Stallings / FIPS-197)]
+$\{57\} = $ \ttx{01010111} $= x^6 + x^4 + x^2 + x + 1$. Repeated xtime (a 1 in the top bit means XOR \ttx{1B} after the shift):
+\begin{center}\small
+\begin{tabular}{@{}lcccccccc@{}}
+\toprule
+$i$ & 0 & 1 & 2 & 3 & 4 & 5 & 6 & 7\\
+$\{57\} \bullet x^i$ & \ttx{57} & \ttx{AE} & \ttx{47} & \ttx{8E} & \ttx{07} & \ttx{0E} & \ttx{1C} & \ttx{38}\\
+reduced? & & no & yes & no & yes & no & no & no\\
+\bottomrule
+\end{tabular}
+\end{center}
+(e.g.\ $i = 2$: \ttx{AE} $=$ \ttx{10101110} $\to$ \ttx{01011100} $\oplus$ \ttx{00011011} $=$ \ttx{01000111} $=$ \ttx{47}.)\\
+$\{83\} = $ \ttx{10000011} $= x^7 + x + 1$, so $\{57\} \bullet \{83\} = $ \ttx{38} $\oplus$ \ttx{AE} $\oplus$ \ttx{57} $=$ \textbf{\ttx{C1}} $= x^7 + x^6 + 1$.\\
+$\{13\} = $ \ttx{00010011} $= x^4 + x + 1$, so $\{57\} \bullet \{13\} = $ \ttx{07} $\oplus$ \ttx{AE} $\oplus$ \ttx{57} $=$ \textbf{\ttx{FE}}.\\
+\textbf{Check} (long method for \ttx{57}$\cdot$\ttx{83}): the product is $x^{13} + x^{11} + x^9 + x^8 + x^6 + x^5 + x^4 + x^3 + 1$; dividing by $m(x)$ gives quotient $x^5 + x^3$ and remainder $x^7 + x^6 + 1$ \checkmark.\\[2pt]
+\textbf{MixColumns use.} AES only multiplies by \ttx{02} and \ttx{03}: $\{02\} \bullet a = $ xtime$(a)$ and $\{03\} \bullet a = $ xtime$(a) \oplus a$. For example, $\{02\} \bullet \{87\}$: \ttx{10000111} $\to$ \ttx{00001110} $\oplus$ \ttx{00011011} $=$ \ttx{00010101} $=$ \textbf{\ttx{15}}; and $\{03\} \bullet \{6E\} = $ \ttx{DC} $\oplus$ \ttx{6E} $=$ \textbf{\ttx{B2}} (Section~\ref{sec:aes}).
+\end{worked}
+
+\subsection{Multiplicative inverse in GF$(2^n)$: extended Euclid on polynomials \hothot}
+\asked{2024--25 Q4 (4 marks): inverse of $x^5$; 2025--26 Q2 (4 marks): inverse of $x^7$, both mod $x^8+x^4+x^3+x+1$.}
+Division in GF$(2^n)$ needs the inverse $a^{-1}$ with $a \otimes a^{-1} \equiv 1 \pmod{m}$. The idea is the same as for integers. The extended Euclidean algorithm on $m(x)$ and $a(x)$ produces polynomials $s, t$ with $s \cdot m + t \cdot a = \gcd(m, a)$. Since $m$ is irreducible and $a$ is a non-zero polynomial of smaller degree, the gcd is 1, so $t \cdot a = 1 + s \cdot m \equiv 1 \pmod m$, and $t$ is the inverse. As with integer inverses, only the $t$ column is needed.
+
+The table is Forouzan's integer table with two changes: the quotient $q$ comes from a polynomial long division, and every subtraction is an XOR. Start with $r_1 = m$, $r_2 = a$, $t_1 = 0$, $t_2 = 1$, and in each row compute
+\[
+q, r = \text{quotient and remainder of } r_1 \div r_2, \qquad t = t_1 - q \cdot t_2 = t_1 \oplus (q \cdot t_2),
+\]
+then shift $(r_1, r_2) \leftarrow (r_2, r)$ and $(t_1, t_2) \leftarrow (t_2, t)$. Stop when $r_2 = 0$. The product $q \cdot t_2$ is an ordinary polynomial product (expand, XOR equal powers); it needs no reduction, because the $t$ values never reach degree $n$ until the very last row.
+
+\begin{mustknow}[: GF$(2^n)$ inverse recipe and its three checks]
+$r_1 = m$, $r_2 = a$, $t_1 = 0$, $t_2 = 1$; each row: $q, r$ from $r_1 \div r_2$; \ $t = t_1 \oplus q \cdot t_2$; shift; stop at $r_2 = 0$. \textbf{Answer $= t_1$ of the final row.}\\
+Checks: (1) the final $r_1$ must be 1; (2) the last $t$ computed always equals $m$ itself (the last row says $t \cdot a$ is a multiple of $m$, and $a$ shares no factor with $m$); (3) multiply $a \otimes t_1$ and reduce by $m$: the remainder must be 1.
+\end{mustknow}
+
+\textbf{Small example (slide): $(x^2 + 1)^{-1}$ in GF$(2^4)$ modulo $x^4 + x + 1$.} The divisions are
+$(x^4 + x + 1) \div (x^2 + 1)$ and $(x^2 + 1) \div x$:
+\[
+\renewcommand{\arraystretch}{1.3}\begin{array}{@{}*{5}{@{\;}r}@{\qquad}l@{}}
+x^{4} &  &  & {}+x & {}+1 & \text{dividend}\\
+x^{4} &  & {}+x^{2} &  &  & \oplus\ x^{2}\cdot r_2\\
+\cline{1-5}
+ &  & x^{2} & {}+x & {}+1 & \\
+ &  & x^{2} &  & {}+1 & \oplus\ 1\cdot r_2\\
+\cline{3-5}
+ &  &  & x &   & \text{remainder}\\
+\end{array}
+\qquad\qquad
+\renewcommand{\arraystretch}{1.3}\begin{array}{@{}*{3}{@{\;}r}@{\qquad}l@{}}
+x^{2} &  & {}+1 & \text{dividend}\\
+x^{2} &  &  & \oplus\ x\cdot r_2\\
+\cline{1-3}
+ &  & 1  & \text{remainder}\\
+\end{array}
+\]
+so the quotients are $x^2 + 1$, $x$, $x$ (the last row is $x \div 1$). The $t$ values are $0 \oplus (x^2 + 1) \cdot 1 = x^2 + 1$, then $1 \oplus x(x^2 + 1) = x^3 + x + 1$, then $(x^2 + 1) \oplus x(x^3 + x + 1) = x^4 + x + 1 = m$ \checkmark.
+\begin{center}\small
+\begin{tabular}{@{}lllllll@{}}
+\toprule
+$q$ & $r_1$ & $r_2$ & $r$ & $t_1$ & $t_2$ & $t$\\
+\midrule
+$x^2{+}1$ & $x^4{+}x{+}1$ & $x^2{+}1$ & $x$ & $0$ & $1$ & $x^2{+}1$\\
+$x$ & $x^2{+}1$ & $x$ & $1$ & $1$ & $x^2{+}1$ & $x^3{+}x{+}1$\\
+$x$ & $x$ & $1$ & $0$ & $x^2{+}1$ & $x^3{+}x{+}1$ & $x^4{+}x{+}1$\\
+ & \textbf{1} & 0 & & $\mathbf{x^3{+}x{+}1}$ & $x^4{+}x{+}1$ & \\
+\bottomrule
+\end{tabular}
+\end{center}
+$(x^2 + 1)^{-1} = \mathbf{x^3 + x + 1}$. Check: $(x^2 + 1)(x^3 + x + 1) = x^5 + x^2 + x + 1$, and $x^5 + x^2 + x + 1 \oplus x \cdot m = 1$ \checkmark.
+
+\begin{worked}[: 2024--25 Q4, ``In GF$(2^8)$, find the inverse of $(x^5)$ modulo $(x^8 + x^4 + x^3 + x + 1)$.'' (4 marks)]
+\textbf{Setup.} $r_1 = m = x^8 + x^4 + x^3 + x + 1$, \ $r_2 = x^5$, \ $t_1 = 0$, \ $t_2 = 1$.\\[2pt]
+\textbf{Divisions} (one per row of the table):\\[2pt]
+\begin{minipage}[t]{0.5\linewidth}
+Row 1: $(x^8 + x^4 + x^3 + x + 1) \div x^5$
+\[
+\renewcommand{\arraystretch}{1.3}\begin{array}{@{}*{9}{@{\;}r}@{\qquad}l@{}}
+x^{8} &  &  &  & {}+x^{4} & {}+x^{3} &  & {}+x & {}+1 & \text{dividend}\\
+x^{8} &  &  &  &  &  &  &  &  & \oplus\ x^{3}\cdot r_2\\
+\cline{1-9}
+ &  &  &  & x^{4} & {}+x^{3} &  & {}+x & {}+1  & \text{remainder}\\
+\end{array}
+\]
+$q = x^3$, \ $r = x^4 + x^3 + x + 1$.
+\end{minipage}%
+\begin{minipage}[t]{0.5\linewidth}
+Row 2: $x^5 \div (x^4 + x^3 + x + 1)$
+\[
+\renewcommand{\arraystretch}{1.3}\begin{array}{@{}*{6}{@{\;}r}@{\qquad}l@{}}
+x^{5} &  &  &  &  &  & \text{dividend}\\
+x^{5} & {}+x^{4} &  & {}+x^{2} & {}+x &  & \oplus\ x\cdot r_2\\
+\cline{1-6}
+ & x^{4} &  & {}+x^{2} & {}+x &  & \\
+ & x^{4} & {}+x^{3} &  & {}+x & {}+1 & \oplus\ 1\cdot r_2\\
+\cline{2-6}
+ &  & x^{3} & {}+x^{2} &  & {}+1  & \text{remainder}\\
+\end{array}
+\]
+$q = x + 1$, \ $r = x^3 + x^2 + 1$.
+\end{minipage}\\[4pt]
+\begin{minipage}[t]{0.5\linewidth}
+Row 3: $(x^4 + x^3 + x + 1) \div (x^3 + x^2 + 1)$
+\[
+\renewcommand{\arraystretch}{1.3}\begin{array}{@{}*{5}{@{\;}r}@{\qquad}l@{}}
+x^{4} & {}+x^{3} &  & {}+x & {}+1 & \text{dividend}\\
+x^{4} & {}+x^{3} &  & {}+x &  & \oplus\ x\cdot r_2\\
+\cline{1-5}
+ &  &  &  & 1  & \text{remainder}\\
+\end{array}
+\]
+$q = x$, \ $r = 1$.
+\end{minipage}%
+\begin{minipage}[t]{0.5\linewidth}
+Row 4: $(x^3 + x^2 + 1) \div 1$\\[4pt]
+Dividing by 1 gives the dividend back:\\
+$q = x^3 + x^2 + 1$, \ $r = 0$.
+\end{minipage}\\[6pt]
+\textbf{$t$ values} ($t = t_1 \oplus q \cdot t_2$):
+\begin{itemize}[nosep]
+  \item Row 1: $0 \oplus x^3 \cdot 1 = x^3$.
+  \item Row 2: $1 \oplus (x + 1) \cdot x^3 = 1 \oplus (x^4 + x^3) = x^4 + x^3 + 1$.
+  \item Row 3: $x^3 \oplus x \cdot (x^4 + x^3 + 1) = x^3 \oplus (x^5 + x^4 + x) = x^5 + x^4 + x^3 + x$.
+  \item Row 4: $(x^3 + x^2 + 1)(x^5 + x^4 + x^3 + x) = (x^8 + x^7 + x^6 + x^4) \oplus (x^7 + x^6 + x^5 + x^3) \oplus (x^5 + x^4 + x^3 + x) = x^8 + x$, so $t = (x^4 + x^3 + 1) \oplus (x^8 + x) = x^8 + x^4 + x^3 + x + 1 = m$ \checkmark.
+\end{itemize}
+\textbf{Table.}
+\begin{center}\small\setlength{\tabcolsep}{3pt}
+\begin{tabular}{@{}lllllll@{}}
+\toprule
+$q$ & $r_1$ & $r_2$ & $r$ & $t_1$ & $t_2$ & $t$\\
+\midrule
+$x^3$ & $x^8{+}x^4{+}x^3{+}x{+}1$ & $x^5$ & $x^4{+}x^3{+}x{+}1$ & 0 & 1 & $x^3$\\
+$x{+}1$ & $x^5$ & $x^4{+}x^3{+}x{+}1$ & $x^3{+}x^2{+}1$ & 1 & $x^3$ & $x^4{+}x^3{+}1$\\
+$x$ & $x^4{+}x^3{+}x{+}1$ & $x^3{+}x^2{+}1$ & 1 & $x^3$ & $x^4{+}x^3{+}1$ & $x^5{+}x^4{+}x^3{+}x$\\
+$x^3{+}x^2{+}1$ & $x^3{+}x^2{+}1$ & 1 & 0 & $x^4{+}x^3{+}1$ & $x^5{+}x^4{+}x^3{+}x$ & $m$\\
+ & \textbf{1} & 0 & & $\mathbf{x^5{+}x^4{+}x^3{+}x}$ & $m$ & \\
+\bottomrule
+\end{tabular}
+\end{center}
+The final $r_1 = 1$, so the inverse exists and equals the final $t_1$: \quad $\boxed{(x^5)^{-1} = x^5 + x^4 + x^3 + x}$ \ (byte \ttx{3A}).\\[2pt]
+\textbf{Verification.} $x^5 \otimes (x^5 + x^4 + x^3 + x) = x^{10} + x^9 + x^8 + x^6$, reduced modulo $m$:
+\[
+\renewcommand{\arraystretch}{1.3}\begin{array}{@{}*{11}{@{\;}r}@{\qquad}l@{}}
+x^{10} & {}+x^{9} & {}+x^{8} &  & {}+x^{6} &  &  &  &  &  &  & \text{dividend}\\
+x^{10} &  &  &  & {}+x^{6} & {}+x^{5} &  & {}+x^{3} & {}+x^{2} &  &  & \oplus\ x^{2}\cdot m\\
+\cline{1-11}
+ & x^{9} & {}+x^{8} &  &  & {}+x^{5} &  & {}+x^{3} & {}+x^{2} &  &  & \\
+ & x^{9} &  &  &  & {}+x^{5} & {}+x^{4} &  & {}+x^{2} & {}+x &  & \oplus\ x\cdot m\\
+\cline{2-11}
+ &  & x^{8} &  &  &  & {}+x^{4} & {}+x^{3} &  & {}+x &  & \\
+ &  & x^{8} &  &  &  & {}+x^{4} & {}+x^{3} &  & {}+x & {}+1 & \oplus\ 1\cdot m\\
+\cline{3-11}
+ &  &  &  &  &  &  &  &  &  & 1  & \text{remainder}\\
+\end{array}
+\]
+The remainder is 1, so the answer is correct \checkmark.
+\end{worked}
+
+\begin{worked}[: 2025--26 Q2, ``Find multiplicative inverse of $x^7$ mod $(x^8 + x^4 + x^3 + x + 1)$.'' (4 marks)]
+\textbf{Setup.} $r_1 = m = x^8 + x^4 + x^3 + x + 1$, \ $r_2 = x^7$, \ $t_1 = 0$, \ $t_2 = 1$.\\[2pt]
+\textbf{Divisions:}\\[2pt]
+\begin{minipage}[t]{0.5\linewidth}
+Row 1: $(x^8 + x^4 + x^3 + x + 1) \div x^7$
+\[
+\renewcommand{\arraystretch}{1.3}\begin{array}{@{}*{9}{@{\;}r}@{\qquad}l@{}}
+x^{8} &  &  &  & {}+x^{4} & {}+x^{3} &  & {}+x & {}+1 & \text{dividend}\\
+x^{8} &  &  &  &  &  &  &  &  & \oplus\ x\cdot r_2\\
+\cline{1-9}
+ &  &  &  & x^{4} & {}+x^{3} &  & {}+x & {}+1  & \text{remainder}\\
+\end{array}
+\]
+$q = x$, \ $r = x^4 + x^3 + x + 1$.
+\end{minipage}%
+\begin{minipage}[t]{0.5\linewidth}
+Row 2: $x^7 \div (x^4 + x^3 + x + 1)$
+\[
+\renewcommand{\arraystretch}{1.3}\begin{array}{@{}*{8}{@{\;}r}@{\qquad}l@{}}
+x^{7} &  &  &  &  &  &  &  & \text{dividend}\\
+x^{7} & {}+x^{6} &  & {}+x^{4} & {}+x^{3} &  &  &  & \oplus\ x^{3}\cdot r_2\\
+\cline{1-8}
+ & x^{6} &  & {}+x^{4} & {}+x^{3} &  &  &  & \\
+ & x^{6} & {}+x^{5} &  & {}+x^{3} & {}+x^{2} &  &  & \oplus\ x^{2}\cdot r_2\\
+\cline{2-8}
+ &  & x^{5} & {}+x^{4} &  & {}+x^{2} &  &  & \\
+ &  & x^{5} & {}+x^{4} &  & {}+x^{2} & {}+x &  & \oplus\ x\cdot r_2\\
+\cline{3-8}
+ &  &  &  &  &  & x &   & \text{remainder}\\
+\end{array}
+\]
+$q = x^3 + x^2 + x$, \ $r = x$.
+\end{minipage}\\[4pt]
+\begin{minipage}[t]{0.5\linewidth}
+Row 3: $(x^4 + x^3 + x + 1) \div x$
+\[
+\renewcommand{\arraystretch}{1.3}\begin{array}{@{}*{5}{@{\;}r}@{\qquad}l@{}}
+x^{4} & {}+x^{3} &  & {}+x & {}+1 & \text{dividend}\\
+x^{4} &  &  &  &  & \oplus\ x^{3}\cdot r_2\\
+\cline{1-5}
+ & x^{3} &  & {}+x & {}+1 & \\
+ & x^{3} &  &  &  & \oplus\ x^{2}\cdot r_2\\
+\cline{2-5}
+ &  &  & x & {}+1 & \\
+ &  &  & x &  & \oplus\ 1\cdot r_2\\
+\cline{4-5}
+ &  &  &  & 1  & \text{remainder}\\
+\end{array}
+\]
+$q = x^3 + x^2 + 1$, \ $r = 1$.
+\end{minipage}%
+\begin{minipage}[t]{0.5\linewidth}
+Row 4: $x \div 1$\\[4pt]
+$q = x$, \ $r = 0$.
+\end{minipage}\\[6pt]
+\textbf{$t$ values} ($t = t_1 \oplus q \cdot t_2$):
+\begin{itemize}[nosep]
+  \item Row 1: $0 \oplus x \cdot 1 = x$.
+  \item Row 2: $1 \oplus (x^3 + x^2 + x) \cdot x = 1 \oplus (x^4 + x^3 + x^2) = x^4 + x^3 + x^2 + 1$.
+  \item Row 3: $(x^3 + x^2 + 1)(x^4 + x^3 + x^2 + 1) = (x^7 + x^6 + x^5 + x^3) \oplus (x^6 + x^5 + x^4 + x^2) \oplus (x^4 + x^3 + x^2 + 1) = x^7 + 1$, so $t = x \oplus (x^7 + 1) = x^7 + x + 1$.
+  \item Row 4: $(x^4 + x^3 + x^2 + 1) \oplus x(x^7 + x + 1) = (x^4 + x^3 + x^2 + 1) \oplus (x^8 + x^2 + x) = x^8 + x^4 + x^3 + x + 1 = m$ \checkmark.
+\end{itemize}
+\textbf{Table.}
+\begin{center}\small\setlength{\tabcolsep}{3pt}
+\begin{tabular}{@{}lllllll@{}}
+\toprule
+$q$ & $r_1$ & $r_2$ & $r$ & $t_1$ & $t_2$ & $t$\\
+\midrule
+$x$ & $x^8{+}x^4{+}x^3{+}x{+}1$ & $x^7$ & $x^4{+}x^3{+}x{+}1$ & 0 & 1 & $x$\\
+$x^3{+}x^2{+}x$ & $x^7$ & $x^4{+}x^3{+}x{+}1$ & $x$ & 1 & $x$ & $x^4{+}x^3{+}x^2{+}1$\\
+$x^3{+}x^2{+}1$ & $x^4{+}x^3{+}x{+}1$ & $x$ & 1 & $x$ & $x^4{+}x^3{+}x^2{+}1$ & $x^7{+}x{+}1$\\
+$x$ & $x$ & 1 & 0 & $x^4{+}x^3{+}x^2{+}1$ & $x^7{+}x{+}1$ & $m$\\
+ & \textbf{1} & 0 & & $\mathbf{x^7{+}x{+}1}$ & $m$ & \\
+\bottomrule
+\end{tabular}
+\end{center}
+The final $r_1 = 1$, so \quad $\boxed{(x^7)^{-1} = x^7 + x + 1}$ \ (byte \ttx{83}, i.e.\ $\{80\}^{-1} = \{83\}$).\\[2pt]
+\textbf{Verification.} $x^7 \otimes (x^7 + x + 1) = x^{14} + x^8 + x^7$, reduced modulo $m$:
+\[
+\renewcommand{\arraystretch}{1.3}\begin{array}{@{}*{15}{@{\;}r}@{\qquad}l@{}}
+x^{14} &  &  &  &  &  & {}+x^{8} & {}+x^{7} &  &  &  &  &  &  &  & \text{dividend}\\
+x^{14} &  &  &  & {}+x^{10} & {}+x^{9} &  & {}+x^{7} & {}+x^{6} &  &  &  &  &  &  & \oplus\ x^{6}\cdot m\\
+\cline{1-15}
+ &  &  &  & x^{10} & {}+x^{9} & {}+x^{8} &  & {}+x^{6} &  &  &  &  &  &  & \\
+ &  &  &  & x^{10} &  &  &  & {}+x^{6} & {}+x^{5} &  & {}+x^{3} & {}+x^{2} &  &  & \oplus\ x^{2}\cdot m\\
+\cline{5-15}
+ &  &  &  &  & x^{9} & {}+x^{8} &  &  & {}+x^{5} &  & {}+x^{3} & {}+x^{2} &  &  & \\
+ &  &  &  &  & x^{9} &  &  &  & {}+x^{5} & {}+x^{4} &  & {}+x^{2} & {}+x &  & \oplus\ x\cdot m\\
+\cline{6-15}
+ &  &  &  &  &  & x^{8} &  &  &  & {}+x^{4} & {}+x^{3} &  & {}+x &  & \\
+ &  &  &  &  &  & x^{8} &  &  &  & {}+x^{4} & {}+x^{3} &  & {}+x & {}+1 & \oplus\ 1\cdot m\\
+\cline{7-15}
+ &  &  &  &  &  &  &  &  &  &  &  &  &  & 1  & \text{remainder}\\
+\end{array}
+\]
+The remainder is 1 \checkmark. (A quicker check uses the reductions $x^8 \equiv x^4 + x^3 + x + 1$, $x^{14} \equiv x^7 + x^4 + x^3 + x$, from repeated xtime: $x^{14} + x^8 + x^7 \equiv (x^7 + x^4 + x^3 + x) + (x^4 + x^3 + x + 1) + x^7 = 1$.)
+\end{worked}
+
+\begin{trap}[: where the GF$(2^8)$ inverse goes wrong]
+In row 1, $m \div x^5$ gives remainder $x^4 + x^3 + x + 1$ (only $x^8$ cancels), not 0 and not $x^4$. In the $t$ column, $q \cdot t_2$ is a polynomial \emph{product} that must be expanded before the XOR with $t_1$. The answer is $t_1$ in the last line, not the last $t$ (which is $m$). And if a remainder ever has degree $\ge$ the divisor's, the division was stopped too early.
+\end{trap}
+
+\subsection{Small fields: GF$(2^2)$ and GF$(2^3)$}
+\textbf{GF$(2^2)$} has the four 2-bit words \ttx{00}, \ttx{01}, \ttx{10}, \ttx{11} $= 0, 1, x, x + 1$. The only irreducible polynomial of degree 2 is $x^2 + x + 1$, so $x^2 \equiv x + 1$. Addition is XOR with identity \ttx{00}; multiplication has identity \ttx{01}:
+\begin{center}\small
+\begin{tabular}{@{}c|cccc@{}}
+$\oplus$ & 00 & 01 & 10 & 11\\\hline
+00 & 00 & 01 & 10 & 11\\
+01 & 01 & 00 & 11 & 10\\
+10 & 10 & 11 & 00 & 01\\
+11 & 11 & 10 & 01 & 00\\
+\end{tabular}
+\qquad
+\begin{tabular}{@{}c|cccc@{}}
+$\otimes$ & 00 & 01 & 10 & 11\\\hline
+00 & 00 & 00 & 00 & 00\\
+01 & 00 & 01 & 10 & 11\\
+10 & 00 & 10 & 11 & 01\\
+11 & 00 & 11 & 01 & 10\\
+\end{tabular}
+\end{center}
+For example $x \otimes x = x^2 \equiv x + 1$ (\ttx{11}), $x \otimes (x + 1) = x^2 + x \equiv 1$, so $x$ and $x + 1$ are inverses, and $(x + 1)^2 = x^2 + 1 \equiv x$.
+
+\textbf{GF$(2^3)$} with the slide's modulus $x^3 + x^2 + 1$ (so $x^3 \equiv x^2 + 1$). Addition is again XOR (e.g.\ \ttx{011} $\oplus$ \ttx{101} $=$ \ttx{110}). Multiplication, with the inverse pairs shaded:
+\begin{center}\small\setlength{\tabcolsep}{4pt}
+\begin{tabular}{@{}c|cccccccc@{}}
+$\otimes$ & 000 & 001 & 010 & 011 & 100 & 101 & 110 & 111\\\hline
+000 & 000 & 000 & 000 & 000 & 000 & 000 & 000 & 000\\
+001 & 000 & \cellcolor{gold!25}001 & 010 & 011 & 100 & 101 & 110 & 111\\
+010 & 000 & 010 & 100 & 110 & 101 & 111 & \cellcolor{gold!25}001 & 011\\
+011 & 000 & 011 & 110 & 101 & \cellcolor{gold!25}001 & 010 & 111 & 100\\
+100 & 000 & 100 & 101 & \cellcolor{gold!25}001 & 111 & 011 & 010 & 110\\
+101 & 000 & 101 & 111 & 010 & 011 & 110 & 100 & \cellcolor{gold!25}001\\
+110 & 000 & 110 & \cellcolor{gold!25}001 & 111 & 010 & 100 & 011 & 101\\
+111 & 000 & 111 & 011 & 100 & 110 & \cellcolor{gold!25}001 & 101 & 010\\
+\end{tabular}
+\end{center}
+Inverse pairs: $1 \leftrightarrow 1$, $x \leftrightarrow x^2 + x$, $x + 1 \leftrightarrow x^2$, $x^2 + 1 \leftrightarrow x^2 + x + 1$. Each non-zero row contains \ttx{001} exactly once, which is the field property ``every non-zero element has exactly one inverse'' made visible. One entry worked out: $x \otimes x^2 = x^3 \equiv x^2 + 1$, so \ttx{010} $\otimes$ \ttx{100} $=$ \ttx{101}.
+
+\begin{fixbox}
+\begin{itemize}
+  \item Slide definition of a field: the second operation ``satisfies all five properties \dots\ except that the identity of the first operation has no inverse''. Read this as: every element except 0 has a multiplicative inverse.
+  \item Irreducible-polynomial table (slide 35): degree 5 lists only five polynomials and misses $x^5 + x^3 + 1$; there are six (all listed above, checked by script).
+  \item GF$(2^3)$ multiplication table (slide 47): the binary entries are right, but two polynomial labels are wrong. $x \otimes x = $ \ttx{100} is $x^2$ (slide prints $(x)$), and $(x + 1) \otimes (x^2 + x + 1) = $ \ttx{100} is $x^2$ (slide prints $(x)$).
+\end{itemize}
+\end{fixbox}
+
+\subsection*{Check your understanding}
+\begin{enumerate}[leftmargin=*]
+  \item \textbf{Is $\langle \mathbb{Z}_n^*, \times \rangle$ a group? Is $\langle \mathbb{Z}_n, \times \rangle$?} $\mathbb{Z}_n^*$ is an abelian group: it is closed (a product of numbers coprime to $n$ is coprime to $n$), associative, has identity 1, and every element has an inverse by extended Euclid because $\gcd(a, n) = 1$. $\mathbb{Z}_n$ under $\times$ is not a group, because 0 (and every $a$ with $\gcd(a, n) > 1$) has no inverse.
+  \item \textbf{Is $\mathbb{Z}$ a field?} No. $\langle \mathbb{Z}, +, \times \rangle$ is a commutative ring: addition satisfies all five properties, but multiplication has no inverses except for $\pm 1$, so division leaves the set ($12 \div 5 = 2.4 \notin \mathbb{Z}$).
+  \item \textbf{Why is $\mathbb{Z}_{256}$ not a field, and what does AES use instead?} 256 is not prime, so there are zero divisors: $2 \times 128 \equiv 0$, which means 2 (and every even byte) has no inverse. AES uses GF$(2^8)$, where bytes are polynomials, addition is XOR and multiplication is reduced modulo the irreducible $x^8 + x^4 + x^3 + x + 1$, so all 256 bytes are field elements.
+  \item \textbf{Differentiate a group, a ring and a field.} A group has one operation with closure, associativity, identity and inverses, and so supports one pair such as $(+, -)$; a ring adds a second operation that only needs closure and associativity and distributes over the first, so it supports $(+, -, \times)$; a field also requires inverses for the second operation (except for 0), so it supports $+, -, \times, \div$. Examples: $\langle \mathbb{Z}_n, + \rangle$, $\langle \mathbb{Z}, +, \times \rangle$, $\langle \mathbb{Z}_p, +, \times \rangle$.
+  \item \textbf{Why does applying two transposition ciphers one after another not make the cipher stronger?} Permutations of the same block length form a group under composition, so by closure the two permutations equal one permutation $\pi_2 \circ \pi_1$, and the attacker only has to find that one key from the same key space of $k!$.
+  \item \textbf{Is $\langle \mathbb{Z}_{10}, + \rangle$ a subgroup of $\langle \mathbb{Z}_{12}, + \rangle$?} No. Although $\mathbb{Z}_{10} \subset \mathbb{Z}_{12}$ as sets, a subgroup must use the same operation, and addition mod 10 is not addition mod 12.
+  \item \textbf{Can $\mathbb{Z}_{11}^*$ contain an element of order 4?} No. $|\mathbb{Z}_{11}^*| = 10$, and by Lagrange the order of an element divides the order of the group, so only the orders 1, 2, 5 and 10 are possible.
+  \item \textbf{Why must the modulus of GF$(2^n)$ be irreducible? Can $x^4 + x^2 + 1$ be used for GF$(2^4)$?} If $m = f \cdot g$, then $f \otimes g \equiv 0$ with $f, g \ne 0$, so $f$ has no inverse and the structure is not a field. $x^4 + x^2 + 1 = (x^2 + x + 1)^2$ is reducible even though it has no root, so it cannot be used.
+  \item \textbf{Why are addition and subtraction the same in GF$(2^n)$?} The coefficients are in GF(2), where $-1 \equiv 1$, so $-B = B$ and $A - B = A + B$; bit by bit, both are XOR.
+  \item \textbf{Find $\{02\} \bullet \{C3\}$ and $x^{-1}$ in GF$(2^8)$.} \ttx{C3} $=$ \ttx{11000011} has its top bit set, so shift to \ttx{10000110} and XOR \ttx{1B}: \textbf{\ttx{9D}}. For $x^{-1}$: $x^8 \equiv x^4 + x^3 + x + 1$ means $x \cdot (x^7 + x^3 + x^2 + 1) \equiv 1$, so $x^{-1} = x^7 + x^3 + x^2 + 1$ (\ttx{8D}).
+  \item \textbf{In GF(11), find $3 \div 7$.} $7^{-1} = 8$ since $56 = 5 \cdot 11 + 1$, so $3 \div 7 = 3 \times 8 = 24 \equiv \mathbf{2}$; check $2 \times 7 = 14 \equiv 3$.
+\end{enumerate}

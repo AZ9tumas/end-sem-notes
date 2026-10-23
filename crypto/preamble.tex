@@ -1,0 +1,96 @@
+\usepackage[margin=1.7cm]{geometry}
+\usepackage{amsmath}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,shapes.geometric,fit,calc}
+\usepackage[most]{tcolorbox}
+\usepackage{booktabs,tabularx}
+\usepackage{enumitem}
+\usepackage{titlesec}
+\usepackage{xcolor}
+\usepackage{colortbl}
+\usepackage[hidelinks]{hyperref}
+\setlist{nosep,leftmargin=1.2em}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{3pt}
+\setlength{\emergencystretch}{3em}
+\titlespacing*{\section}{0pt}{8pt}{4pt}
+\titlespacing*{\subsection}{0pt}{6pt}{2pt}
+
+% ---------- Atom One Light theme ----------
+\makeatletter
+\def\XC@clr@rgb@white{0.98039,0.98039,0.98039}% #FAFAFA
+\def\XC@clr@gray@white{0.98}
+\makeatother
+\definecolor{white}{HTML}{FAFAFA}   % background
+\definecolor{black}{HTML}{383A42}   % foreground
+\definecolor{red}{HTML}{E45649}
+\definecolor{orange}{HTML}{986801}
+\definecolor{yellow}{HTML}{C18401}
+\definecolor{green}{HTML}{50A14F}
+\definecolor{cyan}{HTML}{0184BC}
+\definecolor{blue}{HTML}{4078F2}
+\definecolor{magenta}{HTML}{A626A4}
+\definecolor{brown}{HTML}{986801}
+\definecolor{gray}{HTML}{A0A1A7}
+\definecolor{acc}{HTML}{4078F2}     % blue: headings, key boxes
+\definecolor{warn}{HTML}{E45649}    % red: exam tips, highlights
+\definecolor{ok}{HTML}{50A14F}      % green
+\pagecolor{white}
+\AtBeginDocument{\color{black}\def\normalcolor{\color{black}}}
+\tcbset{colupper=black,collower=black,coltitle=white}% tcolorbox froze the old black/white at load time
+% code font
+\usepackage{fontspec}
+% text: Fira Sans (pairs with Fira Math); code: AnnotationM
+\setmainfont{FiraSans}[Extension=.otf,UprightFont=*-Regular,BoldFont=*-SemiBold,ItalicFont=*-Italic,BoldItalicFont=*-SemiBoldItalic]
+\setsansfont{FiraSans}[Extension=.otf,UprightFont=*-Regular,BoldFont=*-SemiBold,ItalicFont=*-Italic,BoldItalicFont=*-SemiBoldItalic]
+\setmonofont{AnnotationM Nerd Font Mono}[Scale=MatchLowercase]
+\usepackage{unicode-math}
+\setmathfont{FiraMath-Regular.otf}[Scale=0.95]
+% glyphs missing from AnnotationM and Fira Math: take them from STIX Two
+\newfontfamily\symfallback{STIXTwoMath-Regular.otf}
+\AtBeginDocument{\renewcommand{\checkmark}{\text{\symfallback\char"2713}}\renewcommand{\bigstar}{\text{\symfallback\char"2605}}}
+\titleformat{\section}{\large\bfseries\color{acc}}{\thesection}{0.6em}{}
+\titleformat{\subsection}{\normalsize\bfseries}{\thesubsection}{0.5em}{}
+
+\newtcolorbox{keybox}[1][]{colback=acc!6,colframe=acc,boxrule=0.6pt,arc=2pt,left=4pt,right=4pt,top=2pt,bottom=2pt,fonttitle=\bfseries\small,#1}
+\newtcolorbox{examtip}{colback=warn!6,colframe=warn,boxrule=0.6pt,arc=2pt,left=4pt,right=4pt,top=2pt,bottom=2pt,title=Exam tips,fonttitle=\bfseries\small}
+\newtcolorbox{trap}[1][]{colback=warn!6,colframe=warn,boxrule=0.6pt,arc=2pt,left=4pt,right=4pt,top=2pt,bottom=2pt,title={Trap#1},fonttitle=\bfseries\small}
+\newtcolorbox{fixbox}{colback=gray!6,colframe=gray!60,boxrule=0.6pt,arc=2pt,left=4pt,right=4pt,top=2pt,bottom=2pt,title=Corrections to the notes / slides,fonttitle=\bfseries\small,coltitle=black}
+
+\tikzset{
+  box/.style={draw,rounded corners=2pt,align=center,font=\small,minimum height=7mm,inner sep=3pt},
+  circ/.style={draw,circle,fill=orange!25,font=\small\bfseries,minimum size=8mm},
+  arr/.style={-{Stealth[length=2mm]},thick},
+  darr/.style={{Stealth[length=2mm]}-{Stealth[length=2mm]},thick}
+}
+\usepackage{soul}
+\let\soulhl\hl
+\renewcommand{\hl}[1]{\cellcolor{warn!18}\textbf{#1}}% table-cell highlight (kept for old sections)
+\sethlcolor{yellow!30}
+\newcommand{\imp}[1]{\soulhl{#1}}% highlight = write this in the exam
+\newcommand{\ttx}[1]{\texttt{#1}}
+
+\usepackage[normalem]{ulem}
+\newcommand{\pfcell}[3]{\fill[#3] (#1-1,1-#2) rectangle (#1,-#2);}
+\newcommand{\pfletters}[1]{%
+  \foreach \row [count=\r] in #1{\foreach \l [count=\c] in \row {\node[font=\small] at (\c-0.5,0.5-\r) {\l};}}
+  \foreach \i in {0,...,5}{\draw[gray!70] (\i,0) -- (\i,-5); \draw[gray!70] (0,-\i) -- (5,-\i);}}
+\newcommand{\MONARCHY}{{M,O,N,A,R},{C,H,Y,B,D},{E,F,G,{I/J},K},{L,P,Q,S,T},{U,V,W,X,Z}}
+\setcounter{tocdepth}{2}
+\setlength{\headheight}{14pt}
+
+% ---------- importance markers (same system as the DBMS / CN / ES notes) ----------
+\definecolor{gold}{HTML}{C18401}
+\definecolor{good}{HTML}{50A14F}
+\definecolor{trick}{HTML}{A626A4}
+\newcommand{\hot}{\texorpdfstring{\textcolor{gold}{$\bigstar$}}{\9042\005}}% high-priority topic
+\newcommand{\hothot}{\texorpdfstring{\textcolor{gold}{$\bigstar\bigstar$}}{\9042\005\9042\005}}% asked in BOTH past papers
+\newcommand{\asked}[1]{\par\noindent{\small\textcolor{gold}{\textbf{$\bigstar$ In the papers:}} #1}\par}
+\newcommand{\new}{\texorpdfstring{\textcolor{acc}{$\blacktriangleright$}}{\9045\266}}% new-in-syllabus marker for headings
+\newcommand{\likely}[1]{\par\noindent{\small\textcolor{acc}{\textbf{$\blacktriangleright$ Likely this year:}} #1}\par}
+\newtcolorbox{mustknow}[1][]{colback=yellow!10,colframe=gold,boxrule=0.9pt,arc=2pt,left=4pt,right=4pt,top=2pt,bottom=2pt,title={$\bigstar$ MUST KNOW #1},fonttitle=\bfseries\small,breakable}
+\newtcolorbox{intuition}[1][]{colback=good!6,colframe=good,boxrule=0.6pt,arc=2pt,left=4pt,right=4pt,top=2pt,bottom=2pt,title={THE IDEA #1},fonttitle=\bfseries\small,breakable}
+\newtcolorbox{worked}[1][]{colback=white,colframe=acc!70,boxrule=0.6pt,arc=2pt,left=4pt,right=4pt,top=2pt,bottom=2pt,title={WORKED EXAMPLE #1},fonttitle=\bfseries\small,breakable}
+\newtcolorbox{mnemonic}[1][]{colback=trick!6,colframe=trick,boxrule=0.6pt,arc=2pt,left=4pt,right=4pt,top=2pt,bottom=2pt,title={MEMORY TRICK #1},fonttitle=\bfseries\small}
+
+\hypersetup{bookmarksdepth=1}

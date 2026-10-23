@@ -1,0 +1,351 @@
+% MNNIT CSN15403 mid-semester papers 2024-25 and 2025-26, fully solved, plus a mock paper in the same style
+\clearpage
+\section{Previous Year Papers (MNNIT, CSN15403), Fully Solved}\label{sec:pastpapers}
+
+\begin{keybox}[title=What these papers tell you]
+\begin{itemize}
+  \item \textbf{Format:} 90 minutes, 25 marks, 5--7 questions, ``precise answer with proper justification''. Show every step: tables, matrices, divisions.
+  \item \textbf{Sources:} questions come almost word for word from the two standard textbooks: \textbf{Forouzan} (Eve/Alice, $\mathbb{Z}_{100}$, keyed transposition, multiplicative/affine/auto-key, GF$(2^8)$ inverse) and \textbf{Stallings} (``sendmoremoney'' one-time pad, the AES state values).
+  \item \textbf{Repeat topics:} Playfair (both years), GF$(2^8)$ inverse (both years), extended Euclid (inverse / Diophantine, both years), DES/AES (both years).
+\end{itemize}
+\end{keybox}
+\begin{center}\small
+\begin{tabularx}{\textwidth}{@{}l c c X@{}}
+\toprule
+Topic & 2024--25 & 2025--26 & In these notes?\\
+\midrule
+Playfair encryption & 3 & 4 & Section~\ref{sec:playfair}\\
+One-time pad / Vigen\`ere & -- & 8 & Sections~\ref{sec:poly}, \ref{sec:otp}\\
+Cipher properties, attack types, keyed transposition & 2 + 3 & -- & Sections~\ref{sec:attacks}, \ref{sec:classextra}\\
+Modular arithmetic, exponentiation, inverses & 3 & -- & Sections~\ref{sec:modular}--\ref{sec:fermat}\\
+Extended Euclid / Diophantine & 5 & 3 & Section~\ref{sec:exteuclid}\\
+GF$(2^8)$ polynomial inverse & 4 & 4 & Section~\ref{sec:algebra}\\
+DES (Feistel, round function, key schedule) & 5 & -- & Section~\ref{sec:des}\\
+AES (ShiftRows, AddRoundKey) & -- & 6 & Section~\ref{sec:aes}\\
+\bottomrule
+\end{tabularx}
+\end{center}
+Every topic in these papers is now covered in its own section; the boxes below are one-page summaries for quick revision.
+
+\subsection{Quick-revision method boxes}
+
+\begin{keybox}[title={Extended Euclidean algorithm (Forouzan table): inverse of $b$ mod $n$}]
+Columns $q, r_1, r_2, r, t_1, t_2, t$. Start with $r_1 = n$, $r_2 = b$, $t_1 = 0$, $t_2 = 1$. Each row:
+\[
+q = \lfloor r_1 / r_2 \rfloor,\quad r = r_1 - q\,r_2,\quad t = t_1 - q\,t_2;\qquad\text{then shift: } r_1 \leftarrow r_2,\; r_2 \leftarrow r,\; t_1 \leftarrow t_2,\; t_2 \leftarrow t.
+\]
+Stop when $r_2 = 0$. If $r_1 = 1$, then $b^{-1} = t_1 \bmod n$. If $r_1 \ne 1$, there is \textbf{no inverse} ($\gcd \ne 1$).
+\textbf{Pseudocode:}
+\texttt{r1=n; r2=b; t1=0; t2=1; while r2>0 \{ q=r1/r2; r=r1-q*r2; r1=r2; r2=r; t=t1-q*t2; t1=t2; t2=t \}; if r1==1 return t1 mod n}
+\end{keybox}
+
+\begin{keybox}[title={Linear Diophantine equation $ax + by = c$}]
+Let $d = \gcd(a, b)$. If $d \nmid c$: \textbf{no solution}. Otherwise divide by $d$, find $s, t$ with $as + bt = d$ (extended Euclid), and multiply by $c/d$ to get a particular solution $(x_0, y_0)$.
+\textbf{General solution:} $x = x_0 + \frac{b}{d}k$, \; $y = y_0 - \frac{a}{d}k$ \; ($k \in \mathbb{Z}$).
+\end{keybox}
+
+\begin{keybox}[title={GF$(p)$ and GF$(2^8)$}]
+\textbf{GF$(p)$} = $\{0, \dots, p-1\}$ with $+$ and $\times$ mod a prime $p$. Every non-zero element has an inverse, and ``$a \div b$'' means $a \times b^{-1}$.
+\textbf{GF$(2^8)$} elements are polynomials of degree $<8$ with coefficients 0/1 (one byte). \textbf{Add = XOR} (so $+$ and $-$ are the same). Multiply polynomials, then reduce mod $m(x) = x^8 + x^4 + x^3 + x + 1$.
+\textbf{Inverse:} the same extended-Euclid table with polynomial division, where every subtraction is an XOR.
+\end{keybox}
+
+\begin{keybox}[title=Two classical ciphers and the attack types]
+\textbf{Multiplicative:} $C = k_1 P \bmod 26$, with $\gcd(k_1, 26) = 1$. \textbf{Affine:} $C = (k_1 P + k_2) \bmod 26$, decrypted by $P = k_1^{-1}(C - k_2)$.
+\textbf{Attacks:} \emph{ciphertext-only} (Eve has only ciphertext), \emph{known-plaintext} (has some plaintext--ciphertext pairs), \emph{chosen-plaintext} (can encrypt plaintext of her choice), \emph{chosen-ciphertext} (can decrypt ciphertext of her choice).
+\end{keybox}
+
+% ================================================================
+\subsection{Mid-Sem 2024--25, solved}
+
+\textbf{Q1 (2).} \emph{Max characters changed in the ciphertext if one plaintext character changes: (a) multiplicative (b) affine (c) Vigen\`ere (d) auto-key.}\\
+(a) \textbf{1}, (b) \textbf{1}, (c) \textbf{1}: each encrypts one character on its own (Vigen\`ere uses a different shift per position, but still one character in, one out).
+(d) \textbf{2}. In auto-key the plaintext is also the key: $k_{i+1} = P_i$ (Forouzan; or $k_{i+m} = P_i$ with an $m$-letter keyword, as in our lecture). So changing $P_i$ changes $C_i$ and the one later character it acts as key for.
+
+\textbf{Q2 (3).} \emph{Playfair, key ``GUIDANCE'': ``The key is hidden under the door pad''.}
+\begin{center}\small
+\begin{minipage}[c]{0.25\textwidth}\centering
+\begin{tabular}{|*{5}{c|}}\hline G&U&I/J&D&A\\\hline N&C&E&B&F\\\hline H&K&L&M&O\\\hline P&Q&R&S&T\\\hline V&W&X&Y&Z\\\hline\end{tabular}
+\end{minipage}
+\begin{minipage}[c]{0.7\textwidth}
+Digrams (\ttx{dd} $\to$ \ttx{dx}; \ttx{oo} $\to$ \ttx{ox}; odd length, so the final \ttx{d} becomes \ttx{dx}):\\
+\ttx{th ek ey is hi dx de nu nd er th ed ox or pa dx}\\[2pt]
+\ttx{PO CL BX DR LG IY IB CG BG LX PO BI LZ LT TG IY}\\[2pt]
+(\ttx{er}$\to$\ttx{LX} is a column case; all the others are rectangles.)
+\end{minipage}
+\end{center}
+Ciphertext: \textbf{\ttx{POCLBXDRLGIYIBCGBGLXPOBILZLTTGIY}}.
+
+\textbf{Q3 (3).} \emph{Eve types ``abcdefghij'' on Alice's machine and sees ``CABDEHFGIJ''. Keyed transposition.}\\
+(a) \textbf{Chosen-plaintext attack}: Eve chooses the plaintext and sees its encryption.
+(b) The pattern repeats every 5: \ttx{abcde}$\to$\ttx{CABDE} and \ttx{fghij}$\to$\ttx{HFGIJ} (positions 3, 1, 2, 4, 5 both times). So the \textbf{key size is 5}.
+Encryption key: output takes input positions \textbf{(3 1 2 4 5)}. Decryption key = inverse permutation \textbf{(2 3 1 4 5)}.
+
+\textbf{Q4 (4).} \emph{Inverse of $x^5$ in GF$(2^8)$ mod $m = x^8 + x^4 + x^3 + x + 1$.}
+\begin{center}\small\setlength{\tabcolsep}{3pt}
+\begin{tabular}{@{}lllllll@{}}
+\toprule
+$q$ & $r_1$ & $r_2$ & $r$ & $t_1$ & $t_2$ & $t$\\
+\midrule
+$x^3$ & $x^8{+}x^4{+}x^3{+}x{+}1$ & $x^5$ & $x^4{+}x^3{+}x{+}1$ & 0 & 1 & $x^3$\\
+$x{+}1$ & $x^5$ & $x^4{+}x^3{+}x{+}1$ & $x^3{+}x^2{+}1$ & 1 & $x^3$ & $x^4{+}x^3{+}1$\\
+$x$ & $x^4{+}x^3{+}x{+}1$ & $x^3{+}x^2{+}1$ & 1 & $x^3$ & $x^4{+}x^3{+}1$ & $x^5{+}x^4{+}x^3{+}x$\\
+$x^3{+}x^2{+}1$ & $x^3{+}x^2{+}1$ & 1 & 0 & $x^4{+}x^3{+}1$ & $x^5{+}x^4{+}x^3{+}x$ & $m$\\
+ & \textbf{1} & 0 & & $\mathbf{x^5{+}x^4{+}x^3{+}x}$ & & \\
+\bottomrule
+\end{tabular}
+\end{center}
+$(x^5)^{-1} = \mathbf{x^5 + x^4 + x^3 + x}$ (byte \ttx{3A}).
+Check: using $x^8 = x^4{+}x^3{+}x{+}1$, $x^9 = x^5{+}x^4{+}x^2{+}x$, $x^{10} = x^6{+}x^5{+}x^3{+}x^2$:
+$x^5(x^5{+}x^4{+}x^3{+}x) = x^{10}{+}x^9{+}x^8{+}x^6$, and every term cancels in pairs except 1 \checkmark.
+
+\textbf{Q5 (3).}
+(i) GF(7): $5 \div 3 = 5 \times 3^{-1} = 5 \times 5 = 25 \equiv \mathbf{4}$ (since $3 \cdot 5 = 15 \equiv 1$).
+(ii) $100^{95} \bmod 9$: $100 \equiv 1$, so the answer is $\mathbf{1}$.
+$658^{17} \bmod 17$: $658 = 38\cdot17 + 12$, and by Fermat $a^{17} \equiv a \pmod{17}$, so the answer is $\mathbf{12}$.
+$145^{102} \bmod 101$: $145 \equiv 44$; Fermat gives $44^{100} \equiv 1$, so $44^{102} \equiv 44^2 = 1936 = 19\cdot101 + 17$, i.e.\ $\mathbf{17}$.
+(iii) $7^{-1} \bmod 17 = \mathbf{5}$ ($35 = 2\cdot17 + 1$). $15^{-1} \bmod 99$: $\gcd(15, 99) = 3 \ne 1$, so it \textbf{does not exist}. (That's the trap.)
+
+\textbf{Q6 (5). DES: Feistel structure, round function, key generation.}
+\begin{center}
+\begin{tikzpicture}[every node/.style={font=\scriptsize}, bx/.style={box,minimum width=30mm,text width=30mm}]
+  % data path
+  \node[bx] (p) at (0,0) {64-bit plaintext};
+  \node[bx] (ip) at (0,-1) {Initial permutation (IP)};
+  \node[bx,fill=cyan!10] (r) at (0,-2.3) {16 Feistel rounds\\$L_i = R_{i-1}$\\$R_i = L_{i-1} \oplus f(R_{i-1}, K_i)$};
+  \node[bx] (sw) at (0,-3.6) {32-bit swap};
+  \node[bx] (fp) at (0,-4.6) {Final permutation (IP$^{-1}$)};
+  \node[bx] (c) at (0,-5.6) {64-bit ciphertext};
+  \foreach \u/\v in {p/ip,ip/r,r/sw,sw/fp,fp/c} \draw[arr] (\u)--(\v);
+  % key schedule
+  \node[bx,fill=yellow!20] (k) at (4.6,0) {64-bit key};
+  \node[bx,fill=yellow!20] (pc1) at (4.6,-1) {PC-1 (drop parity bits) $\to$ 56};
+  \node[bx,fill=yellow!20] (sh) at (4.6,-2.3) {split $C$, $D$ (28 + 28)\\left shift 1 or 2 bits per round};
+  \node[bx,fill=yellow!20] (pc2) at (4.6,-3.6) {PC-2 $\to$ 48-bit round key $K_i$};
+  \foreach \u/\v in {k/pc1,pc1/sh,sh/pc2} \draw[arr] (\u)--(\v);
+  \draw[arr,dashed] (pc2.west) -- node[above]{$K_i$} ++(-1.0,0) |- (r.east);
+  % round function
+  \node[box,fill=green!12,text width=36mm,align=left] (f) at (9.2,-2.3) {\textbf{Round function} $f(R_{i-1}, K_i)$\\[2pt]
+    1. Expansion P-box: 32 $\to$ 48 bits\\2. XOR with $K_i$ (48 bits)\\3. 8 S-boxes: 6 bits $\to$ 4 bits each (48 $\to$ 32)\\4. Straight P-box: 32 $\to$ 32};
+\end{tikzpicture}
+\end{center}
+\begin{itemize}
+  \item \textbf{Feistel structure:} each round changes only one half and then swaps the halves. Decryption is the \emph{same} algorithm with the round keys used in reverse ($K_{16}, \dots, K_1$). $f$ need not be invertible.
+  \item \textbf{Shifts:} 1 bit in rounds 1, 2, 9, 16; 2 bits in all the others (28 bits in total).
+\end{itemize}
+\begin{minipage}[t]{0.48\textwidth}\small
+\textbf{S-box substitution (pseudocode)}\\
+\ttfamily for i = 1 to 8:\\
+\hspace*{1em}b = in[6i-5 .. 6i]\quad // 6 bits\\
+\hspace*{1em}row = 2*b1 + b6\quad // outer bits\\
+\hspace*{1em}col = b2b3b4b5\quad // inner 4 bits\\
+\hspace*{1em}out[4i-3 .. 4i] = S[i][row][col]\\
+return out\quad // 32 bits
+\end{minipage}\hfill
+\begin{minipage}[t]{0.48\textwidth}\small
+\textbf{Key generation (pseudocode)}\\
+\ttfamily K56 = PC1(K64)\\
+C = K56[1..28]; D = K56[29..56]\\
+for i = 1 to 16:\\
+\hspace*{1em}s = (i in \{1,2,9,16\}) ? 1 : 2\\
+\hspace*{1em}C = rotl(C, s); D = rotl(D, s)\\
+\hspace*{1em}K[i] = PC2(C || D)\quad // 48 bits\\
+return K[1..16]
+\end{minipage}
+
+\medskip
+\textbf{Q7 (5).} \emph{Pseudocode for finding an inverse, and finding $23^{-1}$ in $\mathbb{Z}_{100}$.}
+This is the \textbf{extended Euclidean algorithm} (pseudocode in the method box). Mr X's worry is real: an inverse exists only when $\gcd = 1$, and the same algorithm tells him so when it doesn't. Here $\gcd(100, 23) = 1$:
+\begin{center}\small
+\begin{tabular}{@{}cccccccc@{}}
+\toprule
+Iter. & $q$ & $r_1$ & $r_2$ & $r$ & $t_1$ & $t_2$ & $t$\\
+\midrule
+1 & 4 & 100 & 23 & 8 & 0 & 1 & $-4$\\
+2 & 2 & 23 & 8 & \textbf{7} & 1 & $-4$ & 9\\
+3 & 1 & 8 & 7 & 1 & $-4$ & 9 & $\mathbf{-13}$\\
+4 & 7 & 7 & 1 & 0 & 9 & $-13$ & \textbf{100}\\
+ & & \textbf{1} & 0 & & $\mathbf{-13}$ & 100 & \\
+\bottomrule
+\end{tabular}
+\end{center}
+\begin{enumerate}[leftmargin=1.5em]
+  \item \textbf{4 iterations}.
+  \item Remainder in iteration 2: $r = \mathbf{7}$.
+  \item Coefficient in iteration 4: $t = \mathbf{100}$ (always $\pm n$ in the last step; a useful self-check).
+  \item Inverse value in iteration 3: $t = -13$, which is the final answer: $23^{-1} \equiv -13 \equiv \mathbf{87} \pmod{100}$. Check: $23 \times 87 = 2001 = 20\cdot100 + 1$ \checkmark.
+\end{enumerate}
+
+% ================================================================
+\subsection{Mid-Sem 2025--26, solved}
+
+\textbf{Q1 (8).} \emph{One-time-pad Vigen\`ere; key stream 9 0 1 7 23 15 21 14 11 11 2 8 9.}
+\begin{center}\small\setlength{\tabcolsep}{4pt}
+\begin{tabular}{@{}l*{13}{c}@{}}
+\toprule
+Plain & s&e&n&d&m&o&r&e&m&o&n&e&y\\
+$P$ & 18&4&13&3&12&14&17&4&12&14&13&4&24\\
+Key & 9&0&1&7&23&15&21&14&11&11&2&8&9\\
+$P{+}K$ & \hl{27}&4&14&10&\hl{35}&\hl{29}&\hl{38}&18&23&25&15&12&\hl{33}\\
+mod 26 & 1&4&14&10&9&3&12&18&23&25&15&12&7\\
+Cipher & \textbf{B}&\textbf{E}&\textbf{O}&\textbf{K}&\textbf{J}&\textbf{D}&\textbf{M}&\textbf{S}&\textbf{X}&\textbf{Z}&\textbf{P}&\textbf{M}&\textbf{H}\\
+\bottomrule
+\end{tabular}
+\end{center}
+(a) \textbf{\ttx{BEOKJDMSXZPMH}}.
+(b) We need $K = (C - P) \bmod 26$ with $P$ = \ttx{cashnotneeded}:
+\begin{center}\small\setlength{\tabcolsep}{4pt}
+\begin{tabular}{@{}l*{13}{c}@{}}
+\toprule
+$C$ & B 1&E 4&O 14&K 10&J 9&D 3&M 12&S 18&X 23&Z 25&P 15&M 12&H 7\\
+$P$ & c 2&a 0&s 18&h 7&n 13&o 14&t 19&n 13&e 4&e 4&d 3&e 4&d 3\\
+$C - P$ & $-1$&4&$-4$&3&$-4$&$-11$&$-7$&5&19&21&12&8&4\\
+Key & \textbf{25}&\textbf{4}&\textbf{22}&\textbf{3}&\textbf{22}&\textbf{15}&\textbf{19}&\textbf{5}&\textbf{19}&\textbf{21}&\textbf{12}&\textbf{8}&\textbf{4}\\
+\bottomrule
+\end{tabular}
+\end{center}
+Key stream: \textbf{25 4 22 3 22 15 19 5 19 21 12 8 4}. This is the point of the question: for \emph{any} ciphertext there is a key giving \emph{any} plaintext of the same length, which is why a one-time pad can't be broken (Section 13).
+
+\textbf{Q2 (4).} \emph{Inverse of $x^7$ mod $x^8 + x^4 + x^3 + x + 1$.}
+\begin{center}\small\setlength{\tabcolsep}{3pt}
+\begin{tabular}{@{}lllllll@{}}
+\toprule
+$q$ & $r_1$ & $r_2$ & $r$ & $t_1$ & $t_2$ & $t$\\
+\midrule
+$x$ & $x^8{+}x^4{+}x^3{+}x{+}1$ & $x^7$ & $x^4{+}x^3{+}x{+}1$ & 0 & 1 & $x$\\
+$x^3{+}x^2{+}x$ & $x^7$ & $x^4{+}x^3{+}x{+}1$ & $x$ & 1 & $x$ & $x^4{+}x^3{+}x^2{+}1$\\
+$x^3{+}x^2{+}1$ & $x^4{+}x^3{+}x{+}1$ & $x$ & 1 & $x$ & $x^4{+}x^3{+}x^2{+}1$ & $x^7{+}x{+}1$\\
+$x$ & $x$ & 1 & 0 & $x^4{+}x^3{+}x^2{+}1$ & $x^7{+}x{+}1$ & $m$\\
+ & \textbf{1} & 0 & & $\mathbf{x^7{+}x{+}1}$ & & \\
+\bottomrule
+\end{tabular}
+\end{center}
+$(x^7)^{-1} = \mathbf{x^7 + x + 1}$ (byte \ttx{83}). (Row 2 detail: $x^7 \div (x^4{+}x^3{+}x{+}1)$ gives quotient $x^3{+}x^2{+}x$ and remainder $x$, all with XOR subtraction.)
+
+\textbf{Q3 (4).} \emph{Playfair with the given key matrix: ``Insta Reels Pe Time Waste Na Kar'' (filler X, I/J together).}
+\begin{center}\small
+\begin{minipage}[c]{0.25\textwidth}\centering
+\begin{tabular}{|*{5}{c|}}\hline L&A&R&K&S\\\hline P&U&B&C&D\\\hline E&F&G&H&I/J\\\hline M&N&O&Q&T\\\hline V&W&X&Y&Z\\\hline\end{tabular}
+\end{minipage}
+\begin{minipage}[c]{0.7\textwidth}
+Digrams (\ttx{ee} in ``reels'' $\to$ \ttx{ex}, then re-pair; odd length, so \ttx{r} becomes \ttx{rx}):\\
+\ttx{in st ar ex el sp et im ew as te na ka rx}\\[2pt]
+\ttx{FT DZ RK GV MP LD IM ET FV RL MI WU SR BR}\\[2pt]
+(rows: \ttx{ar}, \ttx{as}, \ttx{ka}; columns: \ttx{st}, \ttx{el}, \ttx{na}, \ttx{rx}; the rest are rectangles)
+\end{minipage}
+\end{center}
+Ciphertext: \textbf{\ttx{FTDZRKGVMPLDIMETFVRLMIWUSRBR}}.
+\emph{Trap:} in ``reels'' the \ttx{ee} lands inside one pair (\ttx{r e | e l} would be wrong). Pairing from the start gives \ttx{in st ar \underline{ee}}, so the filler goes in there.
+
+\textbf{Q4 (6).} \emph{AES: (a) ShiftRows, (b) AddRoundKey.}\\
+(a) Row $r$ is rotated \textbf{left by $r$ bytes} (row 0 unchanged):
+\[
+\begin{pmatrix}\mathtt{87}&\mathtt{F2}&\mathtt{4D}&\mathtt{97}\\\mathtt{EC}&\mathtt{6E}&\mathtt{4C}&\mathtt{90}\\\mathtt{4A}&\mathtt{C3}&\mathtt{46}&\mathtt{E7}\\\mathtt{8C}&\mathtt{D8}&\mathtt{95}&\mathtt{A6}\end{pmatrix}
+\;\xrightarrow{\text{ShiftRows}}\;
+\begin{pmatrix}\mathtt{87}&\mathtt{F2}&\mathtt{4D}&\mathtt{97}\\\mathtt{6E}&\mathtt{4C}&\mathtt{90}&\mathtt{EC}\\\mathtt{46}&\mathtt{E7}&\mathtt{4A}&\mathtt{C3}\\\mathtt{A6}&\mathtt{8C}&\mathtt{D8}&\mathtt{95}\end{pmatrix}
+\]
+(b) AddRoundKey $=$ \textbf{byte-wise XOR} of state and key. E.g.\ $\mathtt{47} \oplus \mathtt{AC}$: $\;0100\,0111 \oplus 1010\,1100 = 1110\,1011 = EB$.
+\[
+\begin{pmatrix}\mathtt{47}&\mathtt{40}&\mathtt{A3}&\mathtt{4C}\\\mathtt{37}&\mathtt{D4}&\mathtt{70}&\mathtt{9F}\\\mathtt{94}&\mathtt{E4}&\mathtt{3A}&\mathtt{42}\\\mathtt{ED}&\mathtt{A5}&\mathtt{A6}&\mathtt{BC}\end{pmatrix}
+\oplus
+\begin{pmatrix}\mathtt{AC}&\mathtt{19}&\mathtt{28}&\mathtt{57}\\\mathtt{77}&\mathtt{FA}&\mathtt{D1}&\mathtt{5C}\\\mathtt{66}&\mathtt{DC}&\mathtt{29}&\mathtt{00}\\\mathtt{F3}&\mathtt{21}&\mathtt{41}&\mathtt{6A}\end{pmatrix}
+=
+\begin{pmatrix}\boldsymbol{\mathtt{EB}}&\boldsymbol{\mathtt{59}}&\boldsymbol{\mathtt{8B}}&\boldsymbol{\mathtt{1B}}\\\boldsymbol{\mathtt{40}}&\boldsymbol{\mathtt{2E}}&\boldsymbol{\mathtt{A1}}&\boldsymbol{\mathtt{C3}}\\\boldsymbol{\mathtt{F2}}&\boldsymbol{\mathtt{38}}&\boldsymbol{\mathtt{13}}&\boldsymbol{\mathtt{42}}\\\boldsymbol{\mathtt{1E}}&\boldsymbol{\mathtt{84}}&\boldsymbol{\mathtt{E7}}&\boldsymbol{\mathtt{D6}}\end{pmatrix}
+\]
+Tip: XOR one hex digit at a time ($\mathtt4 \oplus \mathtt A = 0100 \oplus 1010 = 1110 = \mathtt E$, \;$\mathtt7 \oplus \mathtt C = 0111 \oplus 1100 = 1011 = \mathtt B$).
+
+\textbf{Q5 (3).} \emph{Solve $19x + 13y = 20$.}
+$\gcd(19, 13) = 1$, and $1 \mid 20$, so solutions exist. Euclid: $19 = 1\cdot13 + 6$, $13 = 2\cdot6 + 1$. Back-substitute:
+$1 = 13 - 2\cdot6 = 13 - 2(19 - 13) = 3\cdot13 - 2\cdot19$, so $s = -2$, $t = 3$.
+Times 20: $x_0 = -40$, $y_0 = 60$. General solution: $x = -40 + 13k$, $y = 60 - 19k$. Taking $k = 3$: \textbf{$x = -1$, $y = 3$}, so in general \textbf{$x = -1 + 13k$, $y = 3 - 19k$}.
+Check: $19(-1) + 13(3) = -19 + 39 = 20$ \checkmark.
+
+% ================================================================
+\clearpage
+\subsection{Mock Mid-Sem paper (same style), 90 minutes, 25 marks}
+\emph{Precise answer with proper justification will be considered to get complete marks. Attempt all questions.}
+\begin{center}\small
+\begin{tabularx}{\textwidth}{|c|X|c|}
+\hline
+\textbf{Q} & & \textbf{Marks}\\\hline
+1 & What is the maximum number of characters that change in the \emph{ciphertext} if a single plaintext character is changed, for: (a) Hill ($2\times2$) (b) Playfair (c) row--column transposition? (d) In the auto-key cipher (keyword length $m$), if \emph{one ciphertext character} is corrupted in transit, how many plaintext characters come out wrong after decryption? & 2\\\hline
+2 & Using the Playfair cipher with the key ``MNNIT ALLAHABAD'' (I/J in one cell, filler X), encrypt ``Jazz night at the hall tomorrow''. & 4\\\hline
+3 & Eve types ``abcdefghijkl'' on Alice's computer and the screen shows ``BDACFHEGJLIK''. Alice uses a keyed transposition cipher.
+(a) What type of attack is this? (b) What is the key size? (c) Give the encryption and decryption keys. (d) Decrypt ``ETMEETMAONNO''. & 3\\\hline
+4 & In GF$(2^8)$ find the inverse of $(x^6 + x^4 + x + 1)$ modulo $(x^8 + x^4 + x^3 + x + 1)$. Verify your answer. & 4\\\hline
+5 & (i) In GF(11) find $7 \div 9$. (ii) Find $2^{90} \bmod 13$ and $1000^{999} \bmod 7$. (iii) Find, if they exist, $11^{-1} \bmod 26$, $26^{-1} \bmod 39$ and $17^{-1} \bmod 101$. & 3\\\hline
+6 & Solve the linear Diophantine equations, or show there is no solution: (i) $24x + 138y = 18$ (ii) $15x + 21y = 7$. & 3\\\hline
+7 & Using the extended Euclidean algorithm, find $47^{-1}$ in $\mathbb{Z}_{120}$. State (a) the number of iterations, (b) the remainder in iteration 2, (c) $t$ in iteration 3. (d) Does $46$ have an inverse in $\mathbb{Z}_{120}$? Justify. & 3\\\hline
+8 & AES. State $S = \begin{pmatrix}\mathtt{19}&\mathtt{A0}&\mathtt{9A}&\mathtt{E9}\\\mathtt{3D}&\mathtt{F4}&\mathtt{C6}&\mathtt{F8}\\\mathtt{E3}&\mathtt{E2}&\mathtt{8D}&\mathtt{48}\\\mathtt{BE}&\mathtt{2B}&\mathtt{2A}&\mathtt{08}\end{pmatrix}$, round key $K = \begin{pmatrix}\mathtt{A0}&\mathtt{88}&\mathtt{23}&\mathtt{2A}\\\mathtt{FA}&\mathtt{54}&\mathtt{A3}&\mathtt{6C}\\\mathtt{FE}&\mathtt{2C}&\mathtt{39}&\mathtt{76}\\\mathtt{17}&\mathtt{B1}&\mathtt{39}&\mathtt{05}\end{pmatrix}$.
+(a) Apply ShiftRows to $S$. (b) Apply AddRoundKey with $K$ to your result from (a) (skip MixColumns here). & 3\\\hline
+\end{tabularx}
+\end{center}
+
+\clearpage
+\subsection{Mock paper: model answers}
+
+\textbf{M1.} (a) \textbf{2}: one block of 2 letters; both can change. (b) Usually 2 (one digram), but the \textbf{maximum is every remaining character}: changing a letter can create or remove a doubled pair (e.g.\ ``bal\underline{k}'' $\to$ ``bal\underline{l}''), which adds or removes a filler and shifts every later digram. (c) \textbf{1}: transposition only moves letters, so exactly one ciphertext letter (somewhere else) changes. (d) The wrong $P_i$ is then used as the key for $P_{i+m}$, which is used for $P_{i+2m}$, and so on: the error \textbf{propagates to every $m$-th character until the end}.
+
+\textbf{M2.} Key without repeats: M N I T A L H B D, then the rest.
+\begin{center}\small
+\begin{minipage}[c]{0.25\textwidth}\centering
+\begin{tabular}{|*{5}{c|}}\hline M&N&I/J&T&A\\\hline L&H&B&D&C\\\hline E&F&G&K&O\\\hline P&Q&R&S&U\\\hline V&W&X&Y&Z\\\hline\end{tabular}
+\end{minipage}
+\begin{minipage}[c]{0.7\textwidth}
+\ttx{jazznightatthehalltomorrow}, J $\to$ I. Only \ttx{zz} lands in one pair: \ttx{zx}. The \ttx{tt}, \ttx{ll} and \ttx{rr} are each split across pairs (traps!). Odd length, so \ttx{w} becomes \ttx{wx}:\\
+\ttx{ia zx zn ig ht at th eh al lt om or ro wx}\\[2pt]
+\ttx{TM VY WA BR DN MA ND FL MC DM EA GU UG XY}
+\end{minipage}
+\end{center}
+Ciphertext: \textbf{\ttx{TMVYWABRDNMANDFLMCDMEAGUUGXY}}. (Note \ttx{or}$\to$\ttx{GU} and \ttx{ro}$\to$\ttx{UG}: reversed pairs give reversed output.)
+
+\textbf{M3.} (a) \textbf{Chosen-plaintext}. (b) The pattern repeats every 4 (\ttx{abcd}$\to$\ttx{BDAC}, \ttx{efgh}$\to$\ttx{FHEG}), so the \textbf{key size is 4}.
+(c) Encryption key \textbf{(2 4 1 3)}: output position $j$ takes input position key[$j$]. Decryption key = inverse \textbf{(3 1 4 2)}.
+(d) Blocks \ttx{ETME | ETMA | ONNO}, each rearranged as positions 3, 1, 4, 2: \textbf{meet me at noon}.
+
+\textbf{M4.} Table ($m = x^8{+}x^4{+}x^3{+}x{+}1$, $b = x^6{+}x^4{+}x{+}1$):
+\begin{center}\small\setlength{\tabcolsep}{3pt}
+\begin{tabular}{@{}lllllll@{}}
+\toprule
+$q$ & $r_1$ & $r_2$ & $r$ & $t_1$ & $t_2$ & $t$\\
+\midrule
+$x^2{+}1$ & $m$ & $x^6{+}x^4{+}x{+}1$ & $x^2$ & 0 & 1 & $x^2{+}1$\\
+$x^4{+}x^2$ & $x^6{+}x^4{+}x{+}1$ & $x^2$ & $x{+}1$ & 1 & $x^2{+}1$ & $x^6{+}x^2{+}1$\\
+$x{+}1$ & $x^2$ & $x{+}1$ & 1 & $x^2{+}1$ & $x^6{+}x^2{+}1$ & $x^7{+}x^6{+}x^3{+}x$\\
+$x{+}1$ & $x{+}1$ & 1 & 0 & $x^6{+}x^2{+}1$ & $x^7{+}x^6{+}x^3{+}x$ & $m$\\
+ & \textbf{1} & 0 & & $\mathbf{x^7{+}x^6{+}x^3{+}x}$ & & \\
+\bottomrule
+\end{tabular}
+\end{center}
+Inverse $= \mathbf{x^7 + x^6 + x^3 + x}$ (byte \ttx{CA}; i.e.\ $\{53\}^{-1} = \{CA\}$, the standard AES example).\\
+Verified: $(x^6{+}x^4{+}x{+}1)(x^7{+}x^6{+}x^3{+}x) \bmod m = 1$.
+
+\textbf{M5.} (i) $9^{-1} \bmod 11 = 5$ ($45 = 4\cdot11 + 1$), so $7 \div 9 = 7 \cdot 5 = 35 \equiv \mathbf{2}$.
+(ii) Fermat: $2^{12} \equiv 1 \pmod{13}$ and $90 = 7\cdot12 + 6$, so $2^{90} \equiv 2^6 = 64 \equiv \mathbf{12}$. \;$1000 = 142\cdot7 + 6 \equiv -1$, so $(-1)^{999} = -1 \equiv \mathbf{6}$.
+(iii) $11^{-1} \bmod 26 = \mathbf{19}$ ($209 = 8\cdot26 + 1$). $26^{-1} \bmod 39$: $\gcd(26, 39) = 13$, so it \textbf{does not exist}. $17^{-1} \bmod 101 = \mathbf{6}$ ($102 = 101 + 1$).
+
+\textbf{M6.} (i) $\gcd(24, 138) = 6$ and $6 \mid 18$, so solutions exist. Divide by 6: $4x + 23y = 3$. Since $4\cdot6 + 23\cdot(-1) = 1$, times 3 gives $x_0 = 18$, $y_0 = -3$.
+General: $x = 18 + 23k$, $y = -3 - 4k$; with $k = -1$: \textbf{$x = -5 + 23k$, $y = 1 - 4k$}. Check: $24(-5) + 138(1) = 18$ \checkmark.
+(ii) $\gcd(15, 21) = 3$, and $3 \nmid 7$: \textbf{no solution}. (The left side is always a multiple of 3.)
+
+\textbf{M7.}
+\begin{center}\small
+\begin{tabular}{@{}cccccccc@{}}
+\toprule
+Iter. & $q$ & $r_1$ & $r_2$ & $r$ & $t_1$ & $t_2$ & $t$\\
+\midrule
+1 & 2 & 120 & 47 & 26 & 0 & 1 & $-2$\\
+2 & 1 & 47 & 26 & \textbf{21} & 1 & $-2$ & 3\\
+3 & 1 & 26 & 21 & 5 & $-2$ & 3 & $\mathbf{-5}$\\
+4 & 4 & 21 & 5 & 1 & 3 & $-5$ & 23\\
+5 & 5 & 5 & 1 & 0 & $-5$ & 23 & $-120$\\
+ & & \textbf{1} & 0 & & \textbf{23} & & \\
+\bottomrule
+\end{tabular}
+\end{center}
+(a) \textbf{5 iterations}; (b) \textbf{21}; (c) $\mathbf{-5}$. \;$47^{-1} = \mathbf{23}$ (check: $47 \times 23 = 1081 = 9\cdot120 + 1$ \checkmark).
+(d) \textbf{No}: $\gcd(46, 120) = 2 \ne 1$ (both even), so $46x$ is always even mod 120 and can never be 1.
+
+\textbf{M8.} (a) $\begin{pmatrix}\mathtt{19}&\mathtt{A0}&\mathtt{9A}&\mathtt{E9}\\\mathtt{F4}&\mathtt{C6}&\mathtt{F8}&\mathtt{3D}\\\mathtt{8D}&\mathtt{48}&\mathtt{E3}&\mathtt{E2}\\\mathtt{08}&\mathtt{BE}&\mathtt{2B}&\mathtt{2A}\end{pmatrix}$ \quad
+(b) XOR with $K$: $\begin{pmatrix}\boldsymbol{\mathtt{B9}}&\boldsymbol{\mathtt{28}}&\boldsymbol{\mathtt{B9}}&\boldsymbol{\mathtt{C3}}\\\boldsymbol{\mathtt{0E}}&\boldsymbol{\mathtt{92}}&\boldsymbol{\mathtt{5B}}&\boldsymbol{\mathtt{51}}\\\boldsymbol{\mathtt{73}}&\boldsymbol{\mathtt{64}}&\boldsymbol{\mathtt{DA}}&\boldsymbol{\mathtt{94}}\\\boldsymbol{\mathtt{1F}}&\boldsymbol{\mathtt{0F}}&\boldsymbol{\mathtt{12}}&\boldsymbol{\mathtt{2F}}\end{pmatrix}$
+\;(e.g.\ $\mathtt{19} \oplus \mathtt{A0} = 0001\,1001 \oplus 1010\,0000 = 1011\,1001 = \mathtt{B9}$).

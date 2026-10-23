@@ -1,0 +1,44 @@
+% Priority map: what the two past mid-sem papers asked, what is new this year, and the order to study in.
+\section{What to Study First}\label{sec:roadmap}
+
+\subsection{What the paper looks like}
+The mid-sem (CSN15403) is 90 minutes for 25 marks, with five to seven questions and the instruction that only a ``precise answer with proper justification'' gets full marks. In practice this means that every numerical must show its working in the textbook layout: the extended-Euclid table with its $q, r_1, r_2, r, t_1, t_2, t$ columns, the Playfair digrams, the long divisions of polynomials, and a final check. The questions are not written from the slides. They are taken almost word for word from \textbf{Forouzan} (Eve and Alice, $\mathbb{Z}_{100}$, keyed transposition, GF$(2^8)$) and \textbf{Stallings} (the ``sendmoremoney'' one-time pad, the AES state values), so the notes teach the textbook method wherever the slides are thin.
+
+\subsection{What the two past papers asked}
+Both papers are solved in full in \S\ref{sec:pastpapers}. The table lists every question by topic, with its marks.
+\begin{center}\small
+\begin{tabularx}{\textwidth}{@{}l X c c l@{}}
+\toprule
+ & Topic & 2024--25 & 2025--26 & Where\\
+\midrule
+\hothot & Playfair encryption & 3 & 4 & \S\ref{sec:playfair}\\
+\hothot & GF$(2^8)$ inverse by the extended Euclidean algorithm & 4 & 4 & \S\ref{sec:algebra}\\
+\hothot & Extended Euclid: integer inverse (``value in iteration $k$''), Diophantine equation & 5 & 3 & \S\ref{sec:exteuclid}\\
+\hot & One-time-pad version of Vigen\`ere (encrypt, then find a key) & -- & 8 & \S\ref{sec:poly}, \S\ref{sec:otp}\\
+\hot & AES: ShiftRows and AddRoundKey on a given state & -- & 6 & \S\ref{sec:aes}\\
+\hot & DES: Feistel structure, round function, key generation, pseudocode & 5 & -- & \S\ref{sec:des}\\
+\hot & GF$(p)$ division, Fermat exponent reduction, inverse that does not exist & 3 & -- & \S\ref{sec:fermat}\\
+\hot & Keyed transposition and the attack type & 3 & -- & \S\ref{sec:classextra}, \S\ref{sec:attacks}\\
+\hot & Characters changed: multiplicative, affine, Vigen\`ere, auto-key & 2 & -- & \S\ref{sec:classextra}\\
+\midrule
+\new & Lectures 10--14: primality, CRT, RSA, ElGamal, ECC, hashing & -- & -- & \S\ref{sec:primes}--\S\ref{sec:integrity}\\
+\bottomrule
+\end{tabularx}
+\end{center}
+Three patterns stand out. First, classical ciphers carried 20 of the 50 marks, and Playfair appeared in both years, so it is the safest marks in the paper. Second, the extended Euclidean algorithm appeared in both years twice over: once with integers (an inverse or a Diophantine equation) and once with polynomials (the GF$(2^8)$ inverse). Together these were 16 of the 50 marks, all from one table method. Third, each year had one block-cipher question worth 5--6 marks, DES in one year and AES in the other.
+
+\subsection{What is new this year \new}
+Neither paper asked anything from Lectures 10--14, most likely because those lectures came after the mid-sem in earlier years. This year the syllabus runs up to ``Message Integrity'', so you should expect at least one question from these lectures. The most likely is an RSA numerical in Forouzan's style: given $p$, $q$ and $e$, find $d$ with the extended-Euclid table, then encrypt and decrypt using square-and-multiply. This combines three topics you already need anyway. The next most likely are a CRT system, a Miller--Rabin test, an ElGamal or elliptic-curve computation, and a theory question on hash functions (the three resistance properties, or the birthday attack). This is a prediction from the syllabus, not from a paper, so the chapters marked \new teach these topics fully rather than as summaries.
+
+\subsection{Priority and study order}
+The order below puts the highest marks per hour first. Each step names the chapters to read and the exercise that proves you have learned it.
+\begin{enumerate}[leftmargin=1.6em,itemsep=2pt]
+\item \hothot\ \textbf{Extended Euclid} (\S\ref{sec:exteuclid}). Reproduce the $23^{-1} \bmod 100$ table and the $19x + 13y = 20$ solution without looking. Everything in steps 2, 5 and 6 reuses this table.
+\item \hothot\ \textbf{GF$(2^8)$ inverse} (\S\ref{sec:algebra}). Learn polynomial long division over GF(2), then redo the $x^5$ and $x^7$ inverses from the papers.
+\item \hothot\ \textbf{Playfair} (\S\ref{sec:playfair}), then \hot\ \textbf{Vigen\`ere, auto-key and the one-time pad} (\S\ref{sec:poly}, \S\ref{sec:otp}), then multiplicative/affine, keyed transposition and the attack types (\S\ref{sec:classextra}, \S\ref{sec:attacks}). These are mechanical and fast to practise.
+\item \hot\ \textbf{AES and DES} (\S\ref{sec:modern}--\S\ref{sec:aes}). Be able to draw the DES round and key schedule, and to do ShiftRows, AddRoundKey, an S-box lookup and one MixColumns column by hand.
+\item \hot\ \textbf{Modular exponentiation, Fermat and Euler} (\S\ref{sec:modexp}, \S\ref{sec:totient}, \S\ref{sec:fermat}). Exponent reduction, inverses, and ``the inverse does not exist'' traps.
+\item \new\ \textbf{RSA} (\S\ref{sec:rsa}), then \textbf{CRT, Miller--Rabin and discrete logs} (\S\ref{sec:primes}), then \textbf{ElGamal and ECC} (\S\ref{sec:elgamal}), then \textbf{hash functions} (\S\ref{sec:integrity}).
+\item Finally, the drill bank (\S\ref{sec:drill}) and the timed mock paper in \S\ref{sec:pastpapers}.
+\end{enumerate}
+Topics without a marker (the security model, Caesar and monoalphabetic ciphers, Hill, steganography, the GCD chapter) are worth one read for the theory questions, but they did not earn marks in either paper.

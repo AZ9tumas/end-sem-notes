@@ -1,0 +1,69 @@
+% Videos: modular arithmetic parts 1-2; college Lecture 4 (residues, inverses, Diophantine)
+\section{Modular Arithmetic}\label{sec:modular}
+
+\begin{keybox}[title=Definitions]
+\vspace{-6pt}
+\[
+a \equiv b \pmod m \iff m \mid (a - b) \iff a = km + b \text{ for some } k \in \mathbb{Z}
+\]
+The operator $a \bmod m$ always returns the \textbf{least non-negative residue} $0 \le r < m$. \textbf{Residue class} $[a]_m$: all integers $\equiv a \pmod m$. $\mathbb{Z}_n = \{0, \dots, n-1\}$; $\mathbb{Z}_n^* = \{a \in \mathbb{Z}_n : \gcd(a,n) = 1\}$; for a prime $p$, $\mathbb{Z}_p^* = \{1, \dots, p-1\}$.
+\end{keybox}
+
+\textbf{Negative numbers}: $-255 = (-23)(11) + (-2)$ has $r < 0$; fix it by $q \to q - 1$, $r \to r + n$: $-255 = (-24)(11) + 9$, so $-255 \bmod 11 = 9$.
+
+\begin{center}\small
+\begin{tabular}{@{}llll@{}}
+\toprule
+Statement & $a - b$ & Divisible by $m$? & \\
+\midrule
+$38 \equiv 14 \pmod{12}$ & 24 & yes & \textbf{valid} (but $38 \bmod 12 = 2$, not 14)\\
+$10 \equiv 2 \pmod 6$ & 8 & no & \textbf{invalid}\\
+$13 \equiv 3 \pmod{13}$ & 10 & no & \textbf{invalid}\\
+$-8 \equiv 7 \pmod 5$ & $-15$ & yes & \textbf{valid}\\
+$-3 \equiv -8 \pmod 5$ & 5 & yes & \textbf{valid}\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection{Reduce first}
+\begin{keybox}
+\vspace{-6pt}
+\[
+(a \pm b) \bmod n = [(a \bmod n) \pm (b \bmod n)] \bmod n \qquad (a b) \bmod n = [(a \bmod n)(b \bmod n)] \bmod n
+\]
+There is \textbf{no division rule}: dividing by $a$ means multiplying by $a^{-1}$, which exists only if $\gcd(a, n) = 1$.
+\end{keybox}
+E.g.\ $(123 \times 456) \bmod 7 = (4 \times 1) \bmod 7 = 4$; \; $3^{100} \bmod 10 = (3^4)^{25} \bmod 10 = 1$.
+
+\subsection{Properties of $\mathbb{Z}_n$ and inverses \hot}
+$+$ and $\times$ are commutative, associative, distributive; identities 0 and 1. Subtraction is not commutative.
+\begin{itemize}
+  \item \textbf{Additive inverse}: $b = n - a$ (every element has one). Pairs in $\mathbb{Z}_{10}$: (0,0), (1,9), (2,8), (3,7), (4,6), (5,5).
+  \item \textbf{Multiplicative inverse}: $a \cdot a^{-1} \equiv 1 \pmod n$, \textbf{exists iff $\gcd(a, n) = 1$}. Found with the extended Euclidean algorithm (Section~\ref{sec:exteuclid}). $8^{-1}$ in $\mathbb{Z}_{10}$: none. $11^{-1} \bmod 26 = 19$; $23^{-1} \bmod 100 = 87$; $12^{-1} \bmod 26$: none ($\gcd = 2$).
+\end{itemize}
+\begin{center}\small\setlength{\tabcolsep}{6pt}
+\begin{tabular}{@{}l*{8}{c}@{}}
+\toprule
+$a$ in $\mathbb{Z}_8$ & 0&1&2&3&4&5&6&7\\
+$-a$ & 0&7&6&5&4&3&2&1\\
+$a^{-1}$ & --&1&--&3&--&5&--&7\\
+\bottomrule
+\end{tabular}
+\end{center}
+Caesar decryption $=$ adding the additive inverse of the key; Hill decryption needs $(\det K)^{-1} \bmod 26$, so $\gcd(\det K, 26) = 1$.
+
+\subsection{Linear congruences $ax \equiv b \pmod n$}
+Let $d = \gcd(a, n)$. If $d \nmid b$: \textbf{no solution}. If $d \mid b$: \textbf{exactly $d$ solutions}. Divide through by $d$, solve $x_0 = (b/d)(a/d)^{-1} \bmod (n/d)$; the solutions are $x_0 + k(n/d)$, $k = 0, \dots, d-1$.
+\begin{itemize}
+  \item $10x \equiv 2 \pmod{15}$: $d = 5 \nmid 2$ $\Rightarrow$ no solution.
+  \item $14x \equiv 12 \pmod{18}$: $d = 2$; $7x \equiv 6 \pmod 9$, $7^{-1} = 4$, $x_0 = 24 \bmod 9 = 6$; solutions \textbf{6, 15}.
+  \item $3x + 4 \equiv 6 \pmod{13}$: $3x \equiv 2$, $3^{-1} = 9$, $x = 18 \bmod 13 = \mathbf{5}$.
+\end{itemize}
+
+\begin{examtip}
+\begin{itemize}
+  \item $a \equiv b \pmod m \iff m \mid (a - b)$: fastest validity test.
+  \item ``$\equiv \pmod m$'' allows any representative; ``$\bmod$'' gives only $0..m-1$.
+  \item $a^{-1} \bmod n$ exists only when $\gcd(a, n) = 1$; a linear congruence has $\gcd(a,n)$ solutions or none.
+\end{itemize}
+\end{examtip}

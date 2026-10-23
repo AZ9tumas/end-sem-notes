@@ -1,0 +1,183 @@
+\documentclass[10pt,a4paper]{article}
+\usepackage[margin=1.7cm]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,shapes.geometric,fit,calc}
+\usepackage[most]{tcolorbox}
+\usepackage{booktabs,tabularx}
+\usepackage{enumitem}
+\usepackage{titlesec}
+\usepackage[hidelinks]{hyperref}
+\setlist{nosep,leftmargin=1.2em}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{3pt}
+\titlespacing*{\section}{0pt}{8pt}{4pt}
+\titlespacing*{\subsection}{0pt}{6pt}{2pt}
+
+\definecolor{acc}{HTML}{2E5E8C}
+\definecolor{warn}{HTML}{B5462E}
+\titleformat{\section}{\large\bfseries\color{acc}}{\thesection}{0.6em}{}
+\titleformat{\subsection}{\normalsize\bfseries}{\thesubsection}{0.5em}{}
+
+\newtcolorbox{keybox}[1][]{colback=acc!6,colframe=acc,boxrule=0.6pt,arc=2pt,left=4pt,right=4pt,top=2pt,bottom=2pt,fonttitle=\bfseries\small,#1}
+\newtcolorbox{examtip}{colback=warn!6,colframe=warn,boxrule=0.6pt,arc=2pt,left=4pt,right=4pt,top=2pt,bottom=2pt,title=Exam tips,fonttitle=\bfseries\small}
+
+\tikzset{
+  box/.style={draw,rounded corners=2pt,align=center,font=\small,minimum height=7mm,inner sep=3pt},
+  circ/.style={draw,circle,fill=orange!25,font=\small\bfseries,minimum size=8mm},
+  arr/.style={-{Stealth[length=2mm]},thick},
+  darr/.style={{Stealth[length=2mm]}-{Stealth[length=2mm]},thick}
+}
+
+\begin{document}
+
+\begin{center}
+{\LARGE\bfseries Cryptography \& Network Security}\\[2pt]
+{\large Intro: Security Models, Cryptography Basics}
+\end{center}
+
+\section{Model for Network Security}
+
+Sender $S$ wants to send a message to receiver $R$ over an insecure channel (the Internet). An \textbf{opponent} can sniff the channel.
+
+\begin{center}
+\begin{tikzpicture}[node distance=6mm]
+  \node[box,fill=cyan!10] (m1) {Message\\(S)};
+  \node[circ,right=of m1] (t1) {T};
+  \node[box,below=5mm of t1,fill=magenta!8] (k1) {Secret info};
+  \node[box,right=of t1,fill=yellow!20] (c1) {Secure\\message};
+  \node[box,right=8mm of c1,minimum width=26mm,fill=gray!15] (ch) {Information\\channel};
+  \node[box,right=8mm of ch,fill=yellow!20] (c2) {Secure\\message};
+  \node[circ,right=of c2] (t2) {T};
+  \node[box,below=5mm of t2,fill=magenta!8] (k2) {Secret info};
+  \node[box,right=of t2,fill=cyan!10] (m2) {Message\\(R)};
+  \node[box,below=6mm of ch,fill=red!10] (op) {Opponent};
+  \node[box,above=7mm of ch,fill=green!12] (ttp) {Trusted Third Party};
+  \draw[arr] (m1)--(t1); \draw[arr] (k1)--(t1); \draw[arr] (t1)--(c1);
+  \draw[arr] (c1)--(ch); \draw[arr] (ch)--(c2);
+  \draw[arr] (c2)--(t2); \draw[arr] (k2)--(t2); \draw[arr] (t2)--(m2);
+  \draw[darr] (op)--(ch);
+  \draw[darr,orange!80!black] (ttp)--(ch);
+  \draw[arr,orange!80!black,dashed] (ttp.west) -| (k1.north west);
+  \draw[arr,orange!80!black,dashed] (ttp.east) -| (k2.north east);
+\end{tikzpicture}
+\end{center}
+
+\begin{itemize}
+  \item \textbf{T (security-related transformation)} takes two inputs: the message and \textbf{secret info} (a key). Output: a secure message (ciphertext). $R$ applies the reverse $T$ with its secret info.
+  \item It is called $T$, not $E$, because encryption is only one option. \textbf{Steganography} (hiding data inside an image, audio, etc.) is another.
+  \item The opponent can intercept the secure message but cannot read it.
+  \item Security rests on the \textbf{key} (its secrecy and bit length) and algorithm strength, not on hiding the algorithm. Small key space $\Rightarrow$ brute force works.
+  \item \textbf{Trusted Third Party (TTP)}: distributes keys, issues certificates, settles disputes. Example: a Certificate Authority signing a bank's SSL certificate. (Details come later in the course.)
+\end{itemize}
+
+\subsection{Four tasks in designing a security service}
+\begin{keybox}
+\begin{enumerate}[leftmargin=1.5em]
+  \item \textbf{Design an algorithm} for $T$ (encrypt at $S$, decrypt at $R$) that the opponent cannot defeat.
+  \item \textbf{Generate the secret information} (large keys, so brute force is infeasible).
+  \item \textbf{Develop methods to distribute and share} the secret info (get keys to $S$ and $R$ safely).
+  \item \textbf{Specify a protocol}: the rules both parties follow to use the algorithm and keys (e.g., SSL/TLS, IPsec).
+\end{enumerate}
+\end{keybox}
+Memory aid: \emph{Algorithm $\to$ Key $\to$ Distribute $\to$ Protocol}.
+
+\section{Network Access Security Model}
+
+Protects a \emph{system} from unwanted access, rather than protecting a message in transit.
+
+\begin{center}
+\begin{tikzpicture}[node distance=8mm]
+  \node[box,fill=red!10,text width=30mm] (op) {\textbf{Opponent}\\Human (attacker)\\Software (virus, worm)};
+  \node[box,right=of op,fill=gray!15,minimum width=24mm] (ac) {Access channel};
+  \node[box,right=of ac,fill=green!12,text width=22mm] (gk) {\textbf{Gatekeeper function}\\(firewall)};
+  \node[box,right=12mm of gk,fill=cyan!8,text width=42mm,align=left] (is) {\textbf{Information System}\\
+    \footnotesize Computing resources (CPU, memory, I/O)\\ \footnotesize Data \quad Processes \quad Software\\
+    \footnotesize\textbf{Internal security controls} (antivirus)};
+  \draw[arr] (op)--(ac); \draw[arr] (ac)--(gk); \draw[arr] (gk)--node[above,font=\scriptsize]{allowed} (is);
+\end{tikzpicture}
+\end{center}
+
+\begin{itemize}
+  \item \textbf{Opponent}: a human hacker or malicious software.
+  \item \textbf{Gatekeeper}: first line of defence, like a guard at a gate. Filters traffic and blocks intruders (firewall, login checks).
+  \item \textbf{Internal security controls}: second line, inside the system, catching what slips past the gate (antivirus, OS permissions).
+  \item Insiders (e.g., employees) can also attack, but this model focuses on outside threats.
+\end{itemize}
+
+\section{Cryptography}
+
+\begin{keybox}[title=Definition]
+The art or science of transforming an \textbf{intelligible} message (plaintext) into an \textbf{unintelligible} one (ciphertext), and then \textbf{retransforming} it back to the original form.
+\end{keybox}
+
+\subsection{Symmetric cipher model}
+\begin{center}
+\begin{tikzpicture}[node distance=7mm]
+  \node[box,fill=cyan!10] (p1) {Plaintext $P$};
+  \node[box,right=of p1,fill=green!15] (e) {Encryption\\algorithm $E$};
+  \node[box,right=12mm of e,fill=yellow!20] (c) {Ciphertext $C$};
+  \node[box,right=16mm of c,fill=red!12] (d) {Decryption\\algorithm $D$};
+  \node[box,right=of d,fill=cyan!10] (p2) {Plaintext $P$};
+  \node[box,above=5mm of e,fill=yellow!40] (k1) {Key $K$};
+  \node[box,above=5mm of d,fill=yellow!40] (k2) {Key $K$};
+  \draw[arr] (p1)--(e); \draw[arr] (k1)--(e); \draw[arr] (e)--(c);
+  \draw[arr] (c)--node[above,font=\scriptsize]{transmitted}(d); \draw[arr] (k2)--(d); \draw[arr] (d)--(p2);
+  \draw[darr,bend left=15,orange!80!black] (k1.north) to node[above,font=\scriptsize]{same key} (k2.north);
+\end{tikzpicture}
+\end{center}
+\[
+C = E(K, P) \qquad\qquad P = D(K, C) = D\big(K, E(K,P)\big)
+\]
+\begin{itemize}
+  \item Encryption needs \textbf{two} inputs ($P$ and $K$); decryption needs $C$ and $K$.
+  \item $E$ and $D$ are \textbf{public}. Only $K$ is secret (Kerckhoffs's principle).
+  \item If $K$ leaks, \emph{all} past and future messages between $S$ and $R$ can be read.
+  \item Toy example: $K = 100$ at both ends. Real keys are huge (128, 256, 2048 bits), so guessing is infeasible.
+\end{itemize}
+
+\subsection{Types of cryptography}
+\begin{center}
+\small
+\begin{tabularx}{\textwidth}{@{}l X X@{}}
+\toprule
+ & \textbf{Symmetric} (private / secret key) & \textbf{Asymmetric} (public key) \\
+\midrule
+Keys & One shared key & Key pair: public + private \\
+Use & Same key encrypts and decrypts & One key encrypts, the other (mathematically related) decrypts \\
+Secrecy & Key known only to $S$ and $R$ & Public key published; private key kept by owner \\
+Toy example & Encrypt 100, decrypt 100 & Encrypt 100, decrypt 500 \\
+\bottomrule
+\end{tabularx}
+\end{center}
+Asymmetric works because the two keys satisfy a mathematical relationship, and the private key cannot practically be computed from the public one. (Which key does what is covered in a later lecture.)
+
+\section{Security of Encryption Schemes}
+
+\begin{keybox}[title=Unconditionally secure]
+The ciphertext does \textbf{not contain enough information to uniquely determine the plaintext}, no matter how much ciphertext is available. Holds even against infinite computing power. Example: one-time pad.
+\end{keybox}
+
+\begin{keybox}[title=Computationally secure (either condition)]
+\begin{enumerate}[leftmargin=1.5em]
+  \item \textbf{Cost} of breaking the cipher $>$ \textbf{value} of the encrypted information.
+  \item \textbf{Time} to break the cipher $>$ \textbf{useful lifetime} of the information.
+\end{enumerate}
+\end{keybox}
+\begin{itemize}
+  \item Cost: spending \$1{,}000{,}000 to steal a \$1{,}000 message is pointless.
+  \item Time: a quote valid for 10 minutes that takes 50 years to crack is useless when cracked.
+  \item Real ciphers (AES, RSA) are computationally secure; unconditional security needs a key as long as the message, which is impractical.
+\end{itemize}
+
+\begin{examtip}
+\begin{itemize}
+  \item Draw the network security model with all labels: $S$, $R$, $T$, secret info, secure message, opponent, TTP.
+  \item Know the four tasks in order.
+  \item ``Why $T$ and not $E$?'' $\Rightarrow$ steganography is also a transformation.
+  \item Symmetric = same key; asymmetric = different but related keys.
+  \item Quote both conditions of computational security word for word.
+\end{itemize}
+\end{examtip}
+
+\end{document}

@@ -1,0 +1,871 @@
+% Practice problems + answer key (every answer verified by script)
+\clearpage
+\section{Practice Problems}\label{sec:practice}
+These go beyond the lecture examples, and many contain a trap. Show your working as you would in an exam. Answers start on a new page (Section~\ref{sec:answers}); don't peek.
+
+\newcounter{qn}
+\newcommand{\q}{\refstepcounter{qn}\par\medskip\noindent\textbf{Q\theqn.}\ }
+
+\subsection*{A. Security definitions and shift ciphers}
+
+\q A message is worth \$500 and is useful for only 1 hour. Breaking the cipher needs \$100 of computing time and takes 2 hours.
+(a) Is the scheme computationally secure? (b) What if breaking it took 30 minutes instead?
+
+\q (a) Alice encrypts with a shift cipher, key 7, then encrypts the result again with key 21. Which single key gives the same ciphertext? Did encrypting twice make it stronger?
+(b) Bob says he used a shift cipher with key 29. Which cipher did he really use?
+(c) An attacker brute-forcing a shift cipher got readable text by moving every letter \emph{forward} by 16. What was the encryption key?
+
+\q This was made with a shift cipher; the key is unknown. Decrypt it, then say which principle from the course the message states.
+\begin{center}\ttx{DROOXOWIUXYGCDROCICDOW}\end{center}
+
+\subsection*{B. Monoalphabetic}
+
+\q Keyword cipher: write the keyword \textbf{SECURITY} (no repeats) under \ttx{a b c \dots}, then continue with the unused letters in alphabetical order.
+(a) Encrypt ``meet me at noon''. (b) Decrypt \ttx{IMRLPRHCXSHSFXNANVAHN}.
+(c) Which plaintext letter is not disguised at all by this key? Why is this a typical weakness of keyword ciphers?
+
+\q (a) The lecture says a monoalphabetic cipher has $26!$ keys. How many are actually useful, and why?
+(b) Is the Caesar cipher a monoalphabetic cipher?
+(c) In a 20-letter ciphertext, \ttx{Q} is the most common letter (4 times). Can you conclude \ttx{Q} $=$ e?
+
+\subsection*{C. Playfair}
+
+\q Keyword \textbf{PLAYFAIR EXAMPLE}. Encrypt ``hide the gold in the tree stump''.
+
+\q Keyword \textbf{MONARCHY}. Split ``committee'' into digrams, then encrypt it.
+
+\q Keyword \textbf{NETWORK}. Decrypt \ttx{GCUYOSODNUZY} and write the final, readable message.
+
+\q (a) Under some Playfair key, \ttx{AB} encrypts to \ttx{XY}. What does \ttx{BA} encrypt to? Does it depend on which of the three rules applied?
+(b) Can a Playfair plaintext letter ever encrypt to itself?
+(c) An intercepted message contains the pair \ttx{QQ} (as one digram), and elsewhere the letter \ttx{J}. Could it be Playfair ciphertext?
+
+\subsection*{D. Hill}
+
+\q Which of these are valid Hill keys (mod 26)? Give the reason for each.
+\[
+K_1=\begin{pmatrix}2&3\\1&4\end{pmatrix}\;
+K_2=\begin{pmatrix}4&2\\3&1\end{pmatrix}\;
+K_3=\begin{pmatrix}13&1\\2&1\end{pmatrix}\;
+K_4=\begin{pmatrix}5&4\\3&5\end{pmatrix}\;
+K_5=\begin{pmatrix}1&4\\3&1\end{pmatrix}
+\]
+
+\q $K=\begin{pmatrix}3&3\\2&5\end{pmatrix}$. (a) Encrypt ``help'' with $C = PK$ (the lecture's convention).
+(b) A textbook using $C = KP$ gets a different answer. What is it? (c) Why do they differ?
+
+\q $K=\begin{pmatrix}5&8\\17&3\end{pmatrix}$. (a) Find $K^{-1} \bmod 26$ and check it. (b) Decrypt \ttx{EGXJ}.
+
+\q \textbf{Known-plaintext attack.} A $2\times2$ Hill cipher ($C = PK$) encrypts ``help'' to \ttx{PQEX}. Find the key $K$. Then decrypt \ttx{CKJM}, which was sent with the same key.
+
+\subsection*{E. Polyalphabetic}
+
+\q Vigen\`ere, key \textbf{NESO}. Decrypt \ttx{SVWEHIFQLEFOYCKWFJSWYWZSEI}.
+
+\q (a) What does a Vigen\`ere cipher with key \ttx{AAAA} do? And with key \ttx{DDDD}?
+(b) In a long Vigen\`ere ciphertext, the sequence \ttx{KWX} appears at positions 10, 34 and 70. What can you say about the key length?
+(c) Suppose you know the key length is 5. How would you break it?
+
+\q Autokey, keyword \textbf{KEY}. (a) Encrypt ``meet at noon''.
+(b) Encrypt it with ordinary Vigen\`ere (key \ttx{KEY}) as well. Where do the two ciphertexts first differ, and why?
+(c) Why must an autokey receiver decrypt strictly left to right?
+
+\subsection*{F. Vernam and one-time pad}
+
+\q (a) $P = \ttx{10110011}$, $K = \ttx{01101010}$. Find $C$. (b) Compute $C \oplus P$. What do you get, and why? (c) Why doesn't (b) weaken a one-time pad?
+
+\q Two ciphertexts were made with the \textbf{same} one-time pad key:
+$C_1 = \ttx{JUVUZEXJGN}$, $C_2 = \ttx{YHZOFXYIWY}$. You know $C_1$ is ``meet at noon''. Recover the key and the second message.
+
+\q The ciphertext \ttx{XMCKL} came from a one-time pad. (a) Find a key that decrypts it to ``hello'' and another that decrypts it to ``later''. (b) What does this show?
+
+\q Which of these give \textbf{perfect secrecy}?
+(a) A one-time pad whose random key is used for two messages.
+(b) Vigen\`ere with a truly random key as long as the message, used once.
+(c) Vernam with a random 1,000-bit tape, looped to encrypt a 10,000-bit message.
+(d) A key stream produced from a random 128-bit seed by a fixed formula.
+(e) A Caesar shift with a randomly chosen key, used once on a one-letter message.
+
+\subsection*{G. Transposition}
+
+\q Rail fence, depth 3. Decrypt \ttx{WECRLTEERDSOEEFEAOCAIVDEN}.
+
+\q Row--column transposition, 4 columns, key \textbf{3 1 4 2}, padded with \ttx{x}. Decrypt \ttx{EEEETTFTAXMMTHREARPY}.
+
+\q (a) A ciphertext has normal English letter frequencies (lots of E, T, A) but is unreadable. Substitution or transposition?
+(b) Show that a rail fence of depth 2 is really a row--column transposition. Which rectangle and key?
+(c) Encrypt ``retreat now'' with Caesar ($k=3$) and then rail fence (depth 2). Now do it in the other order. Compare the results and explain.
+
+\subsection*{H. Steganography, key counting, primes}
+
+\q A captured note reads: ``\emph{Don't wait, we'll discuss food now.}'' Analysts believe a message is hidden in it and that a Caesar cipher was also used. Recover the message. Which approach from the lecture did the sender use?
+
+\q LSB steganography, 2 LSBs per channel, bits hidden in the order R, G, B.
+(a) Hide the bits \ttx{101101} in the pixel $(200, 13, 87)$. What is the new pixel?
+(b) What is the largest amount any channel value can change?
+(c) How many bytes can a $1024\times768$ image hide at most?
+(d) Why must the stego image not be saved as a JPEG?
+
+\q A company of 100 employees uses symmetric keys so that every pair can talk privately.
+(a) How many keys are needed? (b) One more employee joins. How many \emph{new} keys are needed?
+(c) How many keys would public-key cryptography need for the 101 employees?
+
+\q Columnar transposition with keyword \textbf{LETTER} (repeated letters numbered left to right), padded with \ttx{x}. Decrypt:
+\begin{center}\ttx{TOELXCPNOXAPNIMKOTAXTSDTXATUWX}\end{center}
+
+\q Compute: (a) $-19 \bmod 3$ \quad (b) $3 \bmod 19$ \quad (c) $2^{10} \bmod 11$. For (c), what do you notice? Which upcoming theorem does it preview?
+
+\q (a) Classify each as prime, composite or neither: 1, 2, 51, 91, 97, 221.
+(b) To test whether 221 is prime by trial division, what is the largest divisor you need to try? Why?
+(c) What is wrong with the sentence ``RSA is secure because factoring large prime numbers is hard''?
+
+\q (a) 100 $= 2^2 \cdot 5^2$ has 9 divisors. Find a rule that gets the number of divisors straight from the prime factorisation, and use it for $5040 = 2^4 \cdot 3^2 \cdot 5 \cdot 7$.
+(b) Which numbers have \emph{exactly three} divisors? Give three examples.
+
+\subsection*{I. Modular arithmetic}
+
+\q Valid or invalid? (a) $73 \equiv 13 \pmod{12}$ \quad (b) $-17 \equiv 3 \pmod 5$ \quad (c) $100 \equiv 1 \pmod 9$ \quad (d) $-7 \equiv 7 \pmod 7$ \quad (e) $14 \equiv -14 \pmod 6$ \quad (f) $0 \equiv 26 \pmod{13}$ \quad (g) $38 \bmod 12 = 14$
+
+\q Without a calculator: (a) $(1234 \times 5678) \bmod 9$ \quad (b) $7^{100} \bmod 10$ \quad (c) $2^{50} \bmod 7$ \quad (d) $-123 \bmod 10$
+
+\q Work in $\mathbb{Z}_{10}$. (a) Give the additive inverses of 3, 0 and 5.
+(b) Give the multiplicative inverses of 3, 7, 9, 5 and 4, where they exist. (c) Explain why 4 can never have one.
+
+\q Find \emph{all} solutions in $\mathbb{Z}_{12}$: (a) $4x \equiv 8 \pmod{12}$ \quad (b) $3x \equiv 8 \pmod{12}$ \quad (c) $5x \equiv 3 \pmod{12}$
+
+\q (a) What time does a 12-hour clock show 100 hours after 9 o'clock? (b) 50 hours before 3 o'clock?
+(c) Use additive inverses to explain why decrypting a shift cipher with key $k$ is the same as \emph{encrypting} with key $26 - k$. What is the ``encryption key'' that decrypts Caesar?
+
+\q Rail fence, depth 4. Decrypt \ttx{TIRTHYSETAEEUDHMKNE}. (Careful: the rows are not all the same length.)
+
+\subsection*{J. Modular exponentiation}
+
+\q (Lecture homework 1) Compute $11^{23} \bmod 187$ by repeated squaring. How is the answer related to the lecture's $88^7 \bmod 187$?
+
+\q (Lecture homework 2) Find the last three digits of $175^{209}$.
+
+\q Compute $2^{33} \bmod 30$ (the example on the definition slide). Do it two ways: repeated squaring, and by spotting a cycle in the powers of 2.
+
+\q (a) Find the last two digits of $7^{222}$. (b) Find its last digit.
+
+\q A student computes $5^{117} \bmod 19$ like this: ``$117 \bmod 19 = 3$, so the answer is $5^3 = 125 \equiv 11$.''
+(a) What is wrong? (b) Find the correct answer.
+
+\q (a) $100^{101} \bmod 101$ \quad (b) $100^{100} \bmod 101$ \quad (c) $99^{99} \bmod 100$
+(d) How many multiplications does repeated squaring need for $a^{100}$, compared with multiplying $a$ by itself over and over? And for $a^{1024}$?
+
+\subsection*{K. GCD and the Euclidean algorithm}
+
+\q (Lecture homework) Find $\gcd(1005, 105)$ with the table method and $\gcd(529, 123)$ with the recursive method. Are 529 and 123 relatively prime? Is either of them prime?
+
+\q True or false? Give a reason or a counterexample for each.
+(a) If $\gcd(a, b) = 1$ then $a$ and $b$ are both prime.
+(b) Two even numbers can be relatively prime.
+(c) Any two consecutive integers $n$ and $n + 1$ are relatively prime.
+(d) $\gcd(a, b) = \gcd(a, a + b)$ for all positive $a, b$.
+(e) In the table method you can stop as soon as $R = 0$ and read the answer from column $B$.
+
+\q (a) Find $\gcd(89, 55)$ and count the divisions. (b) Why does it take so many steps for such small numbers?
+
+\q A Hill cipher works mod 26. (a) Which values from 1 to 25 can the determinant of a valid key take? How many are there?
+(b) Use the Euclidean algorithm to show that $\gcd(13, 26) \ne 1$ but $\gcd(15, 26) = 1$.
+
+\q (a) $\gcd(0, 17)$ \quad (b) $\gcd(17, 17)$ \quad (c) $\gcd(1, 10^{100})$
+(d) Someone starts the table method for $\gcd(105, 1005)$ with $A = 105$, $B = 1005$ (the wrong way round). What happens in the first row? Do they still get the right answer?
+
+\subsection*{L. Relatively prime numbers and Euler's totient}
+
+\q (Lecture homework) (a) Use Euclid to decide whether 790 and 121 are relatively prime. (b) Find $\Phi(369)$ and $\Phi(372)$.
+
+\q Spot the mistakes.
+(a) A student writes $\Phi(25) = (5-1)(5-1) = 16$.
+(b) Another writes $\Phi(1000) = 1000\,(1 - \tfrac12)^3 (1 - \tfrac15)^3$ ``because $1000 = 2^3 \cdot 5^3$''.
+(c) A third says $\Phi(12) = \Phi(2)\cdot\Phi(6) = 1 \cdot 2 = 2$.
+Give the correct values, and also find $\Phi(27)$, $\Phi(1024)$ and $\Phi(97)$.
+
+\q These are totient questions in disguise. Say why, then answer.
+(a) How many of the fractions $\frac{1}{36}, \frac{2}{36}, \dots, \frac{35}{36}$ are already in lowest terms?
+(b) How many integers from 1 to 1000 are divisible by neither 2 nor 5?
+(c) A ``multiplicative cipher'' encrypts $C = k\cdot P \bmod 26$. How many values of $k$ give a usable cipher?
+
+\q (a) Find \emph{all} $n$ with $\Phi(n) = 4$. (Hint: if a prime $p$ divides $n$, then $p - 1$ divides $\Phi(n)$.)
+(b) Show that $\Phi(n)$ is even for every $n \ge 3$.
+
+\q $\bigstar$ Prove that \textbf{no} integer $n$ has $\Phi(n) = 14$.
+
+\q $\bigstar$ RSA with $n = 187$.
+(a) Given $187 = 11 \cdot 17$, find $\Phi(187)$.
+(b) Check that $e = 7$ and $d = 23$ satisfy $e\cdot d \equiv 1 \pmod{\Phi(n)}$.
+(c) Eve doesn't know 11 and 17, but she steals $\Phi(n) = 160$. Show that she can now factor $n$.
+(d) What does (c) tell you about keeping $\Phi(n)$ secret?
+
+\subsection*{M. $\bigstar$ Challenge set (mixed topics)}
+Each of these hides a trap or needs ideas from two different sections.
+
+\q The \textbf{multiplicative cipher} encrypts $C = k\cdot P \bmod 26$ (a $=0$, \dots, z $=25$).
+(a) Why can't $k = 13$ be used? Find two plaintext letters that collide.
+(b) Which two letters are \emph{never} disguised, whatever valid $k$ is chosen?
+(c) Adding a shift, $C = (kP + b) \bmod 26$, gives the \emph{affine} cipher. How many keys does it have?
+
+\q Alice and Bob use a perfect one-time pad (fresh random key, used once). Alice's answer is either ``YES'' or ``NO''. Eve intercepts a 3-letter ciphertext.
+What does Eve learn? Does this contradict perfect secrecy? How should Alice fix it?
+
+\q (a) A message is Vigen\`ere-encrypted with key \ttx{AB}, then the result is encrypted again with key \ttx{BCD}. Show that this is a single Vigen\`ere cipher and find its key.
+(b) If the two keys have lengths 4 and 6, how long is the combined key?
+(c) Is double Vigen\`ere much stronger?
+
+\q Known plaintext: Vigen\`ere turns \ttx{thequickbrownfox} into \ttx{VYCFNKTIQKQNLUHZ}. Find the key and its length.
+
+\q Find (a) $3^{(3^3)} \bmod 10$ and (b) $(3^3)^3 \bmod 10$. Why are they different?
+
+\q Without calculating the huge numbers: (a) show that $10^{101} + 1$ is divisible by 11; (b) find $(10^{100} + 1) \bmod 101$.
+
+\q Find $\gcd(2^{30} - 1,\; 2^{20} - 1)$ without multiplying anything out.
+(Hint: $2^{30} - 1 = 2^{10}(2^{20} - 1) + (2^{10} - 1)$.)
+
+\q A rail fence of depth 2 is applied to \ttx{abcdefghijklmnop} (16 letters), then again to the result, and so on.
+(a) After how many encryptions does the original text come back? (b) What if the message had 20 letters?
+(c) What does this say about ``encrypt twice for extra security''?
+
+\q (a) Split ``taxxi'' into Playfair digrams using the lecture's rules. What goes wrong, and how do you fix it?
+(b) A Playfair ciphertext contains \ttx{RS} and, later, \ttx{SR}. What can an attacker deduce?
+
+\q Hill key $K = \begin{pmatrix}1&2\\0&25\end{pmatrix}$ ($C = PK$).
+(a) Show $K^2 \equiv I \pmod{26}$. (b) Encrypt ``hi'', then encrypt the result again.
+(c) Look at the first letter of every block. Why is this key a bad choice despite being valid?
+
+\q Brute-force the shift-cipher ciphertext \ttx{FKHHU}. How many readable answers are there? What does this mean for the lecture's claim that brute force reveals the one meaningful plaintext?
+
+
+\subsection*{N. $\bigstar$ Fermat, Euler, primitive roots}
+
+\q (a) Show $2^{340} \equiv 1 \pmod{341}$ in two lines. (Hint: look at $2^{10}$.)
+(b) Show that base 3 exposes 341 as composite, \emph{without} computing $3^{340} \bmod 341$. (Hint: work mod 31.)
+
+\q Find the last two digits of (a) $3^{2024}$ and (b) $2^{2024}$. Careful: can Euler's theorem be used in (b)?
+
+\q 6 is a primitive root of 41. (a) How many primitive roots does 41 have? (b) Find two more without building any table. (c) Explain why $6^2$ is \emph{not} a primitive root.
+
+\q (a) Is 2 a primitive root of 101? Decide with at most two modular powers. (b) Is 2 a primitive root of 17?
+
+\q Toy Diffie--Hellman with $p = 23$ and $g = 5$. Alice's secret is 6 and Bob's is 15.
+(a) Find what each sends and the shared key. (b) Why is $g$ chosen to be a primitive root? (c) What would go wrong with $g = 22$?
+
+\q (a) A student computes $4^{-1} \bmod 9$ as $4^{9-2} \bmod 9$. What is wrong, and what is the right answer?
+(b) Applying Euler's formula blindly to $6^{-1} \bmod 9$ gives $6^{\Phi(9) - 1} = 6^5 \bmod 9$. What do you get, and what does it show?
+
+\subsection*{O. $\bigstar$ Attacks and Lecture 5 extras}
+\q Classify (attack, goal threatened, passive/active), and say whether encryption alone stops it: (a) Eve can't read the CEO's encrypted mail but notices it goes to a law firm every night at 2 a.m.; (b) a buyer receives goods, then claims she never ordered them; (c) Eve resends a captured \emph{encrypted} ``pay Rs.~500 to Eve'' message; (d) a botnet floods a web server.
+
+\q (a) Why is $(k_1, k_2) = (13, 5)$ an illegal affine key? Show two letters that collide. (b) Known plaintext: an affine cipher maps \ttx{e}$\to$\ttx{R} and \ttx{n}$\to$\ttx{Y}. Find the key and decrypt \ttx{KTF}.
+
+\q A Kasiski test finds repeated trigrams at distances 30, 42, 66 and 18. Which key lengths are possible, and which do you try first? Why does this attack fail completely against the one-time pad?
+
+\q Keyed transposition, blocks of 5, encryption key \ttx{4 2 5 1 3}. (a) Find the decryption key. (b) Encrypt \ttx{attackatdawn} (pad with \ttx{z}). (c) The key happens to be its own inverse. Is that a weakness?
+
+\q Hill $2\times2$ (row vectors, $C = PK$). Eve knows \ttx{help} encrypts to \ttx{DPLE}. Recover $K$.
+
+\q Lecture 6 says composing two permutations gives a single permutation, so double transposition adds no strength. Lecture 5 says double transposition defeats the pattern attack. Reconcile the two.
+
+\subsection*{P. $\bigstar$ Extended Euclid, congruences, Diophantine}
+\q Full table: $\gcd(1820, 231)$ and $s, t$ with $1820s + 231t = \gcd$.
+
+\q Find $97^{-1} \bmod 1000$ with the table. Without any table, why does $98^{-1} \bmod 1000$ not exist?
+
+\q Solve $35x \equiv 10 \pmod{50}$ (all solutions in $\mathbb{Z}_{50}$). Then $35x \equiv 11 \pmod{50}$.
+
+\q Using $(84)(-19) + (320)(5) = 4$: solve $84x + 320y = 8$ (particular and general) and explain why $84x + 320y = 10$ has no solution.
+
+\subsection*{Q. $\bigstar$ Primes, primality, CRT, discrete logs}
+\q 341 passes the Fermat test with base 2 ($2^{340} \equiv 1 \pmod{341}$). Run Miller--Rabin with base 2. Then run it on $2047 = 23 \times 89$ with base 2 and with base 3. What do the results teach you?
+
+\q (a) Solve $x \equiv 1 \ (3),\ 2\ (4),\ 3\ (5)$. (b) Trap: solve $x \equiv 3 \pmod 6$, $x \equiv 5 \pmod 8$, and then $x \equiv 2 \pmod 6$, $x \equiv 5 \pmod 8$. Can the four-step CRT be used?
+
+\q Factor 8051 by Fermat's method. Why is it so fast here?
+
+\q Given that 2 is a primitive root of 11, list all primitive roots of 11 without testing each number. How many should there be?
+
+\q Solve (a) $2^x \equiv 9 \pmod{11}$; (b) $3^x \equiv 4 \pmod{11}$; (c) $3^x \equiv 2 \pmod{11}$.
+
+\q $\operatorname{ord}_{17}(2) = 8$. Can any element of $\mathbb{Z}_{17}^*$ have order 6? Order 16? Which $a \in \{2, 3, 4\}$ is a primitive root?
+
+\q Compute $5^{117} \bmod 19$ with the least work, then explain what the answer says about $\operatorname{ord}_{19}(5)$.
+
+\subsection*{R. $\bigstar$ Algebraic structures and GF$(2^n)$}
+\q $\langle \mathbb{Z}_{10}^*, \times\rangle$ is cyclic. Is $\langle \mathbb{Z}_{12}^*, \times\rangle$? Justify with orders.
+
+\q Group, ring or field (and why): $\langle \mathbb{Z}_{11}, +, \times\rangle$; $\langle \mathbb{Z}_{12}, +, \times\rangle$; GF$(2^4)$; $\langle \mathbb{Z}, +, \times\rangle$; $\langle \mathbb{Z}_{9}^*, \times\rangle$.
+
+\q In GF$(2^4)$ with $x^4 + x + 1$: compute $(x^3 + x + 1)(x^2 + 1)$, and find $(x^3 + x^2)^{-1}$ and $x^{-1}$.
+
+\q $|\mathbb{Z}_{15}^*| = 8$. Can it contain an element of order 3? Order 8? Is it cyclic?
+
+\q AES arithmetic: compute $\ttx{57} \cdot \ttx{83}$ and $\ttx{57} \cdot \ttx{13}$ in GF$(2^8)$.
+
+\q $x^4 + x^2 + 1$ has no root in GF(2) (it equals 1 at both $x = 0$ and $x = 1$). Is it irreducible?
+
+\subsection*{S. $\bigstar$ Modern block ciphers, DES, AES}
+\q A 1000-byte file is encrypted with AES. How many padding bits, and how many blocks? With DES?
+
+\q Which of these can appear in a non-Feistel cipher: a $32 \times 48$ expansion P-box, a $6 \times 4$ S-box, a $64 \times 64$ straight P-box, a $4 \times 4$ S-box?
+
+\q DES S-box 1: find the outputs for \ttx{101010}, \ttx{110011}, \ttx{010101}.
+
+\q DES key schedule: how far has each half rotated in total after round 3, after round 9, after round 16? Why must the total be 28?
+
+\q One Feistel round: $L_0 = 1010$, $R_0 = 0110$, $f(R_0, K_1) = 1100$. Find $L_1, R_1$, then decrypt them back.
+
+\q Double DES has a 112-bit key. Explain why its strength is only about $2^{57}$, and what the attack needs in memory.
+
+\q AES-128 key expansion: for how many of the words $w_4..w_{43}$ is SubWord applied? How many round keys does AES-256 use?
+
+\q Compute MixColumns of the columns \ttx{[01 01 01 01]}, \ttx{[C6 C6 C6 C6]} and \ttx{[01 00 00 00]}. What does this show?
+
+\q SubBytes maps \ttx{00} to \ttx{63}, not \ttx{00}, even though $00^{-1}$ is defined as $00$. Why?
+
+\subsection*{T. $\bigstar$ RSA}
+\q $p = 13$, $q = 17$, $e = 5$: find $d$, encrypt $P = 65$, decrypt.
+
+\q $p = 7$, $q = 13$, $e = 3$. What goes wrong?
+
+\q Two users publish $n_1 = 143$ and $n_2 = 187$. Break both.
+
+\q You learn $n = 3233$ and $\phi(n) = 3120$. Find $p$, $q$ and, for $e = 17$, $d$.
+
+\q $e = 3$, $n$ is 2048 bits, Alice sends $P = 2$. Eve sees $C = 8$. What's wrong?
+
+\subsection*{U. $\bigstar$ ElGamal and ECC}
+\q ElGamal: $p = 23$, $e_1 = 5$, $d = 6$. Encrypt $P = 10$ with $r = 3$, and decrypt.
+
+\q Alice reuses $r = 3$ (same keys as above) and sends a second ciphertext $(10, 10)$. Eve knows the first plaintext was 10. Find the second plaintext.
+
+\q $E_{11}(1, 6)$: list all points, count them, and compute $2 \cdot (2, 7)$.
+
+\q Is $y^2 = x^3$ over $\mathbb{Z}_{p}$ allowed as an ECC curve? What does Hasse say about $\#E$ for $p = 101$?
+
+\q ECC-ElGamal on $E_{13}(1, 1)$: $e_1 = (1, 4)$, $d = 3$. Find $e_2$, encrypt $P = (5, 1)$ with $r = 2$, and decrypt.
+
+\subsection*{V. $\bigstar$ Message integrity}
+\q For a 128-bit digest give the work for a preimage and for a collision attack (50\%). Which number is the real security level, and why is MD5 broken while a 128-bit AES key isn't?
+
+\q A 40-bit digest: about how many messages give a 50\% chance of a collision?
+
+\q Match each to an attack and a birthday problem: (a) Eve has the stored hash of a password and wants \emph{any} matching password; (b) Eve has a signed contract and its digest and wants a different contract with the same digest; (c) Eve prepares a fair and an unfair contract, each in many reworded versions, looking for a matching pair.
+
+\q SHA-512: padding for a 3000-bit message, number of blocks, and number of words in the expanded schedule per block.
+
+\q Rabin's scheme with DES produces a 64-bit digest. Why is it insecure, and what does Davies--Meyer change?
+
+\q Compute Majority and Conditional for the nibbles $x = 1010$, $y = 1100$, $z = 0110$.
+
+\q 30 students: probability that two share a birthday (approximation and exact).
+
+% ------------------------------------------------------------------
+\clearpage
+\section{Answer Key}\label{sec:answers}
+\setcounter{qn}{0}
+\newcommand{\ans}{\refstepcounter{qn}\par\medskip\noindent\textbf{A\theqn.}\ }
+
+\subsection*{A. Security definitions and shift ciphers}
+
+\ans (a) \textbf{Yes.} The cost criterion fails (\$100 $<$ \$500), but the time criterion holds (2 h $>$ 1 h). Meeting \emph{either} criterion is enough.
+(b) \textbf{No.} Now it's cheap \emph{and} fast (30 min $<$ 1 h), so neither criterion holds.
+\emph{Trap:} thinking both conditions must hold.
+
+\ans (a) $7 + 21 = 28 \equiv \mathbf{2}$. Two shifts combine into one shift, so it is \textbf{no stronger}: still only 25 keys to try.
+(b) $29 \bmod 26 = 3$: the \textbf{Caesar cipher}.
+(c) Moving forward 16 is the same as moving back 10 ($16 \equiv -10$). The encryption key is \textbf{10}, not 16 (compare the GERMANY example).
+
+\ans \ttx{O} appears 5 times out of 22, so guess \ttx{O} $=$ e: key $= 14 - 4 = \mathbf{10}$. Shift every letter back 10:
+\textbf{``the enemy knows the system''}.
+This is \textbf{Kerckhoffs's principle} (Shannon's maxim): assume the attacker knows the algorithm; only the key is secret.
+
+\subsection*{B. Monoalphabetic}
+
+\ans Cipher line:
+\begin{center}\small\setlength{\tabcolsep}{2.4pt}
+\begin{tabular}{@{}l*{26}{c}@{}}
+Plain & a&b&c&d&e&f&g&h&i&j&k&l&m&n&o&p&q&r&s&t&u&v&w&x&y&z\\
+Cipher & S&E&C&U&R&I&T&Y&A&B&D&F&G&H&J&K&L&M&N&O&P&Q&V&W&X&\hl{Z}
+\end{tabular}
+\end{center}
+(a) \textbf{\ttx{GRROGRSOHJJH}}.
+(b) Look each letter up in the \emph{bottom} row: \textbf{``frequency analysis wins''}.
+(c) \textbf{z $\to$ Z}: it maps to itself. The keyword uses no late letters, so the end of the alphabet barely moves (w$\to$V, x$\to$W, y$\to$X, z$\to$Z). A short keyword leaves much of the alphabet in near-normal order.
+
+\ans (a) $26! - 1$. The identity permutation (a$\to$A, b$\to$B, \dots) leaves the message unchanged, just like shift key 0.
+(b) \textbf{Yes.} Every shift is one particular permutation of the alphabet; Caesar is one of the $26!$.
+(c) \textbf{No.} Frequency analysis needs a long ciphertext. In 20 letters the counts are too small to trust (the lecture's example had 120 letters).
+
+\subsection*{C. Playfair}
+
+\ans ``PLAYFAIR EXAMPLE'' without repeats is P L A Y F I R E X M; then B C D G H K N O Q S T U V W Z.
+\begin{center}\small\begin{tabular}{|*{5}{c|}}\hline P&L&A&Y&F\\\hline I&R&E&X&M\\\hline B&C&D&G&H\\\hline K&N&O&Q&S\\\hline T&U&V&W&Z\\\hline\end{tabular}\end{center}
+Digrams: \ttx{hi de th eg ol di nt he tr \underline{ex} es tu mp}.
+\emph{Trap:} in ``tree'', \ttx{t r e e} gives \ttx{tr} then \ttx{ee}, a double in one pair, so it becomes \ttx{ex} and the second \ttx{e} moves on (\ttx{es}).\\
+Answer: \textbf{\ttx{BMODZBXDNABEKUDMUIXMMOUVIF}}\;
+(\ttx{ex}$\to$\ttx{XM} and \ttx{tu}$\to$\ttx{UV} are row cases; \ttx{de}$\to$\ttx{OD} is a column case; the rest are rectangles.)
+
+\ans \ttx{c o m m i t t e e} $\to$ \ttx{co}, \ttx{mm}$\to$\ttx{mx}, then \ttx{mi}, \ttx{tt}$\to$\ttx{tx}, then \ttx{te}, then \ttx{e} alone $\to$ \ttx{ex}.
+Digrams: \textbf{\ttx{co mx mi tx te ex}}.
+\emph{Trap:} \ttx{ee} does \emph{not} get a filler: after re-pairing, the two e's are in different pairs.
+All six are rectangles: \textbf{\ttx{HM AU AE SZ LK IU}} $\Rightarrow$ \textbf{\ttx{HMAUAESZLKIU}}.
+
+\ans Matrix, then decrypt (row $\to$ left, column $\to$ up, rectangle as usual):
+\begin{center}\small\begin{tabular}{|*{5}{c|}}\hline N&E&T&W&O\\\hline R&K&A&B&C\\\hline D&F&G&H&I\\\hline L&M&P&Q&S\\\hline U&V&X&Y&Z\\\hline\end{tabular}\end{center}
+\ttx{GC}$\to$\ttx{ia},\; \ttx{UY}$\to$\ttx{zx},\; \ttx{OS}$\to$\ttx{zi},\; \ttx{OD}$\to$\ttx{ni},\; \ttx{NU}$\to$\ttx{ul},\; \ttx{ZY}$\to$\ttx{yx}\;
+$\Rightarrow$ \ttx{iazxziniulyx}.\\
+Remove the fillers (\ttx{zx z} was a split \ttx{zz}; the final \ttx{x} is padding): \ttx{iazzinjuly}. Decide i/j from context: \textbf{``jazz in july''}.
+
+\ans (a) \textbf{\ttx{YX}}, always. In every rule, each letter's replacement depends only on its own cell and the other letter's cell, not on the order. (Lecture: \ttx{at}$\to$\ttx{RS}, \ttx{ta}$\to$\ttx{SR}; also \ttx{mo}$\to$\ttx{ON}, \ttx{om}$\to$\ttx{NO}.)
+(b) \textbf{Never.} Right neighbour, cell below and other-column corner are all different cells.
+(c) \textbf{No, for two reasons.} Plaintext pairs never contain two equal letters, and two different cells always map to two different cells, so a ciphertext pair is never doubled. And J never appears in Playfair ciphertext (the shared cell is written I).
+
+\subsection*{D. Hill}
+
+\ans Valid $\iff \gcd(\det K, 26) = 1$, i.e.\ det (mod 26) is odd and not 13.
+\begin{center}\small
+\begin{tabular}{@{}lllll@{}}
+\toprule
+& $\det$ & mod 26 & Valid? & Why\\
+\midrule
+$K_1$ & $8-3=5$ & 5 & \textbf{yes} & odd, not 13\\
+$K_2$ & $4-6=-2$ & 24 & \textbf{no} & even (shares factor 2)\\
+$K_3$ & $13-2=11$ & 11 & \textbf{yes} & an entry of 13 is fine; only the det matters\\
+$K_4$ & $25-12=13$ & 13 & \textbf{no} & shares factor 13\\
+$K_5$ & $1-12=-11$ & 15 & \textbf{yes} & negative is fine: $-11+26=15$\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\ans (a) \ttx{he} $=(7,4)$: $(7\cdot3+4\cdot2,\;7\cdot3+4\cdot5) = (29, 41) \equiv (3, 15) = $ \ttx{DP}.
+\ttx{lp} $=(11,15)$: $(33+30,\;33+75) = (63, 108) \equiv (11, 4) = $ \ttx{LE}. Answer: \textbf{\ttx{DPLE}}.\\
+(b) $C = KP$ with column vectors: $(3\cdot7+3\cdot4,\;2\cdot7+5\cdot4) = (33,34) \equiv (7,8) = $ \ttx{HI}; $(3\cdot11+3\cdot15,\;2\cdot11+5\cdot15) = (78, 97) \equiv (0,19) = $ \ttx{AT}. Answer: \textbf{\ttx{HIAT}}.\\
+(c) $KP$ with $K$ is the same as $PK$ with the \textbf{transpose} $K^T$. Same key numbers, different matrix, so a different cipher. Always state the convention.
+
+\ans (a) $\det K = 15 - 136 = -121 \equiv -121 + 130 = 9$, and $9^{-1} \equiv 3$ (since $27 = 26 + 1$).
+For $2\times2$ there is a shortcut: swap the diagonal, negate the other two.
+\[
+\operatorname{adj}\begin{pmatrix}a&b\\c&d\end{pmatrix} = \begin{pmatrix}d&-b\\-c&a\end{pmatrix}
+\quad\Rightarrow\quad
+\operatorname{adj}K = \begin{pmatrix}3&-8\\-17&5\end{pmatrix} \equiv \begin{pmatrix}3&18\\9&5\end{pmatrix}
+\]
+\[
+K^{-1} = 3\begin{pmatrix}3&18\\9&5\end{pmatrix} = \begin{pmatrix}9&54\\27&15\end{pmatrix} \equiv \boxed{\begin{pmatrix}9&2\\1&15\end{pmatrix}}
+\qquad\text{Check: } KK^{-1} = \begin{pmatrix}53&130\\156&79\end{pmatrix} \equiv I \;\checkmark
+\]
+(b) \ttx{EG} $=(4,6)$: $(4\cdot9+6\cdot1,\;4\cdot2+6\cdot15) = (42, 98) \equiv (16, 20) = $ \ttx{qu}.
+\ttx{XJ} $=(23,9)$: $(207+9,\;46+135) = (216, 181) \equiv (8, 25) = $ \ttx{iz}. Answer: \textbf{quiz}.
+
+\ans Stack the blocks as rows: $P = \begin{pmatrix}7&4\\11&15\end{pmatrix}$ (\ttx{he}, \ttx{lp}), $C = \begin{pmatrix}15&16\\4&23\end{pmatrix}$ (\ttx{PQ}, \ttx{EX}).
+Since $C = PK$, we get $K = P^{-1}C$.\\
+$\det P = 105 - 44 = 61 \equiv 9$, and $9^{-1} = 3$. So $P^{-1} = 3\begin{pmatrix}15&-4\\-11&7\end{pmatrix} \equiv \begin{pmatrix}19&14\\19&21\end{pmatrix}$.\\
+$K = \begin{pmatrix}19&14\\19&21\end{pmatrix}\begin{pmatrix}15&16\\4&23\end{pmatrix} = \begin{pmatrix}341&626\\369&787\end{pmatrix} \equiv \boxed{\begin{pmatrix}3&2\\5&7\end{pmatrix}}$.\\
+To decrypt: $\det K = 11$, $11^{-1} = 19$ ($209 = 8\cdot26+1$), $K^{-1} = 19\begin{pmatrix}7&-2\\-5&3\end{pmatrix} \equiv \begin{pmatrix}3&14\\9&5\end{pmatrix}$.
+\ttx{CK} $=(2,10) \to (96, 78) \equiv (18, 0) = $ \ttx{sa}; \ttx{JM} $=(9,12) \to (135, 186) \equiv (5, 4) = $ \ttx{fe}. Answer: \textbf{safe}.\\
+\emph{Lesson:} Hill is linear, so a few known plaintext--ciphertext pairs reveal the whole key. This only works when $P$ is invertible (here $\det P = 9$).
+
+\subsection*{E. Polyalphabetic}
+
+\ans $P = (C - K) \bmod 26$ with key \ttx{NESONESO\dots}. The first letters, with the negatives fixed:
+\begin{center}\small\setlength{\tabcolsep}{4pt}
+\begin{tabular}{@{}l*{8}{c}@{}}
+\toprule
+$C$ & S 18 & V 21 & W 22 & E 4 & H 7 & I 8 & F 5 & Q 16\\
+$K$ & N 13 & E 4 & S 18 & O 14 & N 13 & E 4 & S 18 & O 14\\
+$C-K$ & 5 & 17 & 4 & \hl{$-10$} & \hl{$-6$} & 4 & \hl{$-13$} & 2\\
+mod 26 & 5 f & 17 r & 4 e & 16 q & 20 u & 4 e & 13 n & 2 c\\
+\bottomrule
+\end{tabular}
+\end{center}
+Answer: \textbf{``frequency analysis fails here''}.
+
+\ans (a) \ttx{AAAA}: shift 0 everywhere, so \textbf{nothing is encrypted}. \ttx{DDDD}: shift 3 everywhere, which is just the \textbf{Caesar cipher}. A key whose letters are all equal is a shift cipher.
+(b) The distances are $34-10=24$ and $70-34=36$ (and $60$). Repeats happen when the same plaintext meets the same part of the key, so the distances are multiples of the key length. The key length divides $\gcd(24,36) = 12$: it is \textbf{1, 2, 3, 4, 6 or 12}, most likely 6 or 12. (This is the Kasiski idea mentioned in the notes.)
+(c) Split the ciphertext into 5 groups: letters 1, 6, 11, \dots; 2, 7, 12, \dots; and so on. Each group was shifted by \textbf{one} key letter, so it is a \textbf{Caesar cipher}. Break each with frequency analysis (its most common letter is probably e).
+
+\ans (a) Key stream \ttx{KEY} + \ttx{meetatn} $=$ \ttx{keymeetatn}. Ciphertext: \textbf{\ttx{WICFEXGOHA}}.
+(b) Vigen\`ere: \ttx{WICDERXSMX}. They agree on \ttx{WIC} (both use the keyword \ttx{KEY}) and \textbf{differ from letter 4}: Vigen\`ere repeats \ttx{KEY}, while autokey switches to the plaintext \ttx{m, e, e, \dots}
+(c) From letter 4 on, the key \emph{is} the plaintext. The receiver learns each key letter only by decrypting an earlier letter first.
+
+\subsection*{F. Vernam and one-time pad}
+
+\ans (a) $C = \ttx{11011001}$.
+(b) $C \oplus P = \ttx{01101010} = K$, because $P \oplus K \oplus P = K$. Knowing a plaintext and its ciphertext reveals the key.
+(c) That key is used for \textbf{one message only} and then destroyed. Knowing it tells you nothing about any other message.
+
+\ans $K = C_1 - P_1$: J$-$m $= 9-12 = -3 \to 23 = $ x, U$-$e $= 20-4 = 16 = $ q, \dots\ $\Rightarrow K = $ \textbf{\ttx{xqrbzlkvsa}}.
+$P_2 = C_2 - K$: Y$-$x $= 24-23 = 1 = $ b, H$-$q $= 7-16 = -9 \to 17 = $ r, \dots\ $\Rightarrow$ \textbf{``bring money''}.
+\emph{Lesson:} reusing a pad key is fatal. One known message reveals the other.
+
+\ans (a) $K = C - P$. For ``hello'': \textbf{\ttx{qirzx}}. For ``later'': \textbf{\ttx{mmjgu}}.
+(b) Every 5-letter message is possible with some key, so the ciphertext reveals nothing. This is \textbf{perfect secrecy}, and it is why brute force is useless against an OTP.
+
+\ans (a) \textbf{No}: key reuse (see A18).
+(b) \textbf{Yes}: that \emph{is} a one-time pad; Vigen\`ere's formula with a perfect key.
+(c) \textbf{No}: the key repeats 10 times.
+(d) \textbf{No}: only $2^{128}$ possible key streams, so it is at best computationally secure (a stream cipher).
+(e) \textbf{Yes}: a random shift used once on one letter is a one-time pad of length 1. Every plaintext letter is equally likely. \emph{Trap:} ``Caesar is weak'' is only true when the key is reused across many letters.
+
+\subsection*{G. Transposition}
+
+\ans 25 letters; the zig-zag repeats every $2(3-1) = 4$ letters. Row 1 holds positions 1, 5, 9, \dots, 25 (7 letters); row 3 holds 3, 7, \dots, 23 (6 letters); row 2 the rest (12).
+Cut: \ttx{WECRLTE | ERDSOEEFEAOC | AIVDEN}, then read along the zig-zag: \textbf{``we are discovered flee at once''}.
+
+\ans 20 letters, 4 columns $\Rightarrow$ 5 rows, 5 letters per column.
+\emph{Trap:} key \textbf{3 1 4 2} means column 1 is read \emph{third}, column 2 \emph{first}, column 3 \emph{fourth}, column 4 \emph{second}. So the read order is col 2, col 4, col 1, col 3:
+col 2 $=$ \ttx{EEEET}, col 4 $=$ \ttx{TFTAX}, col 1 $=$ \ttx{MMTHR}, col 3 $=$ \ttx{EARPY}.
+\begin{center}\small
+\begin{tabular}{|cccc|}
+\hline m&e&e&t\\ m&e&a&f\\ t&e&r&t\\ h&e&p&a\\ r&t&y&\textit{x}\\ \hline
+\end{tabular}
+\quad Read rows: \textbf{``meet me after the party''} (+ filler x).
+\end{center}
+(Notice the ciphertext starts \ttx{EEEE}: transposition keeps letters, so the e's stay visible.)
+
+\ans (a) \textbf{Transposition}: it moves letters but never changes them, so the frequencies stay English.
+(b) Write the text row by row into a rectangle with \textbf{2 columns} (letters 1, 2 on row 1; 3, 4 on row 2; \dots), then read column 1, then column 2 (key \textbf{1 2}). Column 1 holds the odd-position letters, which is exactly rail fence row 1. For ``neso academy is the best'' both give \ttx{NSAAEYSHBSEOCDMITEET}.
+(c) Both orders give \textbf{\ttx{UWHWRHUDQZ}}. Caesar changes each letter whatever its position; transposition moves positions whatever the letter. So they commute, and the order doesn't matter.
+
+\subsection*{H. Steganography, key counting, primes}
+
+\ans First letters: \textbf{D}on't \textbf{w}ait, \textbf{w}e'll \textbf{d}iscuss \textbf{f}ood \textbf{n}ow $\Rightarrow$ \ttx{DWWDFN}. That isn't a word, so undo Caesar (shift back 3): \textbf{ATTACK}.
+The sender \textbf{encrypted first, then hid} the ciphertext. Even someone who spots the hidden letters only gets ciphertext.
+
+\ans (a) Bits \ttx{10 | 11 | 01}:
+R $200 = \ttx{110010\textbf{00}} \to \ttx{110010\textbf{10}} = 202$;
+G $13 = \ttx{000011\textbf{01}} \to \ttx{000011\textbf{11}} = 15$;
+B $87 = \ttx{010101\textbf{11}} \to \ttx{010101\textbf{01}} = 85$.
+New pixel: $\mathbf{(202, 15, 85)}$.
+(b) \textbf{3}: the last two bits can go from \ttx{00} to \ttx{11} ($0 \to 3$) or back. \emph{Trap:} answering 2 because ``2 bits''.
+(c) $1024 \cdot 768 \cdot 6 = 4{,}718{,}592$ bits $= \mathbf{589{,}824}$ \textbf{bytes} (576 KB).
+(d) JPEG is \textbf{lossy}: compression changes pixel values slightly, which destroys the LSBs. Use a lossless format like PNG (as OpenStego did).
+
+\ans (a) $\frac{100 \cdot 99}{2} = \mathbf{4950}$.
+(b) The newcomer needs a key with each of the 100 existing people: \textbf{100} new keys. (Check: $\frac{101 \cdot 100}{2} - 4950 = 5050 - 4950 = 100$.)
+(c) One key pair each: \textbf{101 pairs = 202 keys}. It grows linearly instead of roughly $N^2/2$.
+
+\ans Keyword L E T T E R $\to$ E(col 2) $=1$, E(col 5) $=2$, L $=3$, R $=4$, T(col 3) $=5$, T(col 4) $=6$. Key: \textbf{3 1 5 6 2 4}.
+30 letters, 6 columns $\Rightarrow$ 5 letters per column. Cut the ciphertext into fives and put them back in read order (col 2, 5, 1, 6, 3, 4):
+col 2 $=$ \ttx{TOELX}, col 5 $=$ \ttx{CPNOX}, col 1 $=$ \ttx{APNIM}, col 6 $=$ \ttx{KOTAX}, col 3 $=$ \ttx{TSDTX}, col 4 $=$ \ttx{ATUWX}.
+\begin{center}\small
+\begin{tabular}{|cccccc|}\hline a&t&t&a&c&k\\ p&o&s&t&p&o\\ n&e&d&u&n&t\\ i&l&t&w&o&a\\ m&\textit{x}&\textit{x}&\textit{x}&\textit{x}&\textit{x}\\\hline\end{tabular}
+\quad Rows: \textbf{``attack postponed until two am''}
+\end{center}
+
+\ans (a) $-19 = (-7)\cdot 3 + \mathbf{2}$, so the answer is \textbf{2}. \emph{Trap:} not $-1$; the remainder must be in $0, 1, 2$.
+(b) $3 = 0 \cdot 19 + 3$, so the answer is \textbf{3}. A smaller number mod a bigger one is itself.
+(c) $2^{10} = 1024 = 93 \cdot 11 + 1$, so the answer is \textbf{1}. Here 11 is prime and the exponent is $11 - 1$, which previews \textbf{Fermat's theorem}: $a^{p-1} \equiv 1 \pmod p$.
+
+\ans (a) 1: \textbf{neither} (only one divisor). 2: \textbf{prime}. $51 = 3 \cdot 17$: composite. $91 = 7 \cdot 13$: composite. 97: \textbf{prime}. $221 = 13 \cdot 17$: composite.
+\emph{Traps:} 51, 91 and 221 all end in 1 and ``look'' prime.
+(b) Up to $\sqrt{221} \approx 14.9$, so the primes \textbf{2, 3, 5, 7, 11, 13}. If $n = ab$ with both $a, b > \sqrt n$, then $ab > n$, which is impossible, so one factor must be $\le \sqrt n$. Here 13 works: $221 = 13 \cdot 17$.
+(c) Primes can't be factored. The hard problem is \textbf{factoring the product} $n = p \cdot q$ of two large primes.
+
+\ans (a) A divisor of $p^a q^b \cdots$ picks each exponent from $0$ to $a$, $0$ to $b$, \dots, so the count is $(a+1)(b+1)\cdots$
+Check: $100 = 2^2 5^2 \to 3 \cdot 3 = 9$ \checkmark. \;$5040 \to (4+1)(2+1)(1+1)(1+1) = \mathbf{60}$.
+(b) Exactly 3 divisors means $(a+1)\cdots = 3$, so the number is $p^2$ for a prime $p$: \textbf{4, 9, 25, 49, \dots} (e.g.\ 9 has 1, 3, 9, as in the lecture).
+
+\subsection*{I. Modular arithmetic}
+
+\ans Test whether $m \mid (a - b)$:
+(a) $60 = 5\cdot12$: \textbf{valid}. (b) $-20 = -4\cdot5$: \textbf{valid}. (c) $99 = 11\cdot9$: \textbf{valid}.
+(d) $-14 = -2\cdot7$: \textbf{valid}. \emph{Trap:} $-7$ and $7$ look ``opposite'', but both are $\equiv 0 \pmod 7$.
+(e) $28$ is not a multiple of 6: \textbf{invalid}. (f) $-26 = -2\cdot13$: \textbf{valid}.
+(g) \textbf{False}. The $\bmod$ operator gives the least remainder: $38 \bmod 12 = 2$. (The congruence $38 \equiv 14 \pmod{12}$ is true, but that's a different statement.)
+
+\ans (a) A number is $\equiv$ its digit sum $\pmod 9$: $1234 \equiv 1+2+3+4 = 10 \equiv 1$, and $5678 \equiv 26 \equiv 8$. So the product $\equiv 1 \cdot 8 = \mathbf{8}$.
+(b) $7^2 = 49 \equiv 9$, $7^4 \equiv 81 \equiv 1$, so $7^{100} = (7^4)^{25} \equiv \mathbf{1}$.
+(c) $2^3 = 8 \equiv 1 \pmod 7$, so $2^{50} = (2^3)^{16}\cdot 2^2 \equiv 1 \cdot 4 = \mathbf{4}$.
+(d) $-123 = -13\cdot10 + 7$, so the answer is $\mathbf{7}$. \emph{Trap:} not $-3$.
+
+\ans (a) $-3 \equiv \mathbf{7}$, $-0 = \mathbf{0}$, $-5 \equiv \mathbf{5}$ (5 is its own additive inverse: $5 + 5 = 10 \equiv 0$).
+(b) $3^{-1} = \mathbf{7}$ ($21 \equiv 1$), $7^{-1} = \mathbf{3}$, $9^{-1} = \mathbf{9}$ ($81 \equiv 1$), and \textbf{5 and 4 have none} ($\gcd(5,10) = 5$, $\gcd(4,10) = 2$).
+(c) $4x$ is always even, and reducing an even number mod 10 (also even) leaves it even. It can never equal 1.
+
+\ans (a) \emph{Trap:} ``divide by 4, so $x = 2$'' finds only one answer. You can't divide, because $\gcd(4,12) = 4$. Check every $x$: $4x \bmod 12$ is $8$ for $x = \mathbf{2, 5, 8, 11}$ (8, 20, 32, 44). Four solutions.
+(b) $3x \bmod 12$ is always one of $0, 3, 6, 9$. \textbf{No solution.}
+(c) $\gcd(5,12) = 1$, so $5^{-1}$ exists: $5\cdot5 = 25 \equiv 1$, so $5^{-1} = 5$. Then $x \equiv 5 \cdot 3 = 15 \equiv \mathbf{3}$. Exactly one solution (check: $15 \equiv 3$ \checkmark).
+\emph{Rule:} $ax \equiv b \pmod n$ has exactly one solution when $\gcd(a,n) = 1$. Otherwise it has none or several.
+
+\ans (a) $(9 + 100) \bmod 12 = 109 \bmod 12 = 1$: \textbf{1 o'clock}.
+(b) $(3 - 50) \bmod 12 = -47 \bmod 12 = -47 + 48 = 1$: \textbf{1 o'clock}.
+(c) $C - k \equiv C + (-k) \equiv C + (26 - k) \pmod{26}$, because $26 - k$ is the additive inverse of $k$. So decrypting shift $k$ is encrypting with $26 - k$. For Caesar ($k = 3$) that's \textbf{23}.
+
+\ans 19 letters; the pattern repeats every $2(4-1) = 6$: rows 1 2 3 4 3 2 $|$ 1 2 3 4 3 2 $|$ 1 2 3 4 3 2 $|$ 1.
+Counts: row 1 = 4 (positions 1, 7, 13, 19), row 2 = 6, row 3 = 6, row 4 = 3 (positions 4, 10, 16).
+Cut: \ttx{TIRT | HYSETA | EEUDHM | KNE}. Put the pieces back and read positions 1--19: \textbf{``the key is under the mat''}.
+\emph{Trap:} splitting 19 into roughly equal rows gives nonsense. The end rows (1 and 4) come up only once per cycle, the middle rows twice.
+
+\subsection*{J. Modular exponentiation}
+
+\ans $23 = 16 + 4 + 2 + 1$ (binary \ttx{10111}). Table mod 187:
+$11^1 = 11$; \;$11^2 = 121$; \;$11^4 = 121^2 = 14641 = 78\cdot187 + 55 \to 55$; \;$11^8 = 55^2 = 3025 \to 33$; \;$11^{16} = 33^2 = 1089 \to 154 \equiv -33$.
+Multiply, reducing each time: $(-33)(55) = -1815 \equiv 55$; \;$55 \cdot 121 = 6655 \equiv 110$; \;$110 \cdot 11 = 1210 \equiv \mathbf{88}$.
+It \textbf{undoes} the lecture's example: $88^7 \equiv 11$ and $11^{23} \equiv 88 \pmod{187}$. That's RSA with $n = 187$, $e = 7$, $d = 23$: encrypting 88 gives 11, and decrypting 11 gives 88 back.
+
+\ans Last 3 digits means mod 1000. $175^2 = 30625 \to \mathbf{625}$, and $625^2 = 390625 \to \mathbf{625}$ again! So $175^{2^k} \equiv 625$ for every $k \ge 1$.
+$209 = 128 + 64 + 16 + 1$, so $175^{209} \equiv 625 \cdot 625 \cdot 625 \cdot 175 \equiv 625 \cdot 175 = 109375 \to \mathbf{375}$.
+\emph{Trick:} spotting that $625^2 \equiv 625$ saves all the work.
+
+\ans Repeated squaring: $2^2 = 4$, $2^4 = 16$, $2^8 = 256 \equiv 16$, $2^{16} \equiv 16$, $2^{32} \equiv 16$. With $33 = 32 + 1$: $16 \cdot 2 = 32 \equiv \mathbf{2}$.
+Cycle: $2, 4, 8, 16, 32 \equiv 2, 4, \dots$ repeats every 4 from $2^1$. Since $33 = 1 + 8\cdot4$, $2^{33} \equiv 2^1 = \mathbf{2}$.
+(Fermat can't be used: 30 isn't prime.)
+
+\ans (a) $7^2 = 49$, $7^4 = 2401 \equiv \mathbf{1} \pmod{100}$. So $7^{222} = (7^4)^{55}\cdot 7^2 \equiv 49$: the last two digits are \textbf{49}.
+(b) The last digit is the last of those two: \textbf{9}. (Directly: $7^4 \equiv 1 \pmod{10}$ too, so $7^{222} \equiv 7^2 = 49 \equiv 9$.)
+
+\ans (a) You may reduce the \textbf{base} mod 19, but \textbf{not the exponent}. The exponent counts how many times you multiply; it isn't a residue mod 19. (For prime $p$, Fermat lets you reduce the exponent mod $p - 1$, not mod $p$.)
+(b) $117 = 64 + 32 + 16 + 4 + 1$. Mod 19: $5^1 = 5$, $5^2 = 25 \to 6$, $5^4 = 36 \to 17$, $5^8 = 289 \to 4$, $5^{16} = 16$, $5^{32} = 256 \to 9$, $5^{64} = 81 \to 5$.
+Product: $5 \cdot 9 \cdot 16 \cdot 17 \cdot 5$: $45 \to 7$; $7\cdot16 = 112 \to 17$; $17\cdot17 = 289 \to 4$; $4 \cdot 5 = 20 \to \mathbf{1}$. The student's 11 is wrong.
+(Shortcut: $5^9 \equiv 1 \pmod{19}$, and $117 = 13 \cdot 9$.)
+
+\ans (a) $100 \equiv -1 \pmod{101}$ and 101 is odd: $(-1)^{101} = -1 \equiv \mathbf{100}$.
+(b) 100 is even: $(-1)^{100} = \mathbf{1}$.
+(c) $99 \equiv -1 \pmod{100}$ and 99 is odd: $-1 \equiv \mathbf{99}$.
+(d) $a^{100}$: 6 squarings (up to $a^{64}$) + 2 multiplications ($a^{64}\cdot a^{32}\cdot a^4$) $=$ \textbf{8}, versus \textbf{99} naively.
+$a^{1024} = a^{2^{10}}$: just \textbf{10} squarings, versus 1023.
+
+\subsection*{K. GCD and the Euclidean algorithm}
+
+\ans Table for $\gcd(1005, 105)$:
+\begin{center}\small
+\begin{tabular}{cccc}
+\toprule Q&A&B&R\\\midrule 9&1005&105&60\\ 1&105&60&45\\ 1&60&45&15\\ 3&45&15&0\\ X&\textbf{15}&0&X\\\bottomrule
+\end{tabular}
+\qquad
+\begin{minipage}{0.5\textwidth}
+$\gcd(529, 123) = \gcd(123, 37)$ \;($529 = 4\cdot123 + 37$)\\
+$= \gcd(37, 12)$ \;($123 = 3\cdot37 + 12$)\\
+$= \gcd(12, 1)$ \;($37 = 3\cdot12 + 1$)\\
+$= \gcd(1, 0) = \mathbf{1}$ \;($12 = 12\cdot1 + 0$)
+\end{minipage}
+\end{center}
+$\gcd(1005, 105) = \mathbf{15}$. And $\gcd(529, 123) = 1$, so they \textbf{are} relatively prime, \emph{but neither is prime}: $529 = 23^2$ and $123 = 3\cdot41$. (Trap: coprime doesn't mean prime.)
+
+\ans (a) \textbf{False}: $\gcd(8, 9) = 1$, and neither is prime.
+(b) \textbf{False}: both are divisible by 2, so their GCD is at least 2.
+(c) \textbf{True}: any common divisor of $n$ and $n+1$ divides their difference, which is 1.
+(d) \textbf{True}: any common divisor of $a$ and $b$ divides $a + b$; any common divisor of $a$ and $a + b$ divides $(a + b) - a = b$. Same common divisors, same GCD.
+(e) \textbf{True} (same answer, different place to read it). When $R = 0$, the $B$ in that row is the last non-zero remainder, which moves into $A$ in the next row anyway. Just don't read column $A$ of the $R = 0$ row, which is the lecture's warning.
+
+\ans (a) $89 = 1\cdot55 + 34$, $55 = 1\cdot34 + 21$, $34 = 1\cdot21 + 13$, $21 = 1\cdot13 + 8$, $13 = 1\cdot8 + 5$, $8 = 1\cdot5 + 3$, $5 = 1\cdot3 + 2$, $3 = 1\cdot2 + 1$, $2 = 2\cdot1 + 0$.
+$\gcd = \mathbf{1}$, after \textbf{9 divisions}.
+(b) These are consecutive \textbf{Fibonacci numbers} (each is the sum of the two before it). Every quotient is 1, so the numbers shrink as slowly as possible. This is the worst case for Euclid, and even that is only about 5 steps per decimal digit.
+
+\ans (a) Exactly the numbers coprime to 26 $= 2\cdot13$, i.e.\ the \textbf{odd numbers except 13}: 1, 3, 5, 7, 9, 11, 15, 17, 19, 21, 23, 25. That's \textbf{12 values}.
+(b) $\gcd(26, 13)$: $26 = 2\cdot13 + 0 \Rightarrow \gcd = 13 \ne 1$ (invalid).
+$\gcd(26, 15)$: $26 = 1\cdot15 + 11$, $15 = 1\cdot11 + 4$, $11 = 2\cdot4 + 3$, $4 = 1\cdot3 + 1$, $3 = 3\cdot1 + 0 \Rightarrow \gcd = 1$ (valid).
+
+\ans (a) $\gcd(17, 0) = \mathbf{17}$: every number divides 0.
+(b) $\mathbf{17}$. (c) $\mathbf{1}$: 1 is coprime to everything.
+(d) Row 1: $105 = \mathbf{0}\cdot1005 + 105$, so $Q = 0$ and $R = 105$. The shift then gives $A = 1005$, $B = 105$: the numbers swap themselves. They still get \textbf{15}, just one row later.
+
+\subsection*{L. Relatively prime numbers and Euler's totient}
+
+\ans (a) $790 = 6\cdot121 + 64$; $121 = 1\cdot64 + 57$; $64 = 1\cdot57 + 7$; $57 = 8\cdot7 + 1$; $7 = 7\cdot1 + 0$. So $\gcd = 1$: \textbf{relatively prime}, though both are composite ($790 = 2\cdot5\cdot79$, $121 = 11^2$).
+(b) $369 = 3^2\cdot41$: $\;369\cdot\frac23\cdot\frac{40}{41} = \mathbf{240}$. \quad $372 = 2^2\cdot3\cdot31$: $\;372\cdot\frac12\cdot\frac23\cdot\frac{30}{31} = \mathbf{120}$.
+
+\ans (a) $(p-1)(q-1)$ needs \textbf{distinct} primes. Correct: $25(1 - \frac15) = \mathbf{20}$.
+(b) The exponents must \textbf{not} appear. Their version gives $1000\cdot\frac18\cdot\frac{64}{125} = 64$. Correct: $1000\cdot\frac12\cdot\frac45 = \mathbf{400}$.
+(c) Multiplying only works when the factors are \textbf{co-prime}, and $\gcd(2, 6) = 2$. Correct: $12 = 4\cdot3$, so $\Phi(4)\Phi(3) = 2\cdot2 = \mathbf{4}$ (the numbers 1, 5, 7, 11).
+$\Phi(27) = 27 - 9 = \mathbf{18}$; \;$\Phi(1024) = \Phi(2^{10}) = 1024 - 512 = \mathbf{512}$; \;$\Phi(97) = \mathbf{96}$ (97 is prime).
+
+\ans (a) $\frac{k}{36}$ is in lowest terms exactly when $\gcd(k, 36) = 1$. That's $\Phi(36) = 36\cdot\frac12\cdot\frac23 = \mathbf{12}$.
+(b) ``Divisible by neither 2 nor 5'' means co-prime to $10$, and also to $1000 = 2^3 5^3$. 1000 itself doesn't qualify, so the count is $\Phi(1000) = \mathbf{400}$.
+(c) $k$ needs an inverse mod 26 (to decrypt), so $\gcd(k, 26) = 1$: $\Phi(26) = 26\cdot\frac12\cdot\frac{12}{13} = \mathbf{12}$.
+
+\ans (a) A prime $p \mid n$ needs $(p - 1) \mid 4$, so $p \in \{2, 3, 5\}$. Also $p^2 \mid n$ would put $p$ into $\Phi(n)$, so 3 and 5 can appear at most once.
+Checking $n = 2^a 3^b 5^c$ gives exactly $\mathbf{n = 5, 8, 10, 12}$ (e.g.\ $\Phi(10) = 1\cdot4$, $\Phi(12) = 2\cdot2$).
+\emph{Trap:} assuming $\Phi(n) = 4$ has one answer. $\Phi$ is not one-to-one.
+(b) If an odd prime $p \mid n$, then $(p - 1)$, which is even, divides $\Phi(n)$. Otherwise $n = 2^a$ with $a \ge 2$, and $\Phi = 2^{a-1}$ is even.
+(Another way: $k$ and $n - k$ are both co-prime to $n$ or both not, so the co-prime numbers come in pairs. They can only coincide when $k = n/2$, but $\gcd(n/2, n) = n/2 > 1$ for $n \ge 3$.)
+
+\ans The factor 7 in $14 = 2\cdot7$ must come from somewhere. A factor of $\Phi(n)$ comes either from $q - 1$ for a prime $q \mid n$, or from $p$ itself when $p^2 \mid n$.
+\begin{itemize}
+  \item $q - 1$ a multiple of 7 that divides 14: $q - 1 \in \{7, 14\}$, so $q \in \{8, 15\}$. Neither is prime.
+  \item $7^2 \mid n$: then $\Phi(49) = 42$ divides $\Phi(n)$, and $42 > 14$. Impossible.
+\end{itemize}
+So $\Phi(n) = 14$ has \textbf{no solution} (a script check of all $n$ up to 500 agrees).
+
+\ans (a) $\Phi(187) = 10\cdot16 = \mathbf{160}$.
+(b) $7\cdot23 = 161 = 160 + 1 \equiv \mathbf{1} \pmod{160}$ \checkmark. That's why $88^7 \to 11$ and $11^{23} \to 88$ undo each other.
+(c) $n - \Phi(n) + 1 = pq - (p-1)(q-1) + 1 = p + q$, so $p + q = 187 - 160 + 1 = 28$ and $pq = 187$.
+Then $p, q$ are the roots of $x^2 - 28x + 187 = 0$: $x = \frac{28 \pm \sqrt{784 - 748}}{2} = \frac{28 \pm 6}{2} = \mathbf{17, 11}$.
+(d) Knowing $\Phi(n)$ is as good as knowing the factors. It must stay as secret as $p$ and $q$; otherwise $d$ can be computed immediately.
+
+\subsection*{M. Challenge set}
+
+\ans (a) $\gcd(13, 26) = 13$, so there's no inverse and decryption is impossible. Collision: $13 \cdot 0 = 0$ and $13 \cdot 2 = 26 \equiv 0$, so \textbf{a and c both encrypt to A}. (In fact every even letter goes to A, and every odd one to N.)
+(b) \textbf{a} ($k\cdot0 = 0$) and \textbf{n}: $13k \bmod 26 = 13$ for every odd $k$, and every valid $k$ is odd.
+(c) $k$ has $\Phi(26) = 12$ choices and $b$ has 26, so $12 \cdot 26 = \mathbf{312}$ keys (311 if you exclude the identity $k = 1, b = 0$). Still easy to brute-force.
+
+\ans Eve learns the answer is \textbf{YES}: it's the only 3-letter option. Perfect secrecy says the ciphertext reveals nothing \emph{among messages of the same length}. The OTP hides content, \textbf{not length}.
+Fix: \textbf{pad} every message to the same length (e.g.\ send ``NOX'' or use fixed-length codes).
+
+\ans (a) Adding the keys position by position: the shifts repeat every $\operatorname{lcm}(2, 3) = 6$ letters.
+Combined key $=$ (A$+$B, B$+$C, A$+$D, B$+$B, A$+$C, B$+$D) $=$ \textbf{\ttx{BDDCCE}}. Check: ``hello'' gives \ttx{IHONQ} either way.
+(b) $\operatorname{lcm}(4, 6) = \mathbf{12}$. \emph{Trap:} not $4 + 6$ or $4 \times 6$.
+(c) Only a little. It is still a Vigen\`ere cipher (with period 12), and the same key-length attack breaks it.
+
+\ans $K = C - P$, letter by letter: \ttx{cryptcryptcryptc}. The key is \textbf{CRYPT}, length \textbf{5}.
+(One known plaintext is enough to break Vigen\`ere completely.)
+
+\ans (a) Exponents stack \textbf{from the top}: $3^{(3^3)} = 3^{27}$. Powers of 3 mod 10 cycle 3, 9, 7, 1 (period 4), and $27 = 6\cdot4 + 3$, so the answer is $\mathbf{7}$.
+(b) $(3^3)^3 = 27^3 \equiv 7^3 = 343$, so the answer is $\mathbf{3}$ (it equals $3^9$, and $9 \equiv 1 \pmod 4$ gives 3).
+\emph{Trap:} $a^{b^c}$ means $a^{(b^c)}$, not $(a^b)^c = a^{bc}$.
+
+\ans (a) $10 \equiv -1 \pmod{11}$, so $10^{101} + 1 \equiv (-1)^{101} + 1 = 0$. Divisible \checkmark.
+(b) $10^2 = 100 \equiv -1 \pmod{101}$, so $10^{100} = (10^2)^{50} \equiv (-1)^{50} = 1$. The answer is $1 + 1 = \mathbf{2}$.
+
+\ans Euclid step 1: $2^{30} - 1 = 2^{10}(2^{20} - 1) + (2^{10} - 1)$, so the remainder is $2^{10} - 1$.
+Step 2: $2^{20} - 1 = (2^{10} + 1)(2^{10} - 1) + 0$. So $\gcd = 2^{10} - 1 = \mathbf{1023}$.
+The pattern: $\gcd(2^a - 1, 2^b - 1) = 2^{\gcd(a,b)} - 1$, because Euclid on the numbers mirrors Euclid on the exponents ($\gcd(30, 20) = 10$).
+
+\ans (a) \textbf{4} times (\ttx{acegikmobdfhjlnp} after the first).
+(b) \textbf{18} times! The 16-letter and 20-letter cases are completely different.
+\emph{Why:} number positions $0, \dots, n-1$. Depth 2 sends position $i$ to $i/2$ (even $i$) or $n/2 + (i-1)/2$ (odd $i$), which is $i \cdot 2^{-1} \bmod (n - 1)$. The last letter stays put. So after $t$ rounds a letter has moved to $i \cdot 2^{-t}$, and the text returns when $2^t \equiv 1 \pmod{n - 1}$. That happens first at $t = 4$ for $n - 1 = 15$ ($2^4 = 16$), and only at $t = 18$ for $n - 1 = 19$.
+(c) Repeating the same transposition just gives another transposition, and eventually the original. No real security is added.
+
+\ans (a) \ttx{t a x x i} gives \ttx{ta}, then \ttx{xx}. Inserting the filler \ttx{x} just produces \ttx{xx} again, forever. Fix: use a \textbf{different filler} for x's, e.g.\ \ttx{q}: \ttx{ta xq xi}.
+(b) A reversed ciphertext pair means a \textbf{reversed plaintext pair} (practice A9a): if \ttx{RS} came from \ttx{ab}, then \ttx{SR} came from \ttx{ba}. Words like ``re\dots er'' or ``de\dots ed'' leak this way. It's a classic foothold for breaking Playfair.
+
+\ans (a) $K^2 = \begin{pmatrix}1 & 2 + 50\\ 0 & 625\end{pmatrix} = \begin{pmatrix}1&52\\0&625\end{pmatrix} \equiv \begin{pmatrix}1&0\\0&1\end{pmatrix}$ ($52 = 2\cdot26$, $625 = 24\cdot26 + 1$) \checkmark. $K$ is its own inverse.
+(b) \ttx{hi} $= (7, 8) \to (7\cdot1 + 8\cdot0,\; 7\cdot2 + 8\cdot25) = (7, 214) \equiv (7, 6) = $ \ttx{HG}. Encrypting \ttx{HG} gives \ttx{HI} back.
+(c) $C_1 = P_1\cdot1 + P_2\cdot0 = P_1$: the \textbf{first letter of every pair is not encrypted at all}. Half the message shows through, even though $\det K = 25$ is perfectly valid. Validity (invertibility) is not the same as security.
+
+\ans Shift back by 3: \textbf{cheer}. Shift back by 22 (i.e.\ forward 4): \textbf{jolly}. Two meaningful answers, because ``cheer'' and ``jolly'' are themselves shifts of each other by 7.
+With very short ciphertexts, brute force can produce several valid plaintexts, and you need context (or more ciphertext) to decide. The lecture's ``only one answer makes sense'' only holds for long enough messages.
+
+\subsection*{N. Fermat, Euler, primitive roots}
+
+\ans (a) $2^{10} = 1024 = 3\cdot341 + 1$, so $2^{10} \equiv 1$ and $2^{340} = (2^{10})^{34} \equiv 1$.
+(b) If $3^{340} \equiv 1 \pmod{341}$, it would also be $\equiv 1 \pmod{31}$ (since $31 \mid 341$). Mod 31, Fermat gives $3^{30} \equiv 1$; $340 \bmod 30 = 10$, so $3^{340} \equiv 3^{10}$. Now $3^5 = 243 \equiv -5$, so $3^{10} \equiv 25 \ne 1$.
+So $3^{340} \not\equiv 1 \pmod{341}$, and \textbf{341 is composite}. (Base 2 lied; base 3 doesn't. That's why real primality tests try many bases. Worse still, numbers like $561 = 3\cdot11\cdot17$ fool \emph{every} co-prime base: Carmichael numbers.)
+
+\ans (a) $\gcd(3, 100) = 1$, $\Phi(100) = 40$, $2024 \bmod 40 = 24$, so $3^{24}$. In fact $3^{20} \equiv 1 \pmod{100}$, so $3^{24} \equiv 3^4 = 81$: the last two digits are \textbf{81}.
+(b) \textbf{No}: $\gcd(2, 100) = 2$, so Euler doesn't apply. Split $100 = 4 \times 25$ instead.
+Mod 4: $2^{2024} \equiv 0$. Mod 25: $\Phi(25) = 20$ and $2024 \bmod 20 = 4$, so $2^4 = 16$.
+The number below 100 that is $\equiv 0 \pmod 4$ and $\equiv 16 \pmod{25}$ is \textbf{16}. (This is the Chinese remainder theorem, coming soon.)
+
+\ans (a) $\Phi(40) = \mathbf{16}$.
+(b) The primitive roots are exactly $6^k$ with $\gcd(k, 40) = 1$. $k = 3$: $6^3 = 216 = 5\cdot41 + 11$, so \textbf{11}. $k = 7$: $6^7 \equiv$ \textbf{29}.
+(c) $6^2 = 36$ has order $40/\gcd(2, 40) = 20 < 40$: its powers repeat after 20 steps.
+
+\ans (a) $100 = 2^2\cdot5^2$, so check $2^{100/2} = 2^{50}$ and $2^{100/5} = 2^{20}$ mod 101: $2^{50} \equiv 100 \ne 1$ and $2^{20} \equiv 95 \ne 1$. So \textbf{yes}. (Two powers instead of a 100-row table.)
+(b) $16 = 2^4$; check $2^8 = 256 = 15\cdot17 + 1 \equiv 1$. \textbf{No}: 2 has order 8, not 16.
+
+\ans (a) Alice sends $A = 5^6 \bmod 23 = \mathbf{8}$; Bob sends $B = 5^{15} \bmod 23 = \mathbf{19}$.
+Key: Alice computes $B^6 = 19^6 \bmod 23 = \mathbf{2}$; Bob computes $A^{15} = 8^{15} \bmod 23 = \mathbf{2}$. They match, because both equal $5^{90}$.
+(b) A primitive root's powers cover all of $1, \dots, 22$, so the shared key can be any of 22 values. That makes guessing as hard as possible.
+(c) $22 \equiv -1$: its powers are only $\pm1$ (22, 1, 22, 1, \dots). Every public value and every key is 1 or 22, so Eve can guess the key.
+
+\ans (a) $a^{p-2}$ needs $p$ \textbf{prime}, and 9 isn't. The student gets $4^7 \equiv 4 \pmod 9$, but $4\cdot4 = 16 \equiv 7 \ne 1$.
+Correct (Euler, $\Phi(9) = 6$): $4^{-1} \equiv 4^5 = 1024 \equiv \mathbf{7}$ (check $4\cdot7 = 28 = 3\cdot9 + 1$).
+(b) $6^5 = 7776 \equiv \mathbf{0} \pmod 9$, and $6 \cdot 0 \ne 1$. The formula silently fails because $\gcd(6, 9) = 3$, so no inverse exists. Always check the gcd first.
+
+\subsection*{O. Attacks and Lecture 5 extras}
+\ans (a) \textbf{Traffic analysis}, confidentiality, passive; encryption does \textbf{not} stop it (metadata leaks). (b) \textbf{Repudiation}, integrity, active, by a party; needs a digital signature. (c) \textbf{Replay}, integrity, active; encryption doesn't help (the ciphertext is valid); needs timestamps/nonces. (d) \textbf{DoS}, availability, active. Encryption only stops snooping.
+
+\ans (a) $\gcd(13, 26) = 13 \ne 1$: no inverse. $a = 0 \to 5$ and $c = 2 \to 31 \equiv 5$: both become \ttx{F}, so decryption is ambiguous. (b) $4k_1 + k_2 \equiv 17$, $13k_1 + k_2 \equiv 24$ $\Rightarrow 9k_1 \equiv 7$, $9^{-1} = 3$, $k_1 = 21$, $k_2 = 17 - 84 \equiv 11$. Decrypt with $21^{-1} = 5$: \ttx{KTF} $\to$ \textbf{\ttx{vow}}.
+
+\ans $\gcd(30, 42, 66, 18) = 6$: $m \in \{2, 3, 6\}$; try 6 first (2 and 3 are also consistent but give shorter repeats). OTP keys never repeat, so repeated ciphertext segments are coincidences with no common distance.
+
+\ans (a) \ttx{DecKey[EncKey[i]] = i} gives \ttx{4 2 5 1 3}: the same key. (b) \ttx{attac katda wnzzz} $\to$ \ttx{ATCAT DAAKT ZNZWZ}. (c) No: an involution key just means encryption $=$ decryption; security depends on the key being secret, not on it differing from its inverse.
+
+\ans $P = \begin{pmatrix}7&4\\11&15\end{pmatrix}$ (\ttx{he}, \ttx{lp}), $C = \begin{pmatrix}3&15\\11&4\end{pmatrix}$. $\det P = 61 \equiv 9$, $9^{-1} = 3$, $P^{-1} = \begin{pmatrix}19&14\\19&21\end{pmatrix}$, $K = P^{-1}C = \begin{pmatrix}3&3\\2&5\end{pmatrix}$.
+
+\ans Both are true. The double transposition is still one permutation of positions, so it is not a new kind of cipher. But it is not a \emph{columnar} permutation with the same regular structure: the position pattern (steps of the row count) that the pattern attack exploits disappears. It hides structure; it doesn't square the key space.
+
+\subsection*{P. Extended Euclid, congruences, Diophantine}
+\ans Rows $(q; r_1, r_2, r; s; t)$: $(7; 1820, 231, 203; 1; -7)$, $(1; 231, 203, 28; -1; 8)$, $(7; 203, 28, 7; 8; -63)$, $(4; 28, 7, 0; \dots)$. $\gcd = 7$, $s = 8$, $t = -63$: $8 \cdot 1820 - 63 \cdot 231 = 14560 - 14553 = 7$ \checkmark.
+
+\ans $t$ column: $0, 1, -10, 31, -134, \mathbf{433}$ with quotients 10, 3, 4, 3, 2; final $r_1 = 1$ $\Rightarrow 97^{-1} = 433$ ($97 \cdot 433 = 42001$). $\gcd(98, 1000) = 2$ (both even), so no inverse.
+
+\ans $d = \gcd(35, 50) = 5 \mid 10$: 5 solutions. $7x \equiv 2 \pmod{10}$, $7^{-1} = 3$, $x_0 = 6$: \textbf{6, 16, 26, 36, 46}. $35x \equiv 11$: $5 \nmid 11$, \textbf{none}.
+
+\ans Multiply by $8/4 = 2$: particular $(-38, 10)$; general $x = -38 + 80k$, $y = 10 - 21k$. For 10: $\gcd = 4 \nmid 10$.
+
+\subsection*{Q. Primes, primality, CRT, discrete logs}
+\ans $340 = 85 \cdot 2^2$: $T = 2^{85} \bmod 341 = 32$, then $32^2 \bmod 341 = \mathbf{1}$ $\Rightarrow$ composite (a nontrivial square root of 1). $2047$: $2046 = 1023 \cdot 2$, $T = 2^{1023} \bmod 2047 = 1$ $\Rightarrow$ ``prime'' (wrong: a strong pseudoprime to base 2); base 3 gives $T = 1565 \ne \pm1$ with no loop $\Rightarrow$ composite. Lesson: MR catches Fermat liars like 341 but still needs several bases.
+
+\ans (a) $M = 60$; $M_i = 20, 15, 12$; inverses 2, 3, 3; $x = (40 + 90 + 108) \bmod 60 = \mathbf{58}$. (b) 6 and 8 aren't coprime, so the four-step formula doesn't apply. A solution exists iff $\gcd(6, 8) = 2$ divides the difference: $5 - 3 = 2$ \checkmark\ $\Rightarrow x = \mathbf{21} \pmod{24}$; $5 - 2 = 3$ is odd $\Rightarrow$ \textbf{no solution}.
+
+\ans $\lceil\sqrt{8051}\rceil = 90$, $90^2 - 8051 = 49 = 7^2$ $\Rightarrow 8051 = 97 \times 83$, in one step, because the factors are close to $\sqrt n$ (the reason RSA wants $p$, $q$ far apart).
+
+\ans The primitive roots are $2^k$ with $\gcd(k, 10) = 1$, $k = 1, 3, 7, 9$: $2, 8, 7, 6$. Count $= \phi(\phi(11)) = \phi(10) = 4$ \checkmark.
+
+\ans (a) $2^6 = 64 \equiv 9$: $x = 6$. (b) Powers of 3: $3, 9, 5, 4, 1$: $x = 4$ (3 has order 5, not a primitive root). (c) \textbf{No solution}: 2 isn't in $\{1, 3, 4, 5, 9\}$, the subgroup generated by 3.
+
+\ans Orders divide 16, so \textbf{no} element of order 6. Order 16 exists (a primitive root): $\operatorname{ord}(3) = 16$; $\operatorname{ord}(2) = 8$, $\operatorname{ord}(4) = 4$. So 3.
+
+\ans Fermat: $117 \bmod 18 = 9$, so $5^{117} \equiv 5^9 \equiv \mathbf{1} \pmod{19}$. Hence $\operatorname{ord}_{19}(5)$ divides 9 (it is 9): 5 is \textbf{not} a primitive root.
+
+\subsection*{R. Algebraic structures and GF$(2^n)$}
+\ans $\mathbb{Z}_{12}^* = \{1, 5, 7, 11\}$ and $5^2, 7^2, 11^2 \equiv 1$: all orders $\le 2 < 4$, so \textbf{not cyclic} (no generator). Same order 4 as $\mathbb{Z}_{10}^*$, different structure.
+
+\ans $\mathbb{Z}_{11}$: \textbf{field} (11 prime). $\mathbb{Z}_{12}$: commutative \textbf{ring}, not a field (2, 3, 4, 6, \dots\ have no inverse). GF$(2^4)$: \textbf{field}. $\mathbb{Z}$: commutative \textbf{ring} (no division). $\langle \mathbb{Z}_9^*, \times\rangle$: abelian \textbf{group} (one operation), in fact cyclic (generator 2).
+
+\ans $(x^3 + x + 1)(x^2 + 1) \equiv \mathbf{1}$ (they are inverses: compare the worked example in Section~\ref{sec:algebra}). $(x^3 + x^2)^{-1} = x^3 + x$; \;$x^{-1} = x^3 + 1$ (check: $x^4 + x \equiv (x + 1) + x = 1$).
+
+\ans Orders divide 8, so no order 3. All orders in $\mathbb{Z}_{15}^*$ are 1, 2 or 4: no element of order 8 $\Rightarrow$ \textbf{not cyclic} (consistent: primitive roots exist only for $2, 4, p^t, 2p^t$).
+
+\ans $\ttx{57} \cdot \ttx{83} = \ttx{C1}$; \;$\ttx{57} \cdot \ttx{13} = \ttx{FE}$ (FIPS-197's examples).
+
+\ans \textbf{No}: $x^4 + x^2 + 1 = (x^2 + x + 1)^2$. Having no roots only rules out linear factors; a degree-4 polynomial can split into two irreducible quadratics.
+
+\subsection*{S. Modern block ciphers, DES, AES}
+\ans 8000 bits: AES ($128$): $-8000 \bmod 128 = 64$ bits, 63 blocks. DES ($64$): $8000 = 125 \times 64$, \textbf{0} bits, 125 blocks.
+
+\ans Only the invertible ones: the $64 \times 64$ straight P-box and the $4 \times 4$ S-box (if it's a bijection). Expansion P-boxes and $6 \times 4$ S-boxes are noninvertible: Feistel only.
+
+\ans \ttx{101010}: row 2, col 5 $\to 6 =$ \ttx{0110}. \ttx{110011}: row 3, col 9 $\to 11 =$ \ttx{1011}. \ttx{010101}: row 1, col 10 $\to 12 =$ \ttx{1100}.
+
+\ans $1 + 1 + 2 = 4$; after round 9: 15; after 16: \textbf{28}. Each half is 28 bits, so a total of 28 brings it back to the original, which the decryption key schedule relies on.
+
+\ans $L_1 = R_0 = 0110$, $R_1 = L_0 \oplus f = 1010 \oplus 1100 = 0110$. Decrypt: $R_0 = L_1 = 0110$, $L_0 = R_1 \oplus f(L_1, K_1) = 0110 \oplus 1100 = 1010$ \checkmark\ (same $f$, no inverse of $f$ needed).
+
+\ans Meet-in-the-middle (known plaintext $P, C$): encrypt $P$ under all $2^{56}$ keys, store the $M$ values (memory $\approx 2^{56}$ blocks); decrypt $C$ under all $2^{56}$ keys and look up matches: $2 \times 2^{56} = 2^{57}$ operations, then check candidates on another pair.
+
+\ans When $i \bmod 4 = 0$: $i = 4, 8, \dots, 40$: \textbf{10} times. AES-256: 14 rounds, \textbf{15} round keys (60 words).
+
+\ans Each column of equal bytes $b$ maps to itself, since $02 \oplus 03 \oplus 01 \oplus 01 = 01$: \ttx{[01 01 01 01]}, \ttx{[C6 C6 C6 C6]} unchanged. \ttx{[01 00 00 00]} $\to$ \ttx{[02 01 01 03]} (the first column of the matrix). MixColumns alone gives no diffusion on uniform columns; ShiftRows first breaks that up.
+
+\ans The affine step adds the constant \ttx{63}, so the S-box has no fixed point at 0 (and no ``opposite'' fixed points); otherwise SubBytes would be the pure (algebraic, more attackable) inverse map.
+
+\subsection*{T. RSA}
+\ans $n = 221$, $\phi = 192$, $d = 5^{-1} \bmod 192 = \mathbf{77}$ ($5 \cdot 77 = 385 = 2 \cdot 192 + 1$). $C = 65^5 \bmod 221 = \mathbf{182}$; $182^{77} \bmod 221 = 65$ \checkmark.
+
+\ans $\phi = 72$ and $\gcd(3, 72) = 3$: $e$ has no inverse mod $\phi$; choose another $e$ (e.g.\ 5).
+
+\ans $\gcd(143, 187) = 11$ $\Rightarrow 143 = 11 \times 13$, $187 = 11 \times 17$: both factored, so both private keys follow. Never let moduli share a prime (or a modulus).
+
+\ans $p + q = n - \phi + 1 = 114$, $pq = 3233$: roots of $z^2 - 114z + 3233$: $\mathbf{61, 53}$. $d = 17^{-1} \bmod 3120 = \mathbf{2753}$. (Knowing $\phi(n)$ is as good as factoring.)
+
+\ans $P^e = 8 < n$, so no reduction happened: $P = \sqrt[3]{8} = 2$ over the integers. Small $e$ with short unpadded messages: use OAEP padding.
+
+\subsection*{U. ElGamal and ECC}
+\ans $e_2 = 5^6 \bmod 23 = 8$. $C_1 = 5^3 = 125 \equiv \mathbf{10}$, $C_2 = 10 \cdot 8^3 = 5120 \equiv \mathbf{14}$. Decrypt: $C_1^d = 10^6 \equiv 6$, $6^{-1} = 4$, $14 \cdot 4 = 56 \equiv \mathbf{10}$ \checkmark.
+
+\ans $e_2^r = C_2 \cdot P^{-1} = 14 \cdot 10^{-1} = 14 \cdot 7 \equiv 6$. Then $P' = 10 \cdot 6^{-1} = 10 \cdot 4 = 40 \equiv \mathbf{17}$. (Same $C_1 = 10$ reveals that $r$ was reused.)
+
+\ans 12 points: \ttx{(2,4) (2,7) (3,5) (3,6) (5,2) (5,9) (7,2) (7,9) (8,3) (8,8) (10,2) (10,9)}, plus $O$: $\#E = 13$. $2(2,7)$: $s = (3 \cdot 4 + 1)(14)^{-1} = 13 \cdot 3^{-1} \equiv 2 \cdot 4 = 8$; $x_3 = 64 - 4 = 60 \equiv 5$, $y_3 = 8(2 - 5) - 7 = -31 \equiv 2$: $\mathbf{(5, 2)}$.
+
+\ans No: $a = b = 0$ gives $4a^3 + 27b^2 = 0$, a singular curve (cusp), which the definition excludes. Hasse: $102 - 2\sqrt{101} \le \#E \le 102 + 2\sqrt{101}$, i.e.\ $82 \le \#E \le 122$.
+
+\ans $e_2 = 3(1, 4) = (0, 12)$. $C_1 = 2(1, 4) = (8, 12)$; $2e_2 = (10, 6)$; $C_2 = (5, 1) + (10, 6) = (12, 5)$. Decrypt: $3C_1 = (10, 6)$, inverse $(10, 7)$, $C_2 + (10, 7) = \mathbf{(5, 1)}$ \checkmark.
+
+\subsection*{V. Message integrity}
+\ans Preimage $0.69 \times 2^{128}$; collision $1.18 \times 2^{64}$. Security level $= 2^{64}$ (the weakest attack). A 128-bit \emph{key} faces only brute force ($2^{128}$); a 128-bit \emph{digest} faces the birthday bound ($2^{64}$), which is reachable, so MD5 is broken.
+
+\ans $1.18 \times 2^{20} \approx 1.24$ million messages.
+
+\ans (a) Preimage, problem 1 ($\sim 2^n$). (b) Second preimage, problem 2 ($\sim 2^n$). (c) Alternate collision, problem 4 ($\sim 2^{n/2}$): the only one at birthday cost.
+
+\ans $|P| = (-3000 - 128) \bmod 1024 = 968$; $3000 + 968 + 128 = 4096 = $ \textbf{4 blocks}; 80 words per block.
+
+\ans A 64-bit digest falls to a birthday collision in $\sim 2^{32}$ hashes, and the scheme is open to meet-in-the-middle. Davies--Meyer XORs the previous digest into the output ($H_i = E_{M_i}(H_{i-1}) \oplus H_{i-1}$), which blocks the meet-in-the-middle trick (the digest is still only as long as the cipher block).
+
+\ans Majority $= (x \wedge y) \oplus (y \wedge z) \oplus (z \wedge x) = 1000 \oplus 0100 \oplus 0010 = \mathbf{1110}$ (bitwise majority). Conditional $= (x \wedge y) \oplus (\bar x \wedge z) = 1000 \oplus 0100 = \mathbf{1100}$ (take $y$ where $x = 1$, $z$ where $x = 0$).
+
+\ans $1 - e^{-30 \cdot 29/730} \approx 0.696$; exact $1 - \prod_{i=0}^{29}\frac{365 - i}{365} \approx 0.706$.

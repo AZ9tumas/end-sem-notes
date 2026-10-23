@@ -1,0 +1,304 @@
+% College Lecture 13 (ElGamal, elliptic curve cryptosystems) + Forouzan 10.4--10.5. Every number recomputed by script
+% (scratchpad/rsa/ecc.py, ecc2.py, ecc3.py): ElGamal runs, point lists, every addition/doubling, scalar multiples.
+\section{ElGamal and Elliptic Curve Cryptosystems \new}\label{sec:elgamal}
+\likely{New this year: an ElGamal encrypt/decrypt with a small prime, ``find all points on $E_p(a, b)$'', one point addition or doubling, and ``why must $r$ be fresh / why ECC has smaller keys''.}
+
+\subsection{ElGamal cryptosystem \new}
+\likely{``Explain ElGamal key generation, encryption and decryption; prove decryption is correct; encrypt $P$ with $p, e_1, d, r$ given'' (4--5 marks).}
+
+RSA rests on factoring. ElGamal rests on a different hard problem, the \textbf{discrete logarithm problem} (DLP, \S\ref{sec:primes}). Let $p$ be a large prime and $e_1$ a \textbf{primitive root} of $p$, i.e.\ an element whose powers $e_1^1, e_1^2, \dots, e_1^{p-1}$ run through all of $\mathbb{Z}_p^* = \{1, \dots, p-1\}$ (\S\ref{sec:fermat}). Computing $e_2 = e_1^d \bmod p$ is easy by square-and-multiply, but given $e_1$, $e_2$ and $p$, finding $d = \log_{e_1} e_2 \bmod p$ is infeasible for large $p$. So $d \mapsto e_1^d$ is a one-way function, and Bob's private key is the exponent $d$ hidden inside the public $e_2$.
+
+The idea of encryption is to multiply $P$ by a \textbf{one-time mask} $e_2^r$ that only Bob can rebuild. Alice picks a fresh random $r$ and sends two numbers: $C_1 = e_1^r$, a ``hint'' that reveals nothing about $r$ (DLP again), and $C_2 = P \cdot e_2^r$, the masked plaintext. Bob rebuilds the mask from the hint with his secret: $C_1^d = e_1^{rd} = (e_1^d)^r = e_2^r$. Eve would need either $d$ or $r$, and both are discrete logarithms. This is the Diffie--Hellman idea turned into a cipher: $e_2^r = e_1^{dr}$ is a shared value that Alice computes from $(r, e_2)$ and Bob from $(d, C_1)$.
+
+\begin{mustknow}[: ElGamal]
+\textbf{Key generation (Bob)}: choose a large prime $p$ and a primitive root $e_1$ of $p$; choose $d$ with $1 \le d \le p - 2$; compute $e_2 = e_1^d \bmod p$. Public key $(e_1, e_2, p)$, private key $d$.\\
+\textbf{Encryption (Alice)}: choose a \textbf{fresh} random $r \in \mathbb{Z}_p^*$; \;$C_1 = e_1^r \bmod p$, \;$C_2 = (P \times e_2^r) \bmod p$. Send $(C_1, C_2)$.\\
+\textbf{Decryption (Bob)}: $P = \big[C_2 \times (C_1^d)^{-1}\big] \bmod p$, \;and $(C_1^d)^{-1} = C_1^{\,p-1-d} \bmod p$.
+\end{mustknow}
+
+\textbf{Proof of correctness.} $C_2 \times (C_1^d)^{-1} = (P \cdot e_2^r)\,(e_1^{rd})^{-1} = P \cdot e_2^r\,(e_2^r)^{-1} = P \pmod p$, because $e_1^{rd} = (e_1^d)^r = e_2^r$. The inverse exists since $C_1^d \in \mathbb{Z}_p^*$.
+
+\textbf{The inverse shortcut.} By Fermat, $C_1^{p-1} \equiv 1$, so $C_1^d \cdot C_1^{p-1-d} \equiv 1$, i.e.\ $(C_1^d)^{-1} = C_1^{p-1-d}$. One exponentiation replaces an exponentiation followed by an extended-Euclid inverse.
+
+\textbf{Properties.} ElGamal is \textbf{probabilistic}: the same $P$ encrypted twice gives different ciphertexts because $r$ changes, so Eve cannot test guesses by re-encrypting them (unlike textbook RSA). The price is \textbf{ciphertext expansion}: the ciphertext is the pair $(C_1, C_2)$, each as long as $p$, so it is \textbf{twice the size} of the plaintext. Like RSA, it is slow and is used for short data such as session keys.
+
+\begin{worked}[: the slide example]
+\textbf{Q.} Bob chooses $p = 11$, $e_1 = 2$, $d = 3$. Find his public key. Alice encrypts $P = 7$ with $r = 4$. Find the ciphertext and show Bob's decryption.
+
+\textbf{Keys.} $2$ is a primitive root of 11 (its powers are $2, 4, 8, 5, 10, 9, 7, 3, 6, 1$). $e_2 = 2^3 \bmod 11 = 8$. Public key $(2, 8, 11)$, private key $3$.\\
+\textbf{Encrypt.} $C_1 = 2^4 \bmod 11 = 16 \bmod 11 = 5$. \;$e_2^r = 8^4 = 4096 = 372 \cdot 11 + 4$, so $C_2 = 7 \cdot 4 = 28 \bmod 11 = 6$. Ciphertext $\mathbf{(5, 6)}$.\\
+\textbf{Decrypt.} $C_1^d = 5^3 = 125 = 11 \cdot 11 + 4 \equiv 4$; \;$4^{-1} \bmod 11 = 3$ ($4 \cdot 3 = 12$). \;$P = 6 \cdot 3 = 18 \bmod 11 = \mathbf{7}$ \checkmark.\\
+\textbf{Shortcut.} $(C_1^d)^{-1} = 5^{11-1-3} = 5^7$: $5^2 \equiv 3$, $5^4 \equiv 9$, $5^7 = 9 \cdot 3 \cdot 5 = 135 = 12 \cdot 11 + 3 \equiv 3$ \checkmark.
+\end{worked}
+
+\begin{worked}[: new exam-style example]
+\textbf{Q.} In ElGamal, $p = 23$, $e_1 = 5$, Bob's private key $d = 6$. (a) Find $e_2$. (b) Encrypt $P = 20$ with $r = 3$. (c) Decrypt, and verify with the shortcut.
+
+\textbf{(a)} $5^2 = 25 \equiv 2$, $5^4 \equiv 4$, $e_2 = 5^6 = 5^4 \cdot 5^2 \equiv 4 \cdot 2 = \mathbf{8}$. Public key $(5, 8, 23)$. ($5$ is a primitive root of 23: its order is 22.)\\
+\textbf{(b)} $C_1 = 5^3 = 125 = 5 \cdot 23 + 10 \Rightarrow C_1 = 10$. \;$e_2^r = 8^3 = 512 = 22 \cdot 23 + 6 \equiv 6$. \;$C_2 = 20 \cdot 6 = 120 = 5 \cdot 23 + 5 \Rightarrow C_2 = 5$. Ciphertext $\mathbf{(10, 5)}$.\\
+\textbf{(c)} $C_1^d = 10^6$: $10^2 = 100 \equiv 8$, $10^4 \equiv 64 \equiv 18$, $10^6 = 18 \cdot 8 = 144 \equiv 6$ (this is $e_2^r$ again, as the proof says). $6^{-1} \bmod 23 = 4$ ($6 \cdot 4 = 24$). \;$P = 5 \cdot 4 = \mathbf{20}$ \checkmark.\\
+Shortcut: $10^{23-1-6} = 10^{16}$: $10^8 = 18^2 = 324 = 14 \cdot 23 + 2 \equiv 2$, $10^{16} \equiv 4$ \checkmark\ (the same inverse).
+\end{worked}
+
+\subsection{Security of ElGamal \new}
+\likely{``Why must Alice use a fresh $r$ for every message?'' with the algebra.}
+
+\textbf{Low-modulus attack.} If $p$ is small, Eve solves the discrete logarithm $d = \log_{e_1} e_2$ once (by search or a sub-exponential algorithm), stores $d$, and decrypts every message sent to Bob for as long as he keeps the key. With the slide key she tries $2^1 = 2$, $2^2 = 4$, $2^3 = 8 = e_2$ and has $d = 3$. Hence $p$ must be at least 1024 bits (about 309 digits).
+
+\textbf{Known-plaintext attack when $r$ is reused.} The mask $e_2^r$ depends only on $r$, so two messages encrypted with the same $r$ share the same mask. If Eve learns one plaintext $P$ and sees both ciphertexts $C_2 = P \cdot e_2^r$ and $C_2' = P' \cdot e_2^r$, she removes the mask without knowing $d$ or $r$:
+\[
+e_2^r = C_2 \times P^{-1} \bmod p, \qquad P' = C_2' \times (e_2^r)^{-1} \bmod p.
+\]
+In the example above ($p = 23$, $e_2 = 8$, $r = 3$), suppose Alice also sends $P' = 17$ with the same $r$: $C_2' = 17 \cdot 6 = 102 \equiv 10$. Eve, knowing $P = 20$ and $C_2 = 5$: $20^{-1} \bmod 23 = 15$, so $e_2^r = 5 \cdot 15 = 75 \equiv 6$; then $P' = 10 \cdot 6^{-1} = 10 \cdot 4 = 40 \equiv 17$ \checkmark. The repeated $C_1$ even tells Eve that $r$ was reused. \imp{Alice must use a fresh random $r$ for every message.}
+
+\begin{center}\small
+\begin{tabular}{@{}lll@{}}
+\toprule
+ & RSA & ElGamal\\
+\midrule
+Hard problem & factoring $n = pq$ & discrete logarithm mod $p$\\
+Public / private key & $(e, n)$ / $d$ & $(e_1, e_2, p)$ / $d$\\
+Encryption & deterministic, $C = P^e$ & probabilistic, fresh $r$ each time\\
+Ciphertext size & same as plaintext & two numbers: twice the plaintext\\
+Key generation & two primes, $d = e^{-1} \bmod \phi(n)$ & one prime, $e_2 = e_1^d$\\
+Main misuse & small $e$, no padding, shared $n$ & reused $r$, small $p$\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection{Elliptic curves over the real numbers}
+RSA and ElGamal are secure, but their security costs large keys (1024 bits and more). \textbf{Elliptic curve cryptography} (ECC) gets the same security with much smaller keys by replacing the group $\mathbb{Z}_p^*$ with the group of points on an elliptic curve, where the discrete logarithm is harder.
+
+An \textbf{elliptic curve} is the set of points $(x, y)$ satisfying the cubic $y^2 = x^3 + ax + b$. It is symmetric about the $x$-axis, since $(x, -y)$ satisfies the equation whenever $(x, y)$ does. The curve must be \textbf{non-singular}, meaning $x^3 + ax + b$ has three distinct roots, which is equivalent to $4a^3 + 27b^2 \ne 0$. A singular curve has a cusp or a self-crossing where the tangent is undefined, and the group law below breaks there; for example $a = -3, b = 2$ gives $4(-27) + 27 \cdot 4 = 0$ and $x^3 - 3x + 2 = (x - 1)^2(x + 2)$ has a double root. The slide's curve $y^2 = x^3 - 3x + 3$ has $4a^3 + 27b^2 = -108 + 243 = 135 \ne 0$ and one real root, so it is a single connected curve.
+
+\textbf{Adding points (chord-and-tangent rule).} To add $P \ne Q$, draw the line through $P$ and $Q$; a line meets a cubic in three points, so it cuts the curve at a third point, and $R = P + Q$ is the \textbf{reflection} of that third point in the $x$-axis. To double $P$, use the \textbf{tangent} at $P$ (the line through $P$ and a point infinitely close to it), take its second intersection and reflect it. If the line is vertical ($Q = -P$, the reflection of $P$), there is no third point; we say it meets the curve at the \textbf{point at infinity} $O$, which is the identity: $P + (-P) = O$, $P + O = P$. With this rule the points form an abelian group (\S\ref{sec:algebra}).
+\begin{center}
+\begin{tikzpicture}[scale=0.78,font=\footnotesize]
+\begin{scope}
+  \draw[->,gray] (-2.4,0)--(2.6,0) node[right]{$x$}; \draw[->,gray] (0,-2.9)--(0,2.9) node[above]{$y$};
+  \draw[acc,thick] plot[smooth] coordinates {(2.250,-2.764) (2.035,-2.307) (1.826,-1.899) (1.621,-1.549) (1.423,-1.270) (1.230,-1.082) (1.042,-1.003) (0.860,-1.028) (0.683,-1.127) (0.511,-1.265) (0.345,-1.416) (0.185,-1.566) (0.030,-1.706) (-0.120,-1.833) (-0.264,-1.943) (-0.403,-2.036) (-0.536,-2.111) (-0.664,-2.168) (-0.787,-2.208) (-0.904,-2.230) (-1.015,-2.236) (-1.121,-2.226) (-1.222,-2.200) (-1.317,-2.160) (-1.407,-2.106) (-1.492,-2.039) (-1.570,-1.959) (-1.644,-1.868) (-1.712,-1.766) (-1.775,-1.654) (-1.832,-1.533) (-1.883,-1.403) (-1.930,-1.266) (-1.970,-1.123) (-2.006,-0.973) (-2.036,-0.819) (-2.060,-0.660) (-2.079,-0.498) (-2.093,-0.333) (-2.101,-0.167) (-2.104,-0.000) (-2.101,0.167) (-2.093,0.333) (-2.079,0.498) (-2.060,0.660) (-2.036,0.819) (-2.006,0.973) (-1.970,1.123) (-1.930,1.266) (-1.883,1.403) (-1.832,1.533) (-1.775,1.654) (-1.712,1.766) (-1.644,1.868) (-1.570,1.959) (-1.492,2.039) (-1.407,2.106) (-1.317,2.160) (-1.222,2.200) (-1.121,2.226) (-1.015,2.236) (-0.904,2.230) (-0.787,2.208) (-0.664,2.168) (-0.536,2.111) (-0.403,2.036) (-0.264,1.943) (-0.120,1.833) (0.030,1.706) (0.185,1.566) (0.345,1.416) (0.511,1.265) (0.683,1.127) (0.860,1.028) (1.042,1.003) (1.230,1.082) (1.423,1.270) (1.621,1.549) (1.826,1.899) (2.035,2.307) (2.250,2.764)};
+  \draw[warn] (-2.2,2.320)--(1.7,0.711);
+  \draw[warn,dashed] (0.670,1.136)--(0.670,-1.136);
+  \fill (-1.5,2.031) circle (1.6pt) node[above]{$P$};
+  \fill (1.0,1.0) circle (1.6pt) node[above right]{$Q$};
+  \fill[gray] (0.670,1.136) circle (1.6pt);
+  \fill[warn] (0.670,-1.136) circle (1.8pt) node[right]{$P{+}Q$};
+  \node at (0.1,-3.3) {addition: chord};
+\end{scope}
+\begin{scope}[xshift=6.6cm]
+  \draw[->,gray] (-2.4,0)--(2.6,0) node[right]{$x$}; \draw[->,gray] (0,-2.9)--(0,2.9) node[above]{$y$};
+  \draw[acc,thick] plot[smooth] coordinates {(2.250,-2.764) (2.035,-2.307) (1.826,-1.899) (1.621,-1.549) (1.423,-1.270) (1.230,-1.082) (1.042,-1.003) (0.860,-1.028) (0.683,-1.127) (0.511,-1.265) (0.345,-1.416) (0.185,-1.566) (0.030,-1.706) (-0.120,-1.833) (-0.264,-1.943) (-0.403,-2.036) (-0.536,-2.111) (-0.664,-2.168) (-0.787,-2.208) (-0.904,-2.230) (-1.015,-2.236) (-1.121,-2.226) (-1.222,-2.200) (-1.317,-2.160) (-1.407,-2.106) (-1.492,-2.039) (-1.570,-1.959) (-1.644,-1.868) (-1.712,-1.766) (-1.775,-1.654) (-1.832,-1.533) (-1.883,-1.403) (-1.930,-1.266) (-1.970,-1.123) (-2.006,-0.973) (-2.036,-0.819) (-2.060,-0.660) (-2.079,-0.498) (-2.093,-0.333) (-2.101,-0.167) (-2.104,-0.000) (-2.101,0.167) (-2.093,0.333) (-2.079,0.498) (-2.060,0.660) (-2.036,0.819) (-2.006,0.973) (-1.970,1.123) (-1.930,1.266) (-1.883,1.403) (-1.832,1.533) (-1.775,1.654) (-1.712,1.766) (-1.644,1.868) (-1.570,1.959) (-1.492,2.039) (-1.407,2.106) (-1.317,2.160) (-1.222,2.200) (-1.121,2.226) (-1.015,2.236) (-0.904,2.230) (-0.787,2.208) (-0.664,2.168) (-0.536,2.111) (-0.403,2.036) (-0.264,1.943) (-0.120,1.833) (0.030,1.706) (0.185,1.566) (0.345,1.416) (0.511,1.265) (0.683,1.127) (0.860,1.028) (1.042,1.003) (1.230,1.082) (1.423,1.270) (1.621,1.549) (1.826,1.899) (2.035,2.307) (2.250,2.764)};
+  \draw[warn] (-1.0,2.599)--(1.6,0.304);
+  \draw[warn,dashed] (-0.221,1.911)--(-0.221,-1.911);
+  \fill (0.5,1.275) circle (1.6pt) node[above right]{$P$};
+  \fill[gray] (-0.221,1.911) circle (1.6pt);
+  \fill[warn] (-0.221,-1.911) circle (1.8pt) node[below right]{$2P$};
+  \node at (0.1,-3.3) {doubling: tangent};
+\end{scope}
+\end{tikzpicture}
+\end{center}
+
+\textbf{Deriving the formulas.} Let the line through $P = (x_1, y_1)$ have slope $s$: $y = s(x - x_1) + y_1$. Substituting into $y^2 = x^3 + ax + b$ gives a cubic in $x$ whose expanded form starts $x^3 - s^2 x^2 + \dots = 0$. Its three roots are the $x$-coordinates of the three intersection points, and the sum of the roots of a monic cubic is minus the $x^2$ coefficient, so $x_1 + x_2 + x_3 = s^2$, giving $x_3 = s^2 - x_1 - x_2$. The third point is $(x_3,\ s(x_3 - x_1) + y_1)$; reflecting it gives $y_3 = s(x_1 - x_3) - y_1$. For addition, $s$ is the chord slope $(y_2 - y_1)/(x_2 - x_1)$. For doubling, $s$ is the tangent slope: differentiating $y^2 = x^3 + ax + b$ implicitly gives $2y\,y' = 3x^2 + a$, so $s = (3x_1^2 + a)/(2y_1)$, and $x_2 = x_1$. The constant $b$ vanishes on differentiation, which is why the doubling slope contains $a$ and never $b$.
+
+\subsection{Elliptic curves over GF$(p)$ \new}
+\likely{Find all the points on $E_{13}(1, 1)$ / $E_{11}(1, 6)$'' and find the inverse of a point'' (3--4 marks).}
+
+Cryptography cannot use real numbers (rounding errors, unbounded size), so the same equation is taken modulo a prime $p > 3$. The curve $E_p(a, b)$ is the set of all pairs $(x, y) \in \mathbb{Z}_p \times \mathbb{Z}_p$ with
+\[
+y^2 \equiv x^3 + ax + b \pmod p, \qquad a, b \in \mathbb{Z}_p,\quad 4a^3 + 27b^2 \not\equiv 0 \pmod p,
+\]
+together with the point at infinity $O$. The curve'' is now a finite scatter of points, but the addition formulas derived above still define a group, with every division done as multiplication by an inverse modulo $p$.
+
+\textbf{Finding the points.} For each $x = 0, 1, \dots, p-1$, compute $w = (x^3 + ax + b) \bmod p$, which must equal $y^2$. If $w = 0$ there is one point $(x, 0)$. If $w$ is a nonzero \textbf{quadratic residue} (a perfect square mod $p$), there are two points $(x, \sqrt w)$ and $(x, p - \sqrt w)$. If $w$ is not a square, no point has that $x$. Make the table of squares $y^2 \bmod p$ first; since $(p - y)^2 \equiv y^2$, only $y = 0, \dots, (p-1)/2$ are needed.
+
+\textbf{Negatives.} The inverse of $P = (x, y)$ is $-P = (x, -y) = (x, p - y)$: the same $x$, only $y$ flipped (the reflection in the $x$-axis). A point with $y = 0$ is its own inverse. Points therefore come in vertical pairs $(x, y), (x, p - y)$.
+
+\textbf{Hasse's theorem.} The number of points $\#E$ (including $O$) satisfies $p + 1 - 2\sqrt p \le \#E \le p + 1 + 2\sqrt p$: about half the $x$ values give a square and those give two points each, so \#E is close to $p + 1$. It is a quick check on a point count.
+
+\begin{worked}[: Forouzan/slide, all points of $E_{13}(1, 1)$]
+\textbf{Q.} Find all points on $E_{13}(1, 1)$: $y^2 = x^3 + x + 1 \pmod{13}$. List the inverse pairs.
+
+\textbf{Valid curve}: $4 + 27 = 31 \equiv 5 \not\equiv 0 \pmod{13}$. \textbf{Squares mod 13}: $y = 0..6$ give $y^2 = 0, 1, 4, 9, 3, 12, 10$, so the nonzero squares are $\{1, 3, 4, 9, 10, 12\}$ with roots $1 \to \pm1$, $3 \to \pm4$, $4 \to \pm2$, $9 \to \pm3$, $10 \to \pm6$, $12 \to \pm5$.
+\begin{center}\small
+\begin{tabular}{@{}rrrcl@{}}
+\toprule
+$x$ & $x^3 + x + 1$ & $w$ & square? & points\\
+\midrule
+0 & 1 & 1 & yes & (0, 1), (0, 12)\\
+1 & 3 & 3 & yes & (1, 4), (1, 9)\\
+2 & 11 & 11 & no & --\\
+3 & 31 & 5 & no & --\\
+4 & 69 & 4 & yes & (4, 2), (4, 11)\\
+5 & 131 & 1 & yes & (5, 1), (5, 12)\\
+6 & 223 & 2 & no & --\\
+7 & 351 & 0 & $y = 0$ & (7, 0)\\
+8 & 521 & 1 & yes & (8, 1), (8, 12)\\
+9 & 739 & 11 & no & --\\
+10 & 1011 & 10 & yes & (10, 6), (10, 7)\\
+11 & 1343 & 4 & yes & (11, 2), (11, 11)\\
+12 & 1741 & 12 & yes & (12, 5), (12, 8)\\
+\bottomrule
+\end{tabular}
+\end{center}
+\textbf{17 points + $O$ = 18.} Each row's two points are inverses (e.g.\ $4 + 9 = 13$, so $(1, 9) = -(1, 4)$); $(7, 0)$ is its own inverse. $x = 2, 3, 6, 9$ give non-squares. Hasse: $14 \pm 2\sqrt{13} = [6.8,\ 21.2]$ contains 18 \checkmark.
+\end{worked}
+
+\begin{worked}[: new, all points of $E_{11}(1, 6)$]
+\textbf{Q.} Find all points on $y^2 = x^3 + x + 6 \pmod{11}$ and verify Hasse's bound.
+
+\textbf{Valid}: $4 + 27 \cdot 36 = 976 = 88 \cdot 11 + 8 \not\equiv 0$. \textbf{Squares mod 11}: $y = 0..5$ give $0, 1, 4, 9, 5, 3$; nonzero squares $\{1, 3, 4, 5, 9\}$ with roots $1 \to \pm1$, $3 \to \pm5$, $4 \to \pm2$, $5 \to \pm4$, $9 \to \pm3$.
+\begin{center}\small
+\begin{tabular}{@{}rrrcl@{\qquad}rrrcl@{}}
+\toprule
+$x$ & $x^3{+}x{+}6$ & $w$ & sq? & points & $x$ & $x^3{+}x{+}6$ & $w$ & sq? & points\\
+\midrule
+0 & 6 & 6 & no & -- & 6 & 228 & 8 & no & --\\
+1 & 8 & 8 & no & -- & 7 & 356 & 4 & yes & (7, 2), (7, 9)\\
+2 & 16 & 5 & yes & (2, 4), (2, 7) & 8 & 526 & 9 & yes & (8, 3), (8, 8)\\
+3 & 36 & 3 & yes & (3, 5), (3, 6) & 9 & 744 & 7 & no & --\\
+4 & 74 & 8 & no & -- & 10 & 1016 & 4 & yes & (10, 2), (10, 9)\\
+5 & 136 & 4 & yes & (5, 2), (5, 9) & & & & & \\
+\bottomrule
+\end{tabular}
+\end{center}
+\textbf{12 points + $O$ = 13.} Hasse: $12 \pm 2\sqrt{11} = [5.4,\ 18.6]$ contains 13 \checkmark. Since 13 is prime, every point except $O$ generates the whole group (Lagrange).
+\end{worked}
+
+\subsection{Point addition and doubling over GF$(p)$ \new}
+\likely{``Add $P$ and $Q$ / find $2P$ on $E_p(a, b)$'' (2--3 marks), always with modular inverses.}
+
+\begin{mustknow}[: EC group law over GF$(p)$]
+For $P = (x_1, y_1)$, $Q = (x_2, y_2)$, \;$R = P + Q = (x_3, y_3)$ with
+\[
+x_3 = s^2 - x_1 - x_2 \bmod p, \qquad y_3 = s(x_1 - x_3) - y_1 \bmod p,
+\]
+\[
+s = \frac{y_2 - y_1}{x_2 - x_1} \bmod p \ \ (P \ne Q,\ \text{addition}), \qquad s = \frac{3x_1^2 + a}{2y_1} \bmod p \ \ (P = Q,\ \text{doubling}).
+\]
+Division means multiplying by the inverse mod $p$. Special cases: $P + O = P$; if $x_1 = x_2$ and $y_2 = -y_1$ then $P + Q = O$; doubling a point with $y_1 = 0$ gives $O$.
+\end{mustknow}
+
+\begin{worked}[: one addition and two doublings]
+\textbf{Q1 (Forouzan style).} On $E_{13}(1, 1)$, add $P = (4, 2)$ and $Q = (10, 6)$.\\
+$s = (6 - 2)(10 - 4)^{-1} = 4 \cdot 6^{-1} = 4 \cdot 11 = 44 \equiv 5$ \;($6 \cdot 11 = 66 = 5 \cdot 13 + 1$).\\
+$x_3 = 25 - 4 - 10 = 11$; \;$y_3 = 5(4 - 11) - 2 = -37 \equiv -37 + 39 = 2$. \;$\mathbf{P + Q = (11, 2)}$, which is in the point list \checkmark.
+
+\textbf{Q2.} On $E_{13}(1, 1)$, find $2P$ for $P = (1, 4)$.\\
+$s = (3 \cdot 1^2 + 1)(2 \cdot 4)^{-1} = 4 \cdot 8^{-1} = 4 \cdot 5 = 20 \equiv 7$ \;($8 \cdot 5 = 40 = 3 \cdot 13 + 1$).\\
+$x_3 = 49 - 1 - 1 = 47 \equiv 8$; \;$y_3 = 7(1 - 8) - 4 = -53 \equiv -53 + 65 = 12$. \;$\mathbf{2P = (8, 12)}$ \checkmark.
+
+\textbf{Q3 (slide).} On $E_{17}(2, 2)$: $y^2 = x^3 + 2x + 2$, find $2P$ for $P = (5, 1)$.\\
+$s = (3 \cdot 5^2 + 2)(2 \cdot 1)^{-1} = 77 \cdot 2^{-1} \equiv 9 \cdot 9 = 81 \equiv 13$ \;($77 = 4 \cdot 17 + 9$, $2^{-1} = 9$).\\
+$x_3 = 169 - 5 - 5 = 159 = 9 \cdot 17 + 6 \equiv 6$; \;$y_3 = 13(5 - 6) - 1 = -14 \equiv 3$. \;$\mathbf{2P = (6, 3)}$.\\
+Check: $3^2 = 9$ and $6^3 + 2 \cdot 6 + 2 = 230 = 13 \cdot 17 + 9$ \checkmark. (This curve has 19 points and $(5, 1)$ generates all of them.)
+\end{worked}
+
+\begin{trap}[: point arithmetic slips]
+The doubling slope uses $a$ (from $3x^2 + a$), never $b$. Compute $s$ as an integer mod $p$ with a modular inverse, never as a fraction or decimal. $-P = (x, p - y)$ flips only $y$. Use the addition formula only for $P \ne Q$ (it would divide by $x_2 - x_1 = 0$). Reduce negative results by adding multiples of $p$, and check the answer lies on the curve.
+\end{trap}
+
+\subsection{Scalar multiplication and the ECDLP \new}
+\likely{``Compute $kP$ for small $k$ and ``state the ECDLP / Hasse's theorem.}
+Multiplying a point by an integer $k$ means adding it to itself: $kP = P + P + \dots + P$ ($k$ times). It is computed by \textbf{double-and-add}, the analogue of square-and-multiply: scan the bits of $k$, double at every bit and add $P$ at every 1-bit, so $kP$ costs about $\log_2 k$ doublings. The slides' two examples on $E_{13}(1, 1)$, recomputed:
+\begin{itemize}[leftmargin=1.4em]
+  \item $4 \cdot (1, 4) = 2 \cdot (2 \cdot (1, 4)) = 2 \cdot (8, 12)$: $s = (3 \cdot 64 + 1) \cdot 24^{-1} \equiv 11 \cdot 11^{-1} = 1$, $x_3 = 1 - 16 \equiv 11$, $y_3 = 1 \cdot (8 - 11) - 12 = -15 \equiv 11$, so $4 \cdot (1, 4) = \mathbf{(11, 11)}$ \checkmark.
+  \item $3 \cdot (8, 1) = 2 \cdot (8, 1) + (8, 1)$: doubling gives $s = 193 \cdot 2^{-1} \equiv 11 \cdot 7 \equiv 12$, $(11, 2)$; then $(11, 2) + (8, 1)$: $s = (-1)(-3)^{-1} \equiv 12 \cdot 10^{-1} = 12 \cdot 4 \equiv 9$, $x_3 = 81 - 19 \equiv 10$, $y_3 = 9(11 - 10) - 2 = 7$, so $3 \cdot (8, 1) = \mathbf{(10, 7)}$ \checkmark.
+\end{itemize}
+$(1, 4)$ has order 18, so it generates all of $E_{13}(1, 1)$; its multiples (useful for checking the examples below) are:
+\begin{center}\small
+\begin{tabular}{@{}c|ccccccccc@{}}
+\toprule
+$k$ & 1 & 2 & 3 & 4 & 5 & 6 & 7 & 8 & 9\\
+$k(1,4)$ & (1,4) & (8,12) & (0,12) & (11,11) & (5,1) & (10,6) & (12,8) & (4,2) & (7,0)\\
+\midrule
+$k$ & 17 & 16 & 15 & 14 & 13 & 12 & 11 & 10 & 18\\
+$k(1,4)$ & (1,9) & (8,1) & (0,1) & (11,2) & (5,12) & (10,7) & (12,5) & (4,11) & $O$\\
+\bottomrule
+\end{tabular}
+\end{center}
+The second row is the negative of the first ($(18 - k)P = -kP$), and $9P = (7, 0)$ has $y = 0$, so $18P = 2 \cdot 9P = O$.
+
+\textbf{Elliptic curve discrete logarithm problem (ECDLP).} Given a point $P$ (ideally a generator) and $T = dP$, find $d$ with $1 \le d \le \#E$. Computing $T$ from $d$ takes about $\log_2 d$ doublings, but no shortcut is known for the reverse: on a well-chosen curve the best attack is a generic one such as \textbf{Pollard's rho}, which needs about $\sqrt{\#E}$ steps. On the toy curve the table answers it at once ($T = (4, 2) \Rightarrow d = 8$); for a 160-bit curve, $\sqrt{\#E} \approx 2^{80}$ steps is infeasible.
+
+\subsection{ECC simulating ElGamal \new}
+\likely{``Explain ECC encryption/decryption; verify the given example'' (the slide's $E_{67}(2, 3)$ example).}
+
+ElGamal works in any group where the discrete log is hard, so it carries over by a dictionary: multiplication mod $p$ becomes point addition, exponentiation becomes scalar multiplication, and the inverse becomes the negative point. The plaintext must be encoded as a point $P$ on the curve.
+
+\begin{mustknow}[: EC ElGamal]
+\textbf{Keys (Bob)}: choose $E_p(a, b)$, a point $e_1$ on it, and an integer $d$; compute $e_2 = d \times e_1$. Public $(E_p(a, b), e_1, e_2)$, private $d$.\\
+\textbf{Encrypt (Alice)}: fresh random $r$; \;$C_1 = r \times e_1$, \;$C_2 = P + r \times e_2$.\\
+\textbf{Decrypt (Bob)}: $P = C_2 - (d \times C_1)$, where subtracting means adding the negative point.\\
+Proof: $C_2 - d C_1 = P + r(d e_1) - d(r e_1) = P + (rd) e_1 - (dr) e_1 = P + O = P$.
+\end{mustknow}
+
+\begin{worked}[: the slide example on $E_{67}(2, 3)$, every step]
+\textbf{Q.} Bob selects $E_{67}(2, 3)$, $e_1 = (2, 22)$, $d = 4$. Alice sends $P = (24, 26)$ with $r = 2$. Find $e_2$, $C_1$, $C_2$, and verify decryption.
+
+\begin{center}\small
+\begin{tabular}{@{}lllll@{}}
+\toprule
+Step & Slope $s$ (mod 67) & $x_3$ & $y_3$ & Result\\
+\midrule
+$2e_1 = 2(2, 22)$ & $14 \cdot 44^{-1} = 14 \cdot 32 \equiv 46$ & $2112 \equiv 35$ & $-1540 \equiv 1$ & $(35, 1)$\\
+$4e_1 = 2(35, 1)$ & $3677 \cdot 2^{-1} \equiv 59 \cdot 34 \equiv 63$ & $3899 \equiv 13$ & $1385 \equiv 45$ & $(13, 45)$\\
+$2e_2 = 2(13, 45)$ & $509 \cdot 90^{-1} \equiv 40 \cdot 35 \equiv 60$ & $3574 \equiv 23$ & $-645 \equiv 25$ & $(23, 25)$\\
+$P + 2e_2$ & $(-1)(-1)^{-1} = 1$ & $-46 \equiv 21$ & $-23 \equiv 44$ & $(21, 44)$\\
+$C_2 + (23, 42)$ & $(-2) \cdot 2^{-1} \equiv 66$ & $4312 \equiv 24$ & $-242 \equiv 26$ & $(24, 26)$\\
+\bottomrule
+\end{tabular}
+\end{center}
+\textbf{Keys}: $e_2 = 4 e_1 = (13, 45)$. \textbf{Encrypt}: $C_1 = 2 e_1 = (35, 1)$, $r e_2 = (23, 25)$, $C_2 = (24, 26) + (23, 25) = (21, 44)$.\\
+\textbf{Decrypt}: $d \times C_1 = 4 \cdot (35, 1) = 8 e_1 = 2 e_2 = (23, 25)$ (two doublings, rows 2--3). Its negative is $(23, 67 - 25) = (23, 42)$, and $(21, 44) + (23, 42) = \mathbf{(24, 26)} = P$ \checkmark.\\
+Inverses used: $44 \cdot 32 = 1408 = 21 \cdot 67 + 1$; $2 \cdot 34 = 68$; $23 \cdot 35 = 805 = 12 \cdot 67 + 1$ ($90 \equiv 23$).
+\end{worked}
+
+\begin{worked}[: new exam-style example on $E_{13}(1, 1)$]
+\textbf{Q.} Bob uses $E_{13}(1, 1)$ with $e_1 = (1, 4)$ and private key $d = 3$. Alice encrypts the point $P = (4, 2)$ with $r = 2$. Find Bob's public key, the ciphertext, and verify decryption.
+
+\begin{center}\small
+\begin{tabular}{@{}lllll@{}}
+\toprule
+Step & Slope $s$ (mod 13) & $x_3$ & $y_3$ & Result\\
+\midrule
+$2e_1 = 2(1, 4)$ & $4 \cdot 8^{-1} = 4 \cdot 5 \equiv 7$ & $47 \equiv 8$ & $-53 \equiv 12$ & $(8, 12)$\\
+$e_2 = (8, 12) + (1, 4)$ & $(-8)(-7)^{-1} = 5 \cdot 6^{-1} = 5 \cdot 11 \equiv 3$ & $0$ & $12$ & $(0, 12)$\\
+$2e_2 = 2(0, 12)$ & $1 \cdot 24^{-1} = 11^{-1} = 6$ & $36 \equiv 10$ & $-72 \equiv 6$ & $(10, 6)$\\
+$C_2 = (4, 2) + (10, 6)$ & $4 \cdot 6^{-1} \equiv 5$ & $11$ & $-37 \equiv 2$ & $(11, 2)$\\
+$2C_1 = 2(8, 12)$ & $193 \cdot 24^{-1} \equiv 11 \cdot 6 \equiv 1$ & $-15 \equiv 11$ & $-15 \equiv 11$ & $(11, 11)$\\
+$3C_1 = (11, 11) + (8, 12)$ & $1 \cdot (-3)^{-1} = 10^{-1} = 4$ & $-3 \equiv 10$ & $-7 \equiv 6$ & $(10, 6)$\\
+$C_2 + (10, 7)$ & $5 \cdot (-1)^{-1} = 5 \cdot 12 \equiv 8$ & $43 \equiv 4$ & $54 \equiv 2$ & $(4, 2)$\\
+\bottomrule
+\end{tabular}
+\end{center}
+\textbf{Public key} $(E_{13}(1, 1), (1, 4), (0, 12))$. \textbf{Ciphertext} $C_1 = 2 e_1 = \mathbf{(8, 12)}$, $C_2 = \mathbf{(11, 2)}$.\\
+\textbf{Decrypt}: $d \times C_1 = 3 \cdot (8, 12) = (10, 6)$, the same point as $r \times e_2$; negative $(10, 7)$; $(11, 2) + (10, 7) = \mathbf{(4, 2)}$ \checkmark. In multiples of $e_1$ (table above): $e_2 = 3e_1$, $C_1 = 2e_1$, $P = 8e_1$, $C_2 = (8 + 6)e_1 = 14 e_1$, and $14 - 6 = 8$ \checkmark.
+\end{worked}
+
+\subsection{Security of ECC and key size \new}
+\likely{``Why does ECC need smaller keys than RSA for the same security? (2 marks).}
+To decrypt, Eve needs $r$ (then $P = C_2 - r \times e_2$) or $d$ (then $P = C_2 - d \times C_1$). Finding $r$ from $C_1 = r \times e_1$, or $d$ from $e_2 = d \times e_1$, is the ECDLP, which for large $p$ (or large $n$ in GF$(2^n)$) is infeasible by Pollard's rho. As in ElGamal, $r$ must be fresh for every message.
+
+\textbf{Why ECC keys are smaller.} For factoring and for the discrete log in $\mathbb{Z}_p^*$ there are \textbf{sub-exponential} algorithms (the number field sieve, index calculus) that exploit the arithmetic structure of integers, so RSA and ElGamal need 1024-bit and larger moduli to stay ahead. On a well-chosen elliptic curve no such structure is known, and only generic attacks costing about $\sqrt{\#E}$ work, i.e.\ $2^{k/2}$ for a $k$-bit curve. A 160-bit curve therefore costs about $2^{80}$ steps, the same effort as factoring a 1024-bit RSA modulus: \imp{ECC over GF$(2^n)$ or GF$(p)$ with a 160-bit modulus gives the same security as RSA with a 1024-bit modulus} (and 256-bit ECC $\approx$ 3072-bit RSA). Smaller keys mean less computation, bandwidth and storage, which suits smart cards and mobile devices.
+
+\subsection*{Check your understanding}
+\begin{enumerate}[leftmargin=1.6em]
+  \item \textbf{Differentiate RSA and ElGamal.} RSA rests on factoring $n = pq$, is deterministic, and its ciphertext is one number the size of $n$. ElGamal rests on the discrete logarithm modulo a prime, is probabilistic because of the fresh $r$, and its ciphertext is a pair $(C_1, C_2)$, twice the plaintext size.
+  \item \textbf{Why must $r$ be fresh for every ElGamal message?} The mask $e_2^r$ depends only on $r$; if two messages share $r$, one known plaintext $P$ gives $e_2^r = C_2 P^{-1}$, and then every other message encrypted with that $r$ is $P' = C_2' (e_2^r)^{-1}$.
+  \item \textbf{Why is $(C_1^d)^{-1} = C_1^{p-1-d}$?} $C_1^d \cdot C_1^{p-1-d} = C_1^{p-1} \equiv 1 \pmod p$ by Fermat's little theorem.
+  \item \textbf{ElGamal: $p = 11$, $e_1 = 2$, $d = 3$, $r = 4$, $P = 7$.} $(C_1, C_2) = (5, 6)$; decryption $6 \cdot (5^3)^{-1} = 6 \cdot 3 \equiv 7$.
+  \item \textbf{Why must $4a^3 + 27b^2 \not\equiv 0$?} Otherwise the cubic has a repeated root, the curve is singular (a cusp or crossing), the tangent there is undefined, and the points do not form a group.
+  \item \textbf{What is $-(5, 1)$ on $E_{13}(1, 1)$ and what is $(7, 0) + (7, 0)$?} $-(5, 1) = (5, 12)$ (only $y$ flips); $(7, 0) + (7, 0) = O$ because the tangent at a point with $y = 0$ is vertical.
+  \item \textbf{Why does the doubling slope contain $a$ but not $b$?} It is the derivative $dy/dx$ from $2y\,y' = 3x^2 + a$, and the constant $b$ differentiates to 0.
+  \item \textbf{Is $(3, 5)$ on $E_{11}(1, 6)$? Find $2 \cdot (2, 7)$.} Yes: $27 + 3 + 6 = 36 \equiv 3 \equiv 5^2$. For $2(2, 7)$: $s = 13 \cdot 14^{-1} \equiv 2 \cdot 3^{-1} = 2 \cdot 4 = 8$, $x_3 = 64 - 4 = 60 \equiv 5$, $y_3 = 8(2 - 5) - 7 = -31 \equiv 2$, so $(5, 2)$.
+  \item \textbf{Why does 160-bit ECC match 1024-bit RSA?} Factoring has sub-exponential algorithms, while the ECDLP on a good curve only has generic $\sqrt{n}$-time attacks, so a 160-bit curve already needs about $2^{80}$ work.
+  \item \textbf{Why does the ElGamal ciphertext double in size?} Two values $C_1$ and $C_2$, each in $\mathbb{Z}_p$, are sent for one plaintext block in $\mathbb{Z}_p$.
+\end{enumerate}
+
+\begin{fixbox}
+\begin{itemize}[leftmargin=1.2em,itemsep=0pt]
+  \item ElGamal block diagram: the encryption box labels both lines $C_1$; the second line, $(e_2^r \cdot P) \bmod p$, is $\boldsymbol{C_2}$.
+  \item $E_{67}(2, 3)$ example, step 8: ``He uses $2 \times C_1$'' should read $d \times C_1 = \boldsymbol{4} \times C_1 = (23, 25)$. With $C_1 = 2e_1$, $2 \times C_1 = 4e_1 = e_2 = (13, 45)$, not $(23, 25)$ (recomputed). The same misprint is in Forouzan.
+  \item ElGamal security slide: 1024 bits is about \textbf{309} decimal digits (as on the RSA slide), not 300.
+\end{itemize}
+\end{fixbox}

@@ -1,0 +1,202 @@
+\contentsline {section}{\numberline {1}What to Study First}{5}{section.1}%
+\contentsline {subsection}{\numberline {1.1}What the paper looks like}{5}{subsection.1.1}%
+\contentsline {subsection}{\numberline {1.2}What the two past papers asked}{5}{subsection.1.2}%
+\contentsline {subsection}{\numberline {1.3}What is new this year \textcolor {acc}{$\blacktriangleright $}}{5}{subsection.1.3}%
+\contentsline {subsection}{\numberline {1.4}Priority and study order}{6}{subsection.1.4}%
+\contentsline {section}{\numberline {2}Model for Network Security}{6}{section.2}%
+\contentsline {subsection}{\numberline {2.1}Four tasks in designing a security service}{6}{subsection.2.1}%
+\contentsline {section}{\numberline {3}Network Access Security Model}{6}{section.3}%
+\contentsline {section}{\numberline {4}Cryptography}{7}{section.4}%
+\contentsline {subsection}{\numberline {4.1}Symmetric cipher model}{7}{subsection.4.1}%
+\contentsline {subsection}{\numberline {4.2}Types of cryptography}{7}{subsection.4.2}%
+\contentsline {section}{\numberline {5}Security of Encryption Schemes}{7}{section.5}%
+\contentsline {section}{\numberline {6}Security Goals, Attacks and Cryptanalysis}{8}{section.6}%
+\contentsline {subsection}{\numberline {6.1}Security goals (CIA)}{8}{subsection.6.1}%
+\contentsline {subsection}{\numberline {6.2}Attacks (Forouzan's taxonomy)}{8}{subsection.6.2}%
+\contentsline {subsection}{\numberline {6.3}Kerckhoff's principle and cryptanalysis attacks \textcolor {gold}{$\text {\symfallback \char "2605}$}}{8}{subsection.6.3}%
+\contentsline {subsection}{\numberline {6.4}History notes from the slides}{8}{subsection.6.4}%
+\contentsline {section}{\numberline {7}Classical Encryption Techniques}{9}{section.7}%
+\contentsline {subsection}{\numberline {7.1}Substitution technique}{9}{subsection.7.1}%
+\contentsline {subsection}{\numberline {7.2}Transposition technique}{9}{subsection.7.2}%
+\contentsline {subsection}{\numberline {7.3}Substitution vs.\ transposition}{9}{subsection.7.3}%
+\contentsline {section}{\numberline {8}Caesar Cipher}{10}{section.8}%
+\contentsline {subsection}{\numberline {8.1}Letters as numbers (start at 0)}{10}{subsection.8.1}%
+\contentsline {subsection}{\numberline {8.2}Algorithm}{10}{subsection.8.2}%
+\contentsline {subsection}{\numberline {8.3}Worked example: encrypt ``neso academy'' ($k=3$)}{10}{subsection.8.3}%
+\contentsline {subsection}{\numberline {8.4}Homework 1: decrypt ``QHWZRUN VHFXULWB'' ($k=3$)}{10}{subsection.8.4}%
+\contentsline {section}{\numberline {9}Shift Cipher (the general form)}{10}{section.9}%
+\contentsline {subsection}{\numberline {9.1}Pros and cons of the Caesar cipher}{11}{subsection.9.1}%
+\contentsline {section}{\numberline {10}Brute-Force Attack on the Caesar/Shift Cipher}{11}{section.10}%
+\contentsline {section}{\numberline {11}Monoalphabetic Cipher}{12}{section.11}%
+\contentsline {subsection}{\numberline {11.1}Permutations}{12}{subsection.11.1}%
+\contentsline {subsection}{\numberline {11.2}The cipher}{12}{subsection.11.2}%
+\contentsline {subsection}{\numberline {11.3}Breaking it: frequency analysis}{12}{subsection.11.3}%
+\contentsline {subsection}{\numberline {11.4}Pros, cons, countermeasure}{13}{subsection.11.4}%
+\contentsline {subsection}{\numberline {11.5}Homework: encrypt with a key phrase}{13}{subsection.11.5}%
+\contentsline {section}{\numberline {12}Playfair Cipher \textcolor {gold}{$\text {\symfallback \char "2605}\text {\symfallback \char "2605}$}}{13}{section.12}%
+\contentsline {subsection}{\numberline {12.1}Building the 5$\times $5 key matrix}{13}{subsection.12.1}%
+\contentsline {subsection}{\numberline {12.2}Step 1: split the plaintext into digrams}{13}{subsection.12.2}%
+\contentsline {subsection}{\numberline {12.3}Step 2: encrypt each pair (three cases) \textcolor {gold}{$\text {\symfallback \char "2605}$}}{13}{subsection.12.3}%
+\contentsline {subsection}{\numberline {12.4}Worked examples (keyword MONARCHY)}{14}{subsection.12.4}%
+\contentsline {subsection}{\numberline {12.5}Solved question}{14}{subsection.12.5}%
+\contentsline {subsection}{\numberline {12.6}When I or J is in the keyword or the message \textcolor {gold}{$\text {\symfallback \char "2605}$}}{14}{subsection.12.6}%
+\contentsline {subsection}{\numberline {12.7}Decryption}{15}{subsection.12.7}%
+\contentsline {section}{\numberline {13}Hill Cipher}{15}{section.13}%
+\contentsline {subsection}{\numberline {13.1}Encryption example: ``pay more money''}{16}{subsection.13.1}%
+\contentsline {subsection}{\numberline {13.2}Decryption: finding $K^{-1}$}{16}{subsection.13.2}%
+\contentsline {subsection}{\numberline {13.3}Decryption example: \texttt {RRLMWBKASPDH}}{17}{subsection.13.3}%
+\contentsline {section}{\numberline {14}Polyalphabetic Ciphers}{17}{section.14}%
+\contentsline {subsection}{\numberline {14.1}Vigen\`ere cipher \textcolor {gold}{$\text {\symfallback \char "2605}$}}{17}{subsection.14.1}%
+\contentsline {subsection}{\numberline {14.2}Autokey system \textcolor {gold}{$\text {\symfallback \char "2605}$}}{18}{subsection.14.2}%
+\contentsline {subsection}{\numberline {14.3}Vernam cipher}{18}{subsection.14.3}%
+\contentsline {section}{\numberline {15}One-Time Pad \textcolor {gold}{$\text {\symfallback \char "2605}$}}{19}{section.15}%
+\contentsline {subsection}{\numberline {15.1}How it grew out of the earlier ciphers}{19}{subsection.15.1}%
+\contentsline {subsection}{\numberline {15.2}Example 1: letters}{19}{subsection.15.2}%
+\contentsline {subsection}{\numberline {15.3}Example 2: bits}{19}{subsection.15.3}%
+\contentsline {subsection}{\numberline {15.4}Why it can't be broken}{20}{subsection.15.4}%
+\contentsline {subsection}{\numberline {15.5}The rules, and what breaks if you bend them}{20}{subsection.15.5}%
+\contentsline {subsection}{\numberline {15.6}Two fundamental difficulties}{20}{subsection.15.6}%
+\contentsline {subsection}{\numberline {15.7}Perfect secrecy}{20}{subsection.15.7}%
+\contentsline {section}{\numberline {16}Transposition Ciphers}{21}{section.16}%
+\contentsline {subsection}{\numberline {16.1}Rail fence}{21}{subsection.16.1}%
+\contentsline {subsection}{\numberline {16.2}Decrypting a rail fence}{21}{subsection.16.2}%
+\contentsline {subsection}{\numberline {16.3}Row--column transposition}{22}{subsection.16.3}%
+\contentsline {subsection}{\numberline {16.4}Two stages: more complex}{22}{subsection.16.4}%
+\contentsline {section}{\numberline {17}Classical Ciphers at a Glance}{22}{section.17}%
+\contentsline {section}{\numberline {18}Traditional Ciphers: Remaining Topics (Lecture 5)}{23}{section.18}%
+\contentsline {subsection}{\numberline {18.1}Multiplicative and affine ciphers \textcolor {gold}{$\text {\symfallback \char "2605}$}}{23}{subsection.18.1}%
+\contentsline {subsection}{\numberline {18.2}Cryptanalysis of Vigen\`ere: the Kasiski test}{23}{subsection.18.2}%
+\contentsline {subsection}{\numberline {18.3}Cryptanalysis of Hill: known-plaintext}{23}{subsection.18.3}%
+\contentsline {subsection}{\numberline {18.4}Rotor ciphers and Enigma}{24}{subsection.18.4}%
+\contentsline {subsection}{\numberline {18.5}Transposition: keyless, keyed, combined \textcolor {gold}{$\text {\symfallback \char "2605}$}}{24}{subsection.18.5}%
+\contentsline {subsection}{\numberline {18.6}Stream vs.\ block ciphers}{24}{subsection.18.6}%
+\contentsline {section}{\numberline {19}Steganography}{24}{section.19}%
+\contentsline {subsection}{\numberline {19.1}Historical techniques}{24}{subsection.19.1}%
+\contentsline {subsection}{\numberline {19.2}Drawbacks}{25}{subsection.19.2}%
+\contentsline {subsection}{\numberline {19.3}LSB steganography}{25}{subsection.19.3}%
+\contentsline {subsection}{\numberline {19.4}Watermarking vs.\ image steganography}{25}{subsection.19.4}%
+\contentsline {subsection}{\numberline {19.5}OpenStego demo}{25}{subsection.19.5}%
+\contentsline {section}{\numberline {20}Solved Exam Questions}{26}{section.20}%
+\contentsline {section}{\numberline {21}Prime Numbers}{26}{section.21}%
+\contentsline {subsection}{\numberline {21.1}Why primes matter in cryptography}{26}{subsection.21.1}%
+\contentsline {section}{\numberline {22}Modular Arithmetic}{27}{section.22}%
+\contentsline {subsection}{\numberline {22.1}Reduce first}{27}{subsection.22.1}%
+\contentsline {subsection}{\numberline {22.2}Properties of $\symbb {Z}_n$ and inverses \textcolor {gold}{$\text {\symfallback \char "2605}$}}{27}{subsection.22.2}%
+\contentsline {subsection}{\numberline {22.3}Linear congruences $ax \equiv b \pmod n$}{27}{subsection.22.3}%
+\contentsline {section}{\numberline {23}Modular Exponentiation \textcolor {gold}{$\text {\symfallback \char "2605}$}}{28}{section.23}%
+\contentsline {subsection}{\numberline {23.1}Part 1: when the base is close to the modulus}{28}{subsection.23.1}%
+\contentsline {subsection}{\numberline {23.2}Part 2: repeated squaring}{28}{subsection.23.2}%
+\contentsline {section}{\numberline {24}GCD and the Euclidean Algorithm}{29}{section.24}%
+\contentsline {subsection}{\numberline {24.1}The key fact}{29}{subsection.24.1}%
+\contentsline {subsection}{\numberline {24.2}Method 1: the Q A B R table}{30}{subsection.24.2}%
+\contentsline {subsection}{\numberline {24.3}Method 2: recursion}{30}{subsection.24.3}%
+\contentsline {subsection}{\numberline {24.4}Relatively prime}{30}{subsection.24.4}%
+\contentsline {section}{\numberline {25}Extended Euclidean Algorithm \textcolor {gold}{$\text {\symfallback \char "2605}\text {\symfallback \char "2605}$}}{31}{section.25}%
+\contentsline {subsection}{\numberline {25.1}Multiplicative inverse with the table \textcolor {gold}{$\text {\symfallback \char "2605}\text {\symfallback \char "2605}$}}{31}{subsection.25.1}%
+\contentsline {subsection}{\numberline {25.2}Linear Diophantine equations $ax + by = c$ \textcolor {gold}{$\text {\symfallback \char "2605}$}}{31}{subsection.25.2}%
+\contentsline {section}{\numberline {26}Relatively Prime Numbers, Euler's Totient and $\symbb {Z}_n^*$}{32}{section.26}%
+\contentsline {subsection}{\numberline {26.1}Relatively prime (co-prime) numbers}{32}{subsection.26.1}%
+\contentsline {subsection}{\numberline {26.2}Euler's totient function $\mitphi (n)$ \textcolor {gold}{$\text {\symfallback \char "2605}$}}{32}{subsection.26.2}%
+\contentsline {subsection}{\numberline {26.3}Computing $\mitphi (n)$: the four rules \textcolor {gold}{$\text {\symfallback \char "2605}$}}{32}{subsection.26.3}%
+\contentsline {subsection}{\numberline {26.4}The sets $\symbb {Z}_n$ and $\symbb {Z}_n^*$}{33}{subsection.26.4}%
+\contentsline {subsection}{\numberline {26.5}Why cryptography cares about $\mitphi (n)$}{34}{subsection.26.5}%
+\contentsline {section}{\numberline {27}Fermat's and Euler's Theorems, Inverses and Primitive Roots}{34}{section.27}%
+\contentsline {subsection}{\numberline {27.1}Fermat's little theorem and exponent reduction \textcolor {gold}{$\text {\symfallback \char "2605}$}}{35}{subsection.27.1}%
+\contentsline {subsection}{\numberline {27.2}Euler's theorem \textcolor {gold}{$\text {\symfallback \char "2605}$}}{35}{subsection.27.2}%
+\contentsline {subsection}{\numberline {27.3}Multiplicative inverses via Fermat and Euler \textcolor {gold}{$\text {\symfallback \char "2605}$}}{36}{subsection.27.3}%
+\contentsline {subsection}{\numberline {27.4}Order of an element \textcolor {acc}{$\blacktriangleright $}}{37}{subsection.27.4}%
+\contentsline {subsection}{\numberline {27.5}Primitive roots \textcolor {acc}{$\blacktriangleright $}}{38}{subsection.27.5}%
+\contentsline {section}{\numberline {28}Primes, Primality Testing, Factorization, CRT and Discrete Logs}{40}{section.28}%
+\contentsline {subsection}{\numberline {28.1}Primes and how many there are}{40}{subsection.28.1}%
+\contentsline {subsection}{\numberline {28.2}Primality testing: deterministic and probabilistic}{41}{subsection.28.2}%
+\contentsline {subsection}{\numberline {28.3}Miller--Rabin test \textcolor {acc}{$\blacktriangleright $}}{41}{subsection.28.3}%
+\contentsline {subsection}{\numberline {28.4}Factorization}{43}{subsection.28.4}%
+\contentsline {subsection}{\numberline {28.5}Chinese remainder theorem \textcolor {acc}{$\blacktriangleright $}}{43}{subsection.28.5}%
+\contentsline {subsection}{\numberline {28.6}Fast exponentiation: square-and-multiply \textcolor {gold}{$\text {\symfallback \char "2605}$}}{45}{subsection.28.6}%
+\contentsline {subsection}{\numberline {28.7}Discrete logarithms \textcolor {acc}{$\blacktriangleright $}}{46}{subsection.28.7}%
+\contentsline {section}{\numberline {29}Algebraic Structures: Groups, Rings, Fields \textcolor {gold}{$\text {\symfallback \char "2605}\text {\symfallback \char "2605}$}}{48}{section.29}%
+\contentsline {subsection}{\numberline {29.1}Groups}{48}{subsection.29.1}%
+\contentsline {subsection}{\numberline {29.2}Order, subgroups and cyclic subgroups}{49}{subsection.29.2}%
+\contentsline {subsection}{\numberline {29.3}Rings and fields}{49}{subsection.29.3}%
+\contentsline {subsection}{\numberline {29.4}Finite fields: why the size must be $p^n$}{50}{subsection.29.4}%
+\contentsline {subsection}{\numberline {29.5}GF$(p)$ arithmetic and division \textcolor {gold}{$\text {\symfallback \char "2605}$}}{50}{subsection.29.5}%
+\contentsline {subsection}{\numberline {29.6}Why GF$(2^n)$ instead of $\symbb {Z}_{2^n}$}{51}{subsection.29.6}%
+\contentsline {subsection}{\numberline {29.7}Polynomial representation and addition}{51}{subsection.29.7}%
+\contentsline {subsection}{\numberline {29.8}Irreducible polynomials: the modulus}{51}{subsection.29.8}%
+\contentsline {subsection}{\numberline {29.9}Polynomial long division over GF(2) \textcolor {gold}{$\text {\symfallback \char "2605}$}}{51}{subsection.29.9}%
+\contentsline {subsection}{\numberline {29.10}Multiplication in GF$(2^n)$ \textcolor {gold}{$\text {\symfallback \char "2605}$}}{52}{subsection.29.10}%
+\contentsline {subsection}{\numberline {29.11}Multiplicative inverse in GF$(2^n)$: extended Euclid on polynomials \textcolor {gold}{$\text {\symfallback \char "2605}\text {\symfallback \char "2605}$}}{53}{subsection.29.11}%
+\contentsline {subsection}{\numberline {29.12}Small fields: GF$(2^2)$ and GF$(2^3)$}{56}{subsection.29.12}%
+\contentsline {section}{\numberline {30}Modern Symmetric-Key Ciphers}{57}{section.30}%
+\contentsline {subsection}{\numberline {30.1}Modern block ciphers and padding}{57}{subsection.30.1}%
+\contentsline {subsection}{\numberline {30.2}Components of a modern block cipher}{57}{subsection.30.2}%
+\contentsline {subsection}{\numberline {30.3}Product ciphers: confusion, diffusion and rounds \textcolor {gold}{$\text {\symfallback \char "2605}$}}{59}{subsection.30.3}%
+\contentsline {subsection}{\numberline {30.4}Feistel ciphers \textcolor {gold}{$\text {\symfallback \char "2605}$}}{60}{subsection.30.4}%
+\contentsline {subsection}{\numberline {30.5}Non-Feistel ciphers}{61}{subsection.30.5}%
+\contentsline {subsection}{\numberline {30.6}Attacks on modern block ciphers}{61}{subsection.30.6}%
+\contentsline {subsection}{\numberline {30.7}Modern stream ciphers}{62}{subsection.30.7}%
+\contentsline {section}{\numberline {31}Data Encryption Standard (DES)}{63}{section.31}%
+\contentsline {subsection}{\numberline {31.1}DES structure \textcolor {gold}{$\text {\symfallback \char "2605}$}}{63}{subsection.31.1}%
+\contentsline {subsection}{\numberline {31.2}Initial and final permutations}{63}{subsection.31.2}%
+\contentsline {subsection}{\numberline {31.3}Rounds: mixer, swapper and the reverse cipher}{64}{subsection.31.3}%
+\contentsline {subsection}{\numberline {31.4}The DES function $f(R_{i-1}, K_i)$ \textcolor {gold}{$\text {\symfallback \char "2605}$}}{64}{subsection.31.4}%
+\contentsline {subsection}{\numberline {31.5}Key generation \textcolor {gold}{$\text {\symfallback \char "2605}$}}{66}{subsection.31.5}%
+\contentsline {subsection}{\numberline {31.6}DES analysis: avalanche and completeness}{68}{subsection.31.6}%
+\contentsline {subsection}{\numberline {31.7}Weaknesses of DES}{68}{subsection.31.7}%
+\contentsline {subsection}{\numberline {31.8}Multiple DES}{69}{subsection.31.8}%
+\contentsline {subsection}{\numberline {31.9}Security of DES in one line each}{69}{subsection.31.9}%
+\contentsline {section}{\numberline {32}Advanced Encryption Standard (AES)}{70}{section.32}%
+\contentsline {subsection}{\numberline {32.1}Parameters and data units}{70}{subsection.32.1}%
+\contentsline {subsection}{\numberline {32.2}Round structure}{71}{subsection.32.2}%
+\contentsline {subsection}{\numberline {32.3}SubBytes (substitution) \textcolor {gold}{$\text {\symfallback \char "2605}$}}{71}{subsection.32.3}%
+\contentsline {subsection}{\numberline {32.4}ShiftRows (permutation) \textcolor {gold}{$\text {\symfallback \char "2605}$}}{73}{subsection.32.4}%
+\contentsline {subsection}{\numberline {32.5}MixColumns (mixing) \textcolor {gold}{$\text {\symfallback \char "2605}$}}{73}{subsection.32.5}%
+\contentsline {subsection}{\numberline {32.6}AddRoundKey (key adding) \textcolor {gold}{$\text {\symfallback \char "2605}$}}{74}{subsection.32.6}%
+\contentsline {subsection}{\numberline {32.7}Key expansion (AES-128) \textcolor {gold}{$\text {\symfallback \char "2605}$}}{75}{subsection.32.7}%
+\contentsline {subsection}{\numberline {32.8}One complete round: FIPS-197 example}{76}{subsection.32.8}%
+\contentsline {subsection}{\numberline {32.9}Decryption}{76}{subsection.32.9}%
+\contentsline {subsection}{\numberline {32.10}Analysis of AES}{76}{subsection.32.10}%
+\contentsline {subsection}{\numberline {32.11}AES versus DES}{76}{subsection.32.11}%
+\contentsline {section}{\numberline {33}Asymmetric-Key Cryptography and RSA \textcolor {acc}{$\blacktriangleright $}}{77}{section.33}%
+\contentsline {subsection}{\numberline {33.1}Why asymmetric-key cryptography exists \textcolor {acc}{$\blacktriangleright $}}{77}{subsection.33.1}%
+\contentsline {subsection}{\numberline {33.2}Trapdoor one-way functions \textcolor {acc}{$\blacktriangleright $}}{78}{subsection.33.2}%
+\contentsline {subsection}{\numberline {33.3}RSA: key generation, encryption, decryption \textcolor {acc}{$\blacktriangleright $}}{78}{subsection.33.3}%
+\contentsline {subsection}{\numberline {33.4}Why decryption works: proof of correctness \textcolor {acc}{$\blacktriangleright $}}{78}{subsection.33.4}%
+\contentsline {subsection}{\numberline {33.5}The slide examples \textcolor {acc}{$\blacktriangleright $}}{79}{subsection.33.5}%
+\contentsline {subsection}{\numberline {33.6}Exam-format RSA numericals \textcolor {acc}{$\blacktriangleright $}}{79}{subsection.33.6}%
+\contentsline {subsection}{\numberline {33.7}Choosing $e$; why $e = 2$ never works \textcolor {acc}{$\blacktriangleright $}}{80}{subsection.33.7}%
+\contentsline {subsection}{\numberline {33.8}Faster decryption with the CRT \textcolor {acc}{$\blacktriangleright $}}{80}{subsection.33.8}%
+\contentsline {subsection}{\numberline {33.9}Attacks on RSA \textcolor {acc}{$\blacktriangleright $}}{81}{subsection.33.9}%
+\contentsline {subsection}{\numberline {33.10}Recommendations}{81}{subsection.33.10}%
+\contentsline {section}{\numberline {34}ElGamal and Elliptic Curve Cryptosystems \textcolor {acc}{$\blacktriangleright $}}{82}{section.34}%
+\contentsline {subsection}{\numberline {34.1}ElGamal cryptosystem \textcolor {acc}{$\blacktriangleright $}}{82}{subsection.34.1}%
+\contentsline {subsection}{\numberline {34.2}Security of ElGamal \textcolor {acc}{$\blacktriangleright $}}{83}{subsection.34.2}%
+\contentsline {subsection}{\numberline {34.3}Elliptic curves over the real numbers}{83}{subsection.34.3}%
+\contentsline {subsection}{\numberline {34.4}Elliptic curves over GF$(p)$ \textcolor {acc}{$\blacktriangleright $}}{84}{subsection.34.4}%
+\contentsline {subsection}{\numberline {34.5}Point addition and doubling over GF$(p)$ \textcolor {acc}{$\blacktriangleright $}}{85}{subsection.34.5}%
+\contentsline {subsection}{\numberline {34.6}Scalar multiplication and the ECDLP \textcolor {acc}{$\blacktriangleright $}}{86}{subsection.34.6}%
+\contentsline {subsection}{\numberline {34.7}ECC simulating ElGamal \textcolor {acc}{$\blacktriangleright $}}{86}{subsection.34.7}%
+\contentsline {subsection}{\numberline {34.8}Security of ECC and key size \textcolor {acc}{$\blacktriangleright $}}{87}{subsection.34.8}%
+\contentsline {section}{\numberline {35}Message Integrity and Hash Functions}{88}{section.35}%
+\contentsline {subsection}{\numberline {35.1}Integrity versus secrecy; message and digest \textcolor {acc}{$\blacktriangleright $}}{88}{subsection.35.1}%
+\contentsline {subsection}{\numberline {35.2}The three security criteria \textcolor {acc}{$\blacktriangleright $}}{88}{subsection.35.2}%
+\contentsline {subsection}{\numberline {35.3}The random oracle model \textcolor {acc}{$\blacktriangleright $}}{89}{subsection.35.3}%
+\contentsline {subsection}{\numberline {35.4}The four birthday problems \textcolor {acc}{$\blacktriangleright $}}{89}{subsection.35.4}%
+\contentsline {subsection}{\numberline {35.5}Attacks on an $n$-bit digest \textcolor {acc}{$\blacktriangleright $}}{90}{subsection.35.5}%
+\contentsline {subsection}{\numberline {35.6}Iterated hash functions: the Merkle--Damg\r ard scheme \textcolor {acc}{$\blacktriangleright $}}{92}{subsection.35.6}%
+\contentsline {subsection}{\numberline {35.7}Compression functions: from scratch or from a block cipher \textcolor {acc}{$\blacktriangleright $}}{92}{subsection.35.7}%
+\contentsline {subsection}{\numberline {35.8}SHA-512: overview and parameters \textcolor {acc}{$\blacktriangleright $}}{93}{subsection.35.8}%
+\contentsline {subsection}{\numberline {35.9}SHA-512: padding and length field \textcolor {acc}{$\blacktriangleright $}}{94}{subsection.35.9}%
+\contentsline {subsection}{\numberline {35.10}SHA-512: word expansion and the compression function \textcolor {acc}{$\blacktriangleright $}}{94}{subsection.35.10}%
+\contentsline {subsection}{\numberline {35.11}Exercises on the SHA-512 operations \textcolor {acc}{$\blacktriangleright $}}{95}{subsection.35.11}%
+\contentsline {subsection}{\numberline {35.12}Whirlpool}{96}{subsection.35.12}%
+\contentsline {section}{\numberline {36}Previous Year Papers (MNNIT, CSN15403), Fully Solved}{98}{section.36}%
+\contentsline {subsection}{\numberline {36.1}Quick-revision method boxes}{98}{subsection.36.1}%
+\contentsline {subsection}{\numberline {36.2}Mid-Sem 2024--25, solved}{98}{subsection.36.2}%
+\contentsline {subsection}{\numberline {36.3}Mid-Sem 2025--26, solved}{100}{subsection.36.3}%
+\contentsline {subsection}{\numberline {36.4}Mock Mid-Sem paper (same style), 90 minutes, 25 marks}{102}{subsection.36.4}%
+\contentsline {subsection}{\numberline {36.5}Mock paper: model answers}{103}{subsection.36.5}%
+\contentsline {section}{\numberline {37}Exam-Pattern Drill Bank}{104}{section.37}%
+\contentsline {subsection}{\numberline {37.1}Drill bank: model answers}{106}{subsection.37.1}%
+\contentsline {section}{\numberline {38}Practice Problems}{109}{section.38}%
+\contentsline {section}{\numberline {39}Answer Key}{115}{section.39}%

@@ -1,0 +1,120 @@
+% Videos: relatively prime numbers, Euler's totient (concept), Euler's totient (formulas, solved examples)
+\section{Relatively Prime Numbers and Euler's Totient}
+
+\subsection{Relatively prime (co-prime) numbers}
+\begin{keybox}
+Two numbers are \textbf{relatively prime} if they have no prime factors in common and their only common factor is 1:
+\[
+\gcd(a, b) = 1 \iff a, b \text{ are relatively prime (co-prime)}
+\]
+\end{keybox}
+\begin{center}\small
+\begin{tabular}{@{}lllcl@{}}
+\toprule
+$a$, $b$ & Divisors & GCD & Co-prime? & Note\\
+\midrule
+4, 13 & $\{1,2,4\}$, $\{1,13\}$ & 1 & yes & composite + prime\\
+15, 21 & $\{1,3,5,15\}$, $\{1,3,7,21\}$ & 3 & \textbf{no} & share the factor 3\\
+11, 17 & & 1 & yes & both prime\\
+11, 21 & & 1 & yes & prime + composite ($21 = 3\cdot7$)\\
+12, 77 & & 1 & yes & \textbf{both composite} ($2^2\cdot3$ and $7\cdot11$)\\
+83, 19 & (Euclid: $\gcd(19,7) = \dots = \gcd(1,0)$) & 1 & yes & \\
+\bottomrule
+\end{tabular}
+\end{center}
+\textbf{Never judge by looks.} Co-prime numbers can both be composite (12, 77). Always compute the GCD, using Euclid for big numbers.
+Lecture homework: $\gcd(790, 121)$ (answer in practice Q48).
+
+\subsection{Euler's totient function $\Phi(n)$}
+\begin{keybox}
+$\Phi(n)$ = the number of \textbf{positive integers less than $n$} that are \textbf{relatively prime to $n$}.
+(Zero and negative numbers don't count.)
+\end{keybox}
+\textbf{By hand:} check $\gcd(k, n)$ for every $k = 1, \dots, n-1$ and count the 1s.
+\begin{center}\small\setlength{\tabcolsep}{5pt}
+\begin{tabular}{@{}l*{7}{c}l@{}}
+\toprule
+$k$ & 1&2&3&4&5&6&7&\\
+$\gcd(k, 8)$ & 1&2&1&4&1&2&1&\\
+co-prime? & \checkmark&$\times$&\checkmark&$\times$&\checkmark&$\times$&\checkmark& $\Rightarrow \Phi(8) = \mathbf{4}$\\
+\bottomrule
+\end{tabular}
+\end{center}
+Similarly $\Phi(5) = 4$ (all of 1--4) and $\Phi(11) = 10$ (all of 1--10). For $n = 1000$ this would take 999 GCDs, hence the formulas.
+
+\subsection{Formulas}
+\begin{center}\small
+\begin{tabularx}{\textwidth}{@{}l X l@{}}
+\toprule
+Case & Formula & Example\\
+\midrule
+1. $n$ is prime & $\Phi(n) = n - 1$ & $\Phi(7) = 6$, $\Phi(31) = 30$\\
+2. $n = p \times q$, \textbf{distinct} primes & $\Phi(n) = (p-1)(q-1)$ & $\Phi(21) = 2\cdot6 = 12$\\
+3. anything else & $\Phi(n) = n\left(1 - \frac{1}{p_1}\right)\left(1 - \frac{1}{p_2}\right)\cdots$, \;$p_i$ = the \textbf{distinct} primes dividing $n$ & $\Phi(1000) = 400$\\
+\bottomrule
+\end{tabularx}
+\end{center}
+The formula in case 3 works for \emph{every} $n$: for a prime, $n(1 - \frac1n) = n - 1$; for $pq$, $pq(1-\frac1p)(1-\frac1q) = (p-1)(q-1)$. Cases 1 and 2 are shortcuts.
+
+\textbf{Example: $\Phi(35)$}, with $35 = 5 \times 7$: $\;(5-1)(7-1) = 4 \times 6 = \mathbf{24}$. Check by crossing out the multiples of 5 and 7 among 1--34:
+\begin{center}
+\begin{tikzpicture}[x=5.6mm,y=5.6mm]
+  \foreach \k in {1,...,34}{
+    \pgfmathtruncatemacro{\col}{mod(\k-1,17)}
+    \pgfmathtruncatemacro{\row}{(\k-1)/17}
+    \pgfmathtruncatemacro{\mf}{mod(\k,5)}
+    \pgfmathtruncatemacro{\ms}{mod(\k,7)}
+    \ifnum\mf=0 \fill[warn!30] (\col,-\row) rectangle ++(1,-1);\fi
+    \ifnum\ms=0 \fill[acc!30] (\col,-\row) rectangle ++(1,-1);\fi
+    \draw[gray!60] (\col,-\row) rectangle ++(1,-1);
+    \node[font=\scriptsize] at (\col+0.5,-\row-0.5) {\k};
+  }
+\end{tikzpicture}\\[2pt]
+{\footnotesize red = multiple of 5 (6 numbers), blue = multiple of 7 (4 numbers); $34 - 10 = 24$ white cells}
+\end{center}
+
+\begin{keybox}[title=Trap: repeated prime factors]
+$25 = 5 \times 5$, but $p$ and $q$ must be \textbf{different}. $(5-1)(5-1) = 16$ is \textbf{wrong}.
+Use case 3: $\Phi(25) = 25\left(1 - \frac15\right) = \mathbf{20}$. (Check: of 1--24, only 5, 10, 15, 20 share a factor with 25, so $24 - 4 = 20$.)
+\end{keybox}
+
+\textbf{Example: $\Phi(1000)$.} $1000 = 2^3 \cdot 5^3$; the distinct primes are 2 and 5 (\textbf{the exponents don't appear}):
+$\;1000 \cdot \frac12 \cdot \frac45 = \mathbf{400}$.
+
+\textbf{Example: $\Phi(7000)$.} $7000 = 2^3 \cdot 5^3 \cdot 7$:
+$\;7000 \cdot \frac12 \cdot \frac45 \cdot \frac67 = 7000 \cdot \frac{24}{70} = \mathbf{2400}$.
+
+\textbf{Lecture homework:} $\Phi(369)$ and $\Phi(372)$. Answers in practice Q48.
+
+\subsection{Other useful formulas (mentioned but not shown in the lecture)}
+\begin{itemize}
+  \item \textbf{Prime power:} $\Phi(p^k) = p^k - p^{k-1}$ (remove the $p^{k-1}$ multiples of $p$). E.g.\ $\Phi(25) = 25 - 5 = 20$, $\Phi(8) = 8 - 4 = 4$.
+  \item \textbf{Multiplicative:} $\Phi(mn) = \Phi(m)\,\Phi(n)$ \emph{when $\gcd(m, n) = 1$}. E.g.\ $\Phi(1000) = \Phi(8)\Phi(125) = 4 \cdot 100 = 400$. (If $\gcd \ne 1$ it fails: $\Phi(4) = 2 \ne \Phi(2)\Phi(2) = 1$.)
+  \item By convention $\Phi(1) = 1$.
+\end{itemize}
+
+\subsection{Why cryptography cares}
+\begin{itemize}
+  \item $\Phi(n)$ counts the numbers that \textbf{have a multiplicative inverse} mod $n$. $\Phi(26) = 12$: that's exactly the 12 valid Hill determinants (practice Q46).
+  \item \textbf{RSA:} $n = p \cdot q$ and $\Phi(n) = (p-1)(q-1)$. The keys satisfy $e \cdot d \equiv 1 \pmod{\Phi(n)}$.
+  The bookmarked example: $187 = 11 \cdot 17$, $\Phi(187) = 10 \cdot 16 = 160$, and $7 \cdot 23 = 161 \equiv 1 \pmod{160}$. That's why $88^7 \to 11$ and $11^{23} \to 88$ undo each other.
+  \item \textbf{Euler's theorem} (coming next): $a^{\Phi(n)} \equiv 1 \pmod n$ when $\gcd(a, n) = 1$.
+\end{itemize}
+
+\begin{examtip}
+\begin{itemize}
+  \item Co-prime $\iff \gcd = 1$. Neither number has to be prime.
+  \item $\Phi(n)$ counts $1 \le k < n$ with $\gcd(k, n) = 1$.
+  \item Prime: $n - 1$. Two \textbf{distinct} primes: $(p-1)(q-1)$. Otherwise: $n\prod(1 - 1/p)$ over the \textbf{distinct} primes.
+  \item $\Phi(p^2) \ne (p-1)^2$: $\Phi(25) = 20$, not 16.
+  \item Always factorise completely first, and ignore the exponents in the product formula.
+\end{itemize}
+\end{examtip}
+
+\begin{fixbox}
+\begin{itemize}
+  \item All results correct (checked by script): $\Phi(5) = 4$, $\Phi(11) = 10$, $\Phi(8) = 4$, $\Phi(35) = 24$, $\Phi(25) = 20$, $\Phi(1000) = 400$, $\Phi(7000) = 2400$. Gemini's homework answers ($\Phi(369) = 240$, $\Phi(372) = 120$) are also correct.
+  \item The slide's ``case 3'' (``either or both of $a, b$ composite'') makes the product formula look like a last resort. It actually works for all $n$.
+  \item ``Less than $n$'' gives $\Phi(1) = 0$, but the standard convention is $\Phi(1) = 1$ (count $1 \le k \le n$). It only matters for $n = 1$.
+\end{itemize}
+\end{fixbox}
