@@ -1,0 +1,108 @@
+% Question bank for sections/25_assignment_topics.tex (AKS, factoring, RSA attacks, OAEP, hash families, WhatsApp, UPI).
+% Every number recomputed by script (scratchpad/w25/qnums.py, fact.py, rsa_att.py, rsa2.py, oaep.py).
+\section{Assignment Topics}\label{q:assign}
+\noindent{\small Notes: \S\ref{sec:assign}--\S\ref{sec:upi}.}
+
+\subsection*{Check your understanding}
+\begin{enumerate}[leftmargin=1.6em,itemsep=3pt]
+  \item \textbf{State the identity behind AKS. Why can it not be checked directly, and why is AKS not used in practice?} For $\gcd(a, n) = 1$, $n$ is prime if and only if $(X + a)^n \equiv X^n + a \pmod n$. Checking it directly means computing $n + 1$ coefficients, which is exponential in the number of bits, so AKS checks it modulo $X^r - 1$ for a small $r$ and for a few values of $a$. The result is polynomial ($\tilde O(\log^6 n)$ in the Lenstra--Pomerance version) but still about $2^{60}$ bit operations for 1024 bits, whereas Miller--Rabin with 40 bases is far faster with an error probability below $4^{-40}$.
+  \item \textbf{In AKS, why is the perfect-power check (step 1) needed, and what does step 3 achieve?} The proof that a composite cannot pass step 5 shows only that $n$ must be a power of one of its prime factors, so proper powers such as $7^3$ must be removed first. Step 3 computes $\gcd(a, n)$ for all $a \le r$; any value strictly between 1 and $n$ is a factor, and afterwards every prime factor of $n$ exceeds $r$.
+  \item \textbf{Why must both $p - 1$ and $q - 1$ have a large prime factor?} If $p - 1$ is $B$-smooth for a small $B$, then $p - 1 \mid B!$, so $2^{B!} \equiv 1 \pmod p$ by Fermat, and Pollard's $p - 1$ method finds $p = \gcd(2^{B!} - 1, n)$ after about $B \log B$ multiplications.
+  \item \textbf{Why does Pollard rho need only about $\sqrt p$ steps, and what does Floyd's method add?} Modulo the unknown prime $p$ the sequence $x_{i+1} = x_i^2 + 1$ behaves like random values in $\mathbb{Z}_p$, so by the birthday paradox it repeats after about $1.25\sqrt p$ terms, and then $p \mid \gcd(x_i - x_j, n)$. Floyd compares only $x_i$ with $x_{2i}$, which finds the repetition with constant memory and one gcd per step.
+  \item \textbf{Define $L_n[\alpha, c]$ and place trial division, QS and NFS on this scale.} $L_n[\alpha, c] = \exp((c + o(1))(\ln n)^\alpha(\ln\ln n)^{1-\alpha})$, polynomial for $\alpha = 0$ and exponential for $\alpha = 1$. Trial division is $L_n[1, 1/2]$ (exponential), the quadratic sieve $L_n[1/2, 1]$ and the number field sieve $L_n[1/3, 1.923]$ (both sub-exponential, NFS faster for large $n$).
+  \item \textbf{Why does a shared modulus break RSA even if no message is ever sent twice?} Any user who knows his own pair $(e, d)$ knows a multiple $ed - 1$ of $\phi(n)$; writing $ed - 1 = 2^s t$ and squaring $a^t$ repeatedly gives a nontrivial square root of 1 with probability at least $1/2$, and $\gcd(x - 1, n)$ factors $n$ (for $n = 3233$: $3^{2925} \to 2256 \to 794 \to 1$, $\gcd(793, 3233) = 61$).
+  \item \textbf{When does H\aa stad's broadcast attack work, and why does OAEP stop it?} It needs the same unpadded $M$ encrypted under $e$ different moduli with the same small $e$; then CRT gives $M^e$ modulo $n_1 \cdots n_e$, which equals $M^e$ exactly because $M^e < n_1 \cdots n_e$. OAEP puts a fresh random $r$ into each encryption, so the receivers encrypt different numbers and no perfect $e$-th power appears.
+  \item \textbf{Why is Wiener's attack irrelevant for a key with $e = 65537$?} Wiener needs $d < \frac13 n^{1/4}$; with a fixed small $e$, $d = e^{-1} \bmod \phi(n)$ is essentially random and as long as $n$, far above $n^{1/4}$. Small $d$ only arises if it is chosen deliberately, which is forbidden; CRT is the safe way to speed up decryption.
+  \item \textbf{With the public key $(3, 55)$ Eve intercepts $C = 13$. Recover $M$ by cycling, and say why this fails for real keys.} $13^3 \equiv 52$, $52^3 \equiv 28$, $28^3 \equiv 7$, $7^3 = 343 \equiv 13$, so the cycle closes and $M = 7$. The cycle length divides $\operatorname{ord}_{\lambda(n)}(e)$ ($\lambda(55) = 20$, $3^4 \equiv 1 \pmod{20}$); for random 1024-bit primes this order is astronomically large.
+  \item \textbf{How does blinding defeat a timing attack on RSA decryption?} Bob decrypts $C' = C r^e$ for a fresh random $r$ and multiplies the result $P r$ by $r^{-1}$. The timed exponentiation runs on a random value that the attacker neither chose nor knows, so the measured times no longer correlate with predictions based on the attacker's ciphertexts.
+  \item \textbf{What do ``all-or-nothing'' and ``non-malleable'' mean for OAEP?} All-or-nothing: recovering any bit of $M$ requires $G(r)$, hence all of $r$, hence all of $P_1$ and $P_2$, so partial inversion of RSA reveals nothing. Non-malleable: a modified ciphertext such as $C X^e$ decodes to a block whose padding bits are random, so it is rejected and gives the attacker no useful plaintext.
+  \item \textbf{Differentiate MD5, SHA-1, SHA-256 and SHA3-256.} MD5: MD design, 128-bit digest, 64 steps, practical collisions since 2004. SHA-1: MD design, 160-bit digest, 80 steps, first collision in 2017 (SHAttered). SHA-256: MD design, 256-bit digest, 64 rounds on 32-bit words, secure. SHA3-256: sponge on a 1600-bit state with capacity 512, 24 rounds, secure and immune to length extension.
+  \item \textbf{What is a length-extension attack, and why are SHA-3 and SHA-512/256 immune?} In an MD hash the digest is the whole final chaining value, so from $h(K \| M)$ and the length an attacker continues hashing to get $h(K \| M \| \text{pad} \| X)$ without $K$. SHA-3 outputs only part of its state (the capacity is never output) and SHA-512/256 outputs only 256 of its 512 chaining bits, so the internal state needed to continue is unknown.
+  \item \textbf{In WhatsApp, what are the roles of the signed prekey, the one-time prekeys and the safety number?} The signed prekey lets a user start a session while the recipient is offline, and its signature by the identity key stops the server from substituting it. A one-time prekey is used in a single session ($DH_4$), giving forward secrecy before the signed prekey is rotated and preventing replay. The 60-digit safety number (security code) lets the two users compare identity keys out of band, which detects a man-in-the-middle by the server.
+  \item \textbf{Differentiate forward secrecy and post-compromise security; which ratchet provides each?} Forward secrecy: stealing today's keys does not reveal past messages; it comes from the one-way HMAC chain (symmetric ratchet) and deletion of used keys. Post-compromise security: after a theft, security is restored for future messages; it comes from the DH ratchet, because each change of speaker mixes in a DH value from a fresh private key the thief never saw.
+\end{enumerate}
+
+\subsection*{Practice problems}
+\begin{enumerate}[leftmargin=1.6em,itemsep=4pt]
+  \item Run the AKS algorithm on $n = 37$: show steps 1--4, find $r$, the bound of the step-5 loop, and the congruence checked in step 5. \hfill(5 marks)\\
+  \textbf{Solution.} \emph{Step 1}: $\log_2 37 = 5.21$, so test $b = 2, \dots, 5$: $6^2 = 36 < 37 < 49$; $3^3 = 27 < 37 < 64$; $2^4 = 16 < 37 < 81$; $2^5 = 32 < 37 < 243$; not a perfect power.
+  \emph{Step 2}: $(\log_2 37)^2 = 27.14$, so we need $\operatorname{ord}_r(37) \ge 28$, which requires $r \ge 29$ (since $\phi(26) = 12$, $\phi(27) = 18$, $\phi(28) = 12$). For $r = 29$: $37 \equiv 8$; $8^2 \equiv 6$, $8^4 \equiv 7$, $8^7 \equiv 17$, $8^{14} \equiv 17^2 = 289 \equiv 28 = -1 \pmod{29}$, so no proper divisor of 28 gives 1 and $\operatorname{ord}_{29}(37) = 28 > 27.14$: $\mathbf{r = 29}$.
+  \emph{Step 3}: 37 is prime, so $\gcd(a, 37) = 1$ for $a \le 29$. \emph{Step 4}: $37 > 29$, continue.
+  \emph{Step 5}: bound $= \lfloor\sqrt{\phi(29)}\log_2 37\rfloor = \lfloor 5.2915 \times 5.2095\rfloor = \lfloor 27.57\rfloor = \mathbf{27}$. Since $37 \bmod 29 = 8$, $X^{37} \equiv X^8$, so for $a = 1, \dots, 27$ it checks $(X + a)^{37} \equiv X^8 + a \pmod{X^{29} - 1, 37}$. All checks pass (37 is prime), so the output is \textbf{PRIME}.
+  \emph{Check}: script confirms $r = 29$, $\operatorname{ord} = 28$, bound 27.
+
+  \item Use Pollard's $p - 1$ method with $B = 5$ to factor $n = 4087$. What happens with $B = 11$? \hfill(5 marks)\\
+  \textbf{Solution.} $a_1 = 2$, $a_e = a_{e-1}^{\,e} \bmod 4087$:
+  \begin{center}\small
+  \begin{tabular}{@{}clcc@{}}
+  \toprule
+  $e$ & computation & $a_e$ & $\gcd(a_e - 1, 4087)$\\
+  \midrule
+  2 & $2^2$ & 4 & 1\\
+  3 & $4^3$ & 64 & 1\\
+  4 & $64^4$: $64^2 = 4096 \equiv 9$, $9^2 = 81$ & 81 & 1\\
+  5 & $81^5$: $81^2 \equiv 2474$, $81^4 \equiv 2474^2 \equiv 2437$, $2437 \cdot 81 \equiv 1221$ & 1221 & \textbf{61}\\
+  \bottomrule
+  \end{tabular}
+  \end{center}
+  $\gcd(1220, 4087) = 61$ ($1220 = 20 \times 61$), so $\mathbf{4087 = 61 \times 67}$. Reason: $61 - 1 = 60 = 2^2 \cdot 3 \cdot 5$ divides $5! = 120$, while $67 - 1 = 66 = 2 \cdot 3 \cdot 11$ does not. With $B = 11$ both 60 and 66 divide $11!$, the final $a$ is 1, and $\gcd(0, 4087) = 4087$: the method fails (reduce $B$ or check the gcd at each step). \emph{Check}: $61 \times 67 = 4087$ \checkmark.
+
+  \item Factor $n = 1387$ by Pollard's rho method with $f(x) = x^2 + 1$, $x_0 = y_0 = 2$ and Floyd cycle detection. \hfill(4 marks)\\
+  \textbf{Solution.} Sequence $x_i$: $2, 5, 26, 677, 620, 202, 582$ ($677^2 + 1 = 458330 \equiv 620$, $620^2 + 1 = 384401 \equiv 202$, $202^2 + 1 \equiv 582 \pmod{1387}$).
+  \begin{center}\small
+  \begin{tabular}{@{}ccccc@{}}
+  \toprule
+  $i$ & $x = x_i$ & $y = x_{2i}$ & $|x - y|$ & $\gcd(|x - y|, 1387)$\\
+  \midrule
+  1 & 5 & 26 & 21 & 1\\
+  2 & 26 & 620 & 594 & 1\\
+  3 & 677 & 582 & 95 & \textbf{19}\\
+  \bottomrule
+  \end{tabular}
+  \end{center}
+  $\mathbf{1387 = 19 \times 73}$. Modulo 19 the sequence is $2, 5, 7, 12, 12, \dots$ ($12^2 + 1 = 145 \equiv 12$), so $x_3 \equiv x_6 \pmod{19}$. \emph{Check}: $19 \times 73 = 1387$ \checkmark.
+
+  \item Factor $n = 4559$ by Fermat's method. How many steps does the formula $(p - q)^2/(8\sqrt n)$ predict? \hfill(3 marks)\\
+  \textbf{Solution.} $\sqrt{4559} = 67.52$, start at $x = 68$: $68^2 - 4559 = 65$, $69^2 - 4559 = 202$, $70^2 - 4559 = 341$, $71^2 - 4559 = 482$ (none square), $72^2 - 4559 = 5184 - 4559 = 625 = 25^2$. So $4559 = (72 - 25)(72 + 25) = \mathbf{47 \times 97}$. Prediction: $(97 - 47)^2/(8 \times 67.52) = 2500/540.2 \approx 4.6$ steps beyond $\sqrt n$, matching $72 - 67.52 = 4.48$. \emph{Check}: $47 \times 97 = 4559$ \checkmark.
+
+  \item Using the congruence-of-squares (quadratic sieve) idea with factor base $\{2, 3, 5, 7\}$ and $x = 46, 47, \dots, 51$, factor $n = 2041$. \hfill(5 marks)\\
+  \textbf{Solution.} $Q(x) = x^2 - 2041$: $Q(46) = 75 = 3 \cdot 5^2$, $Q(47) = 168 = 2^3 \cdot 3 \cdot 7$, $Q(48) = 263$ (prime, not smooth), $Q(49) = 360 = 2^3 \cdot 3^2 \cdot 5$, $Q(50) = 459 = 3^3 \cdot 17$ (not smooth), $Q(51) = 560 = 2^4 \cdot 5 \cdot 7$. Exponent vectors mod 2 over $(2, 3, 5, 7)$: $46: (0,1,0,0)$, $47: (1,1,0,1)$, $49: (1,0,1,0)$, $51: (0,0,1,1)$; their sum is $(0,0,0,0)$. Product: $75 \cdot 168 \cdot 360 \cdot 560 = 2^{10} 3^4 5^4 7^2$, so $Y = 2^5 \cdot 3^2 \cdot 5^2 \cdot 7 = 50400 \equiv 1416$. $X = 46 \cdot 47 \cdot 49 \cdot 51 \bmod 2041$: $46 \cdot 47 = 2162 \equiv 121$, $49 \cdot 51 = 2499 \equiv 458$, $121 \cdot 458 = 55418 \equiv 311$. Then $311^2 \equiv 1416^2$ and $\gcd(1416 - 311, 2041) = \gcd(1105, 2041) = 13$, $\gcd(1416 + 311, 2041) = \gcd(1727, 2041) = 157$. $\mathbf{2041 = 13 \times 157}$. \emph{Check}: $13 \times 157 = 2041$ \checkmark.
+
+  \item Two users share the modulus $n = 2773$ with public exponents $e_1 = 3$ and $e_2 = 5$. The same message is sent to both; Eve intercepts $C_1 = 740$ and $C_2 = 2766$. Recover the message. \hfill(5 marks)\\
+  \textbf{Solution.} $\gcd(3, 5) = 1$ and $2 \cdot 3 + (-1) \cdot 5 = 1$, so $M = C_1^{\,2} \cdot C_2^{-1} \bmod n$. Inverse of $C_2$ by extended Euclid on $(2773, 2766)$: quotients $1, 395, 7$; remainders $7, 1, 0$; $t$ values $0, 1, -1, 396$; so $C_2^{-1} = 396$ (check $2766 \times 396 = 1095336 = 395 \times 2773 + 1$). $C_1^2 = 547600 = 197 \times 2773 + 1319 \equiv 1319$. $M = 1319 \times 396 = 522324 = 188 \times 2773 + 1000$, so $\mathbf{M = 1000}$. \emph{Check}: $1000^3 \bmod 2773 = 740$ and $1000^5 \bmod 2773 = 2766$ \checkmark. ($\phi(2773) = 46 \times 58 = 2668$ is coprime to 3 and 5, so both exponents are legal.)
+
+  \item The same message is sent with $e = 3$ to three users with moduli $n_1 = 87$, $n_2 = 115$, $n_3 = 187$; the ciphertexts are $43$, $80$, $65$. Recover the message (H\aa stad's attack). \hfill(5 marks)\\
+  \textbf{Solution.} $N = 87 \times 115 \times 187 = 1\,870\,935$.
+  \begin{center}\small
+  \begin{tabular}{@{}ccccccr@{}}
+  \toprule
+  $i$ & $n_i$ & $C_i$ & $N_i$ & $N_i \bmod n_i$ & $y_i = N_i^{-1}$ & $C_i N_i y_i$\\
+  \midrule
+  1 & 87 & 43 & 21\,505 & 16 & 49 & 45\,311\,035\\
+  2 & 115 & 80 & 16\,269 & 54 & 49 & 63\,774\,480\\
+  3 & 187 & 65 & 10\,005 & 94 & 2 & 1\,300\,650\\
+  \bottomrule
+  \end{tabular}
+  \end{center}
+  Inverse checks: $16 \cdot 49 = 784 = 9 \cdot 87 + 1$; $54 \cdot 49 = 2646 = 23 \cdot 115 + 1$; $94 \cdot 2 = 188 = 187 + 1$. Sum $= 110\,386\,165 = 59 \times 1\,870\,935 + 1000$, so $M^3 = 1000$ and $\mathbf{M = 10}$. \emph{Check}: $1000 \bmod 87 = 43$, $1000 \bmod 115 = 80$, $1000 \bmod 187 = 65$ \checkmark. The attack works because $M^3 = 1000 < N$.
+
+  \item Bob's public key is $(e, n) = (28397, 71531)$. Use Wiener's attack to find $d$ and factor $n$. \hfill(6 marks)\\
+  \textbf{Solution.} Continued fraction of $28397/71531$: $71531 = 2 \cdot 28397 + 14737$; $28397 = 1 \cdot 14737 + 13660$; $14737 = 1 \cdot 13660 + 1077$; $13660 = 12 \cdot 1077 + 736$; \dots, so $e/n = [0; 2, 1, 1, 12, \dots]$ with convergents $\frac01, \frac12, \frac13, \frac25, \frac{25}{63}, \dots$\\
+  $k/d = 1/2$: $\phi = (28397 \cdot 2 - 1)/1 = 56793$, $p + q = 71531 - 56793 + 1 = 14739$, discriminant $14739^2 - 4 \cdot 71531 = 216\,951\,997$, not a square; reject.\\
+  $k/d = 1/3$: $\phi = 85190 > n$, impossible; reject.\\
+  $k/d = 2/5$: $\phi = (28397 \cdot 5 - 1)/2 = 141984/2 = 70992$; $p + q = 71531 - 70992 + 1 = 540$; $x^2 - 540x + 71531 = 0$ has discriminant $291600 - 286124 = 5476 = 74^2$, so $x = (540 \pm 74)/2 = 307, 233$.\\
+  $\mathbf{d = 5}$, $\mathbf{n = 307 \times 233}$. \emph{Check}: $306 \times 232 = 70992$ and $28397 \times 5 = 141985 = 2 \times 70992 + 1$ \checkmark; Wiener's condition holds since $\frac13 n^{1/4} = 5.45 > 5$.
+
+  \item (Toy OAEP of \S\ref{sec:oaep}: $M_{\text{pad}} = M \| 0000$, 4-bit $r$, $G(r) = (37r + 11) \bmod 256$ as 8 bits, $H(x) = x_L \oplus x_R$, RSA $n = 5917$, $e = 7$, $d = 823$.) Bob receives $C = 824$ and decrypts it to the 12-bit block $0011\,1000\,0010$. (a) Decode the message. (b) Eve sends $C' = 824 \cdot 2^7 \bmod 5917 = 4883$ instead, which decrypts to $0111\,0000\,0100$. Show that Bob rejects it. \hfill(5 marks)\\
+  \textbf{Solution.} (a) $P_1 = 0011\,1000$, $P_2 = 0010$. $H(P_1) = 0011 \oplus 1000 = 1011$; $r = H(P_1) \oplus P_2 = 1011 \oplus 0010 = 1001 = 9$. $G(9) = 37 \cdot 9 + 11 = 344 \equiv 88 = 0101\,1000$. $M_{\text{pad}} = P_1 \oplus G(r) = 0011\,1000 \oplus 0101\,1000 = 0110\,0000$; the padding is zero, so $\mathbf{M = 0110}$.\\
+  (b) $P_1 = 0111\,0000$, $P_2 = 0100$; $H(P_1) = 0111 \oplus 0000 = 0111$; $r = 0111 \oplus 0100 = 0011 = 3$; $G(3) = 122 = 0111\,1010$; $M_{\text{pad}} = 0111\,0000 \oplus 0111\,1010 = 0000\,1010$. The last four bits are not zero, so Bob \textbf{rejects}. \emph{Check}: $898^7 \bmod 5917 = 824$, and $4883^{823} \bmod 5917 = 1796 = 2 \times 898$ (the multiplicative change that textbook RSA would have accepted).
+
+  \item Compare MD5, SHA-1, SHA-256, SHA-512 and SHA3-256 (construction, block, digest, rounds, security status). Why was SHA-3 standardised although SHA-2 is unbroken? \hfill(6 marks)\\
+  \textbf{Solution (model answer).} Write the table of \S\ref{sec:hashfamily}: MD5 (MD, 512-bit blocks, 128-bit digest, 64 steps, collisions since 2004, Flame 2012); SHA-1 (MD, 512, 160, 80 steps, SHAttered collision 2017, being phased out by 2030); SHA-256 (MD, 512, 256, 64 rounds, 32-bit words, secure); SHA-512 (MD, 1024, 512, 80 rounds, 64-bit words, secure); SHA3-256 (sponge, rate 1088 + capacity 512 = 1600-bit state, 24 rounds of $\theta\rho\pi\chi\iota$, secure). Add one sentence per attack and the generic security $2^{d/2}$ for collisions. SHA-3 was chosen by an open competition (2007--2012) as a backup with a completely different design: if a structural attack on MD-style functions extended to SHA-2, SHA-3 would not be affected. It also brings new features: no length extension (so $h(K \| M)$ is a valid MAC, KMAC) and extendable output (SHAKE).
+
+  \item Explain how WhatsApp provides end-to-end encryption. Draw the X3DH key agreement and explain the Double Ratchet. \hfill(10 marks)\\
+  \textbf{Solution (model answer outline).} (i) Problem: the server relays and stores messages and must not read them; the recipient may be offline; keys must be renewed for forward secrecy and post-compromise security. (ii) Keys: identity key, signed prekey (signed by the identity key), one-time prekeys; publics uploaded at registration (Curve25519). (iii) Draw the X3DH sequence diagram of \S\ref{sec:whatsapp}: bundle upload, fetch, four DH values $DH_1 = \mathrm{DH}(IK_A, SPK_B)$, $DH_2 = \mathrm{DH}(EK_A, IK_B)$, $DH_3 = \mathrm{DH}(EK_A, SPK_B)$, $DH_4 = \mathrm{DH}(EK_A, OPK_B)$, $SK = \mathrm{KDF}(\cdot)$, initial message with $IK_A$, $EK_A$. Explain: $DH_1$, $DH_2$ authenticate the two sides; $DH_3$, $DH_4$ give forward secrecy; $OPK$ prevents replay. (iv) Double Ratchet: symmetric HMAC chain per message ($MK = \mathrm{HMAC}(CK, 1)$, $CK \leftarrow \mathrm{HMAC}(CK, 2)$) gives forward secrecy; DH ratchet at each change of speaker gives post-compromise security. Message keys feed AES-256-CBC with HMAC-SHA256. (v) Groups use sender keys (one ciphertext, server fan-out, signature key). (vi) Safety numbers (60 digits, QR) detect a man-in-the-middle by the server. (vii) Limits: metadata, endpoint malware, unencrypted backups unless enabled.
+
+  \item ``All UPI apps are equally secure.'' Discuss, explaining how a UPI payment is protected end to end and which frauds remain. \hfill(10 marks)\\
+  \textbf{Solution (model answer outline).} (i) Architecture: payer app (PSP) with NPCI Common Library, NPCI switch, remitter bank, beneficiary bank; VPA instead of account number; draw the 7-message flow of \S\ref{sec:upi}. (ii) Two factors: device binding through an SMS sent from the registered SIM (possession) and the UPI PIN, set with debit-card details and a bank OTP (knowledge). (iii) The PIN is captured and encrypted inside the CL with an NPCI public key and verified only by the issuer bank in HSMs; the app and PSP servers never see it. (iv) Signed messages over mutually authenticated encrypted links, transaction limits, SMS alerts, RBI rules (zero liability if reported within three working days). (v) Frauds: phishing/vishing, collect-request fraud (the PIN is never needed to receive money), QR scams, SIM swap, screen-sharing apps and malware, mule accounts; countermeasures for each. (vi) Conclusion: the statement is true for the protocol core, since every app uses the same NPCI rails, CL and bank-side PIN verification; apps differ only in app-level controls (app lock, fraud detection, overlay and root detection, updates, privacy, grievance handling, attack surface), and user behaviour matters most.
+\end{enumerate}

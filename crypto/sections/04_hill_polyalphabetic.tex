@@ -43,7 +43,7 @@ K \cdot \operatorname{adj}(K) = \det(K) \cdot I
 
 When the condition fails, encryption is not one-to-one. With $K = \begin{pmatrix}2&0\\0&1\end{pmatrix}$ ($\det K = 2$), the blocks \ttx{aa} $= (0, 0)$ and \ttx{na} $= (13, 0)$ both encrypt to $(0, 0) = $ \ttx{AA}, because $13 \cdot 2 = 26 \equiv 0$. Bob, receiving \ttx{AA}, cannot know which was sent.
 
-\textbf{Key space.} The slides count $26^{m \times m}$ matrices: $26^4 \approx 4.6 \times 10^5$ for $m = 2$, $26^9 \approx 5.4 \times 10^{12}$ for $m = 3$ and $26^{16} \approx 4.4 \times 10^{22}$ for $m = 4$. Only the invertible ones are keys (157{,}248 of the 456{,}976 matrices for $m = 2$, about $1.6 \times 10^{12}$ for $m = 3$), but the number grows so fast with $m$ that brute force on a large key is hopeless.
+\textbf{Key space.} The slides count $26^{m \times m}$ matrices ($26^9 \approx 5.4 \times 10^{12}$ for $m = 3$, $26^{16} \approx 4.4 \times 10^{22}$ for $m = 4$). Only the invertible ones are keys (157{,}248 of the 456{,}976 matrices for $m = 2$), but the count grows so fast with $m$ that brute force on a large key is hopeless.
 
 \subsection{Encryption example: ``pay more money''}
 \begin{worked}[: lecture / Stallings]
@@ -92,7 +92,6 @@ $23x \bmod 26$ & 23&20&17&14&11&8&5&2&25&22&19&16&13&10&7&4&\hl{1}\\
 \end{tabular}
 \end{center}
 $23 \times 17 = 391 = 15\cdot26 + 1$, so $\mathbf{23^{-1} \equiv 17}$.
-An inverse exists only if $\gcd(\det K, 26) = 1$, i.e.\ $\det K$ is odd and not 13. Otherwise the key can't be used, because messages could not be decrypted.
 
 \textbf{Step 3: adjugate, using the $5\times5$ shortcut.} Computing nine cofactors and transposing is error-prone; the lecture's grid produces the adjugate directly, with the signs and the transpose built in.
 \begin{enumerate}[leftmargin=1.5em]
@@ -239,13 +238,21 @@ P = \begin{pmatrix}7&8\\11&11\end{pmatrix}\ (\ttx{hi}, \ttx{ll}),\qquad C = \beg
 $\det P = 7\cdot11 - 8\cdot11 = -11 \equiv 15$; $\gcd(15, 26) = 1$, so $P$ is invertible, and $15^{-1} \equiv 7$ ($15\cdot7 = 105 = 4\cdot26 + 1$).
 \[
 P^{-1} = 7\begin{pmatrix}11&-8\\-11&7\end{pmatrix} = \begin{pmatrix}77&-56\\-77&49\end{pmatrix} \equiv \begin{pmatrix}25&22\\1&23\end{pmatrix},
-\qquad
+\]
+\[
 K = P^{-1}C = \begin{pmatrix}25\cdot7+22\cdot17 & 25\cdot2+22\cdot25\\ 1\cdot7+23\cdot17 & 1\cdot2+23\cdot25\end{pmatrix} = \begin{pmatrix}549&600\\398&577\end{pmatrix} \equiv \mathbf{\begin{pmatrix}3&2\\8&5\end{pmatrix}}
 \]
 ($549 = 21\cdot26 + 3$, $600 = 23\cdot26 + 2$, $398 = 15\cdot26 + 8$, $577 = 22\cdot26 + 5$.) \textbf{Check} with the unused third pair: \ttx{ci} $= (2, 8)$ gives $(2\cdot3 + 8\cdot8,\; 2\cdot2 + 8\cdot5) = (70, 44) \equiv (18, 18) =$ \ttx{SS} \checkmark.
 \end{worked}
 
-The slide's $3\times3$ example works the same way: from three known blocks with $P = \left(\begin{smallmatrix}5&7&10\\13&17&7\\0&5&4\end{smallmatrix}\right)$ ($\det P \equiv 9$) and $C = \left(\begin{smallmatrix}3&6&0\\14&16&9\\3&17&11\end{smallmatrix}\right)$, Eve gets $K = P^{-1}C = \left(\begin{smallmatrix}2&3&7\\5&7&9\\1&2&11\end{smallmatrix}\right)$ (worked in \S\ref{sec:classextra}). The lesson carries over to modern ciphers: a cipher whose output is a linear function of its input is broken by a handful of known pairs, which is why DES and AES contain non-linear S-boxes (\S\ref{sec:des}, \S\ref{sec:aes}).
+The slide's $3\times3$ example (worked in \S\ref{sec:classextra}) is the same computation with three known blocks; $\det P \equiv 9$, so $P$ is invertible:
+\[
+P = \begin{pmatrix}5&7&10\\13&17&7\\0&5&4\end{pmatrix},\quad
+C = \begin{pmatrix}3&6&0\\14&16&9\\3&17&11\end{pmatrix},\quad
+P^{-1} = \begin{pmatrix}21&14&1\\0&8&25\\13&3&8\end{pmatrix},\quad
+K = P^{-1}C = \begin{pmatrix}2&3&7\\5&7&9\\1&2&11\end{pmatrix}.
+\]
+The lesson carries over to modern ciphers: a cipher whose output is a linear function of its input is broken by a handful of known pairs, which is why DES and AES contain non-linear S-boxes (\S\ref{sec:des}, \S\ref{sec:aes}).
 
 \begin{fixbox}
 \begin{itemize}
@@ -256,4 +263,242 @@ The slide's $3\times3$ example works the same way: from three known blocks with 
 \end{itemize}
 \end{fixbox}
 
-%%POLY%%
+\section{Polyalphabetic Ciphers}\label{sec:poly}
+
+Monoalphabetic ciphers fall to frequency analysis because every letter always gets the same substitute. Playfair and Hill hide single-letter frequencies by encrypting blocks, but each block still has one fixed substitute. A \textbf{polyalphabetic} cipher attacks the problem from the other side: it keeps encrypting one letter at a time, but uses \textbf{different} monoalphabetic rules at different positions, so \imp{each occurrence of a character may have a different substitute; the relationship between plaintext and ciphertext characters is one-to-many}. All polyalphabetic ciphers share two features:
+\begin{enumerate}[leftmargin=1.5em]
+  \item A \textbf{set of related monoalphabetic substitution rules} is used.
+  \item A \textbf{key} determines which rule is used for each letter.
+\end{enumerate}
+Since the occurrences of a frequent letter such as \ttx{e} are spread over several ciphertext letters, and each ciphertext letter collects several different plaintext letters, the ciphertext histogram is much flatter than the plaintext one, and Eve cannot use single-letter frequency statistics. How secure the cipher is then depends entirely on how the sequence of rules, the \textbf{key stream}, is produced. The four ciphers below are successive answers to that question: repeat a keyword (Vigen\`ere), continue the keyword with the plaintext (autokey), use an independent key stream of bits (Vernam), and finally a truly random key used once (the one-time pad, \S\ref{sec:otp}).
+
+\subsection{Vigen\`ere cipher \hot}
+\asked{2025--26 Q1 (8 marks, the biggest question so far): one-time-pad version of Vigen\`ere, encrypt ``sendmoremoney'' with a key stream, then find the key that turns the ciphertext into ``cashnotneeded''. 2024--25 Q1(c): characters changed.}
+\likely{Encrypt or decrypt with a keyword (3--4 marks); find the key from a known plaintext ($K_i = C_i - P_i$); ``explain the Kasiski test'' (2--3 marks).}
+The Vigen\`ere cipher (16th century) uses as its rule set the \textbf{26 Caesar ciphers} with shifts 0 to 25, each named by the letter that \ttx{a} is shifted to: key letter \ttx{d} means shift 3. The key is a keyword $k_1 k_2 \dots k_m$ of length $m$, and it is \textbf{repeated} as often as needed to cover the message, so plaintext letter $i$ is encrypted with the Caesar cipher chosen by key letter $i \bmod m$. In the \textbf{Vigen\`ere tableau}, a $26 \times 26$ table whose row $k$ is the alphabet shifted by $k$, encryption is a lookup: the row of the key letter and the column of the plaintext letter meet at the ciphertext letter.
+\begin{center}
+$C_i = \big(P_i + K_{i \bmod m}\big) \bmod 26 \qquad\qquad P_i = \big(C_i - K_{i \bmod m}\big) \bmod 26$
+\end{center}
+The key stream is $(k_1, \dots, k_m, k_1, \dots, k_m, \dots)$. Spaces are removed first, so the keyword runs continuously across word boundaries.
+
+\begin{worked}[: Stallings / lecture]
+\textbf{Q.} Encrypt \ttx{wearediscoveredsaveyourself} (27 letters) with the Vigen\`ere keyword \ttx{deceptive} (9 letters).
+
+\textbf{A.} The key \ttx{deceptive} is repeated three times.
+\begin{center}\footnotesize\setlength{\tabcolsep}{2.9pt}
+\begin{tabular}{@{}l*{14}{c}@{}}
+\toprule
+Key & d&e&c&e&p&t&i&v&e&d&e&c&e&p\\
+$K$ & 3&4&2&4&15&19&8&21&4&3&4&2&4&15\\
+Plain & w&e&a&r&e&d&i&s&c&o&v&e&r&e\\
+$P$ & 22&4&0&17&4&3&8&18&2&14&21&4&17&4\\
+$(P{+}K) \bmod 26$ & 25&8&2&21&19&22&16&\hl{13}&6&17&25&6&21&19\\
+Cipher & \textbf{Z}&\textbf{I}&\textbf{C}&\textbf{V}&\textbf{T}&\textbf{W}&\textbf{Q}&\textbf{N}&\textbf{G}&\textbf{R}&\textbf{Z}&\textbf{G}&\textbf{V}&\textbf{T}\\
+\bottomrule
+\end{tabular}
+\\[4pt]
+\begin{tabular}{@{}l*{13}{c}@{}}
+\toprule
+Key & t&i&v&e&d&e&c&e&p&t&i&v&e\\
+$K$ & 19&8&21&4&3&4&2&4&15&19&8&21&4\\
+Plain & d&s&a&v&e&y&o&u&r&s&e&l&f\\
+$P$ & 3&18&0&21&4&24&14&20&17&18&4&11&5\\
+$(P{+}K) \bmod 26$ & 22&\hl{0}&21&25&7&\hl{2}&16&24&\hl{6}&\hl{11}&12&\hl{6}&9\\
+Cipher & \textbf{W}&\textbf{A}&\textbf{V}&\textbf{Z}&\textbf{H}&\textbf{C}&\textbf{Q}&\textbf{Y}&\textbf{G}&\textbf{L}&\textbf{M}&\textbf{G}&\textbf{J}\\
+\bottomrule
+\end{tabular}
+\end{center}
+Answer: \textbf{\ttx{ZICVTWQNGRZGVTWAVZHCQYGLMGJ}} (highlighted cells wrapped past 25). \textbf{Check:} $Z - d = 25 - 3 = 22 =$ \ttx{w}.
+\end{worked}
+
+\textbf{Why it is stronger.} The same plaintext letter gets different ciphertext letters: the six \ttx{e}'s of the message (positions 2, 5, 12, 14, 19, 25) become \ttx{I, T, G, T, H, M}. Conversely, the most common ciphertext letter, \ttx{G}, stands for \ttx{c}, \ttx{e}, \ttx{r} and \ttx{l}. A plaintext letter can have up to $m$ different substitutes, so a longer keyword with distinct letters flattens the frequencies more.
+
+\textbf{Vigen\`ere is $m$ interleaved Caesar ciphers.} Writing the message in rows of length $m$ puts all letters encrypted with the same key letter into one column (Forouzan's view of Vigen\`ere as a combination of $m$ additive ciphers). Each column is an ordinary Caesar cipher:
+\begin{center}\small\setlength{\tabcolsep}{4pt}
+\begin{tabular}{@{}l*{9}{c}@{}}
+\toprule
+Key letter (shift) & d (3) & e (4) & c (2) & e (4) & p (15) & t (19) & i (8) & v (21) & e (4)\\
+\midrule
+Row 1 (plain/cipher) & w/Z & e/I & a/C & \textbf{r/V} & \textbf{e/T} & \textbf{d/W} & i/Q & s/N & c/G\\
+Row 2 & o/R & v/Z & e/G & \textbf{r/V} & \textbf{e/T} & \textbf{d/W} & s/A & a/V & v/Z\\
+Row 3 & e/H & y/C & o/Q & u/Y & r/G & s/L & e/M & l/G & f/J\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\textbf{Cryptanalysis.} The weakness is that the \textbf{key repeats}. Breaking Vigen\`ere has two parts: find the key length $m$, then find the key. For the first part the \textbf{Kasiski test} looks for repeated segments of at least three letters in the ciphertext. If the same plaintext fragment occurs at two positions whose distance is a multiple of $m$, it is encrypted with the same key letters both times and produces the same ciphertext fragment. In the example, the plaintext \ttx{red} at positions 4--6 and 13--15 meets the key letters \ttx{ept} both times and gives \ttx{VTW} twice (bold in the table); the distance is $13 - 4 = 9 = m$. A repeat of three or more letters is unlikely to be a coincidence, so the cryptanalyst assumes $m \mid d$ for each distance $d$, and with several repeats $m$ divides $\gcd(d_1, d_2, \dots)$. (The slide example, with distances 100, 48, 60, 8 and gcd 4, is in \S\ref{sec:classextra}.) For the second part, the ciphertext is split into $m$ pieces (letters $1, m{+}1, 2m{+}1, \dots$; letters $2, m{+}2, \dots$; and so on). \imp{The whole ciphertext does not preserve the single-letter frequencies of the plaintext, but each piece does}, because each piece is a Caesar cipher; each is broken by frequency analysis (its most common letter is probably \ttx{e}) or by trying its 26 shifts.
+
+\textbf{Known plaintext.} If Eve knows some plaintext, the key falls out immediately, since $K_i = (C_i - P_i) \bmod 26$. From \ttx{ZICVTWQNGRZG} and \ttx{wearediscove} she gets $25 - 22 = 3$ (\ttx{d}), $8 - 4 = 4$ (\ttx{e}), \dots, i.e.\ \ttx{deceptivedec}, which shows both the key and its period. The same subtraction answers the past-paper question of finding a key that maps a ciphertext to a chosen plaintext (the Question Bank (past papers)).
+
+\begin{worked}[: slide example (Forouzan)]
+\textbf{Q.} Encrypt ``She is listening'' with the Vigen\`ere keyword ``PASCAL''.
+
+\textbf{A.} The initial key stream is $(15, 0, 18, 2, 0, 11)$, repeated as often as needed.
+\begin{center}\small\setlength{\tabcolsep}{3.6pt}
+\begin{tabular}{@{}l*{14}{c}@{}}
+\toprule
+Plaintext & s&h&e&i&s&l&i&s&t&e&n&i&n&g\\
+$P$ & 18&07&04&08&18&11&08&18&19&04&13&08&13&06\\
+Key stream & 15&00&18&02&00&11&15&00&18&02&00&11&15&00\\
+$P + K$ & \hl{33}&07&22&10&18&22&23&18&\hl{37}&06&13&19&\hl{28}&06\\
+$C$ & 07&07&22&10&18&22&23&18&11&06&13&19&02&06\\
+Ciphertext & \textbf{H}&\textbf{H}&\textbf{W}&\textbf{K}&\textbf{S}&\textbf{W}&\textbf{X}&\textbf{S}&\textbf{L}&\textbf{G}&\textbf{N}&\textbf{T}&\textbf{C}&\textbf{G}\\
+\bottomrule
+\end{tabular}
+\end{center}
+Ciphertext: \textbf{\ttx{HHWKSWXSLGNTCG}}. \textbf{Check:} $H - P = 7 - 15 = -8 \equiv 18 =$ \ttx{s}. The two \ttx{s} at positions 1 and 5 became \ttx{H} and \ttx{S}, and the two \ttx{H} at positions 1--2 come from different letters (\ttx{s}, \ttx{h}).
+\end{worked}
+
+\subsection{Autokey system \hot}
+\asked{2024--25 Q1(d): one plaintext change alters \textbf{2} ciphertext characters in auto-key (the letter itself and the one it keys).}
+\likely{An autokey encryption (keyword version or Forouzan's single initial key, 2--4 marks); ``how many ciphertext characters change'' or ``why is autokey still breakable'' (1--2 marks).}
+Vigen\`ere's weakness is the period, so the obvious fix is a key that never repeats. Vigen\`ere himself proposed the \textbf{autokey system}: the keyword is followed by the \textbf{plaintext itself}, so the key is a \textbf{running key} as long as the message. In the lecture (Stallings) version with a keyword of length $m$, $k_{i+m} = P_i$. The slides (Forouzan) use the special case $m = 1$: the first subkey $k_1$ is a secret number agreed by Alice and Bob, the second subkey is the value of the first plaintext letter, the third is the second plaintext letter, and so on, so $k = (k_1, P_1, P_2, \dots)$. In both versions
+\begin{center}
+$C_i = (P_i + k_i) \bmod 26 \qquad\qquad P_i = (C_i - k_i) \bmod 26 .$
+\end{center}
+Bob knows only the keyword, so he must decrypt \textbf{strictly from left to right}: each recovered plaintext letter becomes the key for a later position.
+\begin{center}\small\ttfamily\setlength{\tabcolsep}{2.2pt}
+\begin{tabular}{@{}l*{27}{c}@{}}
+\rmfamily Key & \textbf{d}&\textbf{e}&\textbf{c}&\textbf{e}&\textbf{p}&\textbf{t}&\textbf{i}&\textbf{v}&\textbf{e}&w&e&a&r&e&d&i&s&c&o&v&e&r&e&d&s&a&v\\
+\rmfamily Plain & w&e&a&r&e&d&i&s&c&o&v&e&r&e&d&s&a&v&e&y&o&u&r&s&e&l&f\\
+\rmfamily Cipher & Z&I&C&V&T&W&Q&N&G&K&Z&E&I&I&G&A&S&X&S&T&S&L&V&V&W&L&A
+\end{tabular}
+\end{center}
+Answer: \textbf{\ttx{ZICVTWQNGKZEIIGASXSTSLVVWLA}}. The first 9 letters match Vigen\`ere (same key); after that the key is the plaintext (\ttx{w e a r e \dots}).
+
+\textbf{Why it improves on Vigen\`ere.} The key has no period, so there are no repeats at multiples of a fixed distance, the Kasiski test finds nothing, and the ciphertext cannot be split into Caesar columns. Each key letter also depends on the message, so two messages under the same keyword quickly use different keys.
+
+\textbf{Why it is still breakable.} The key is ordinary English text: key letters have English frequencies, so \textbf{key and plaintext share the same letter statistics}, and pairs of frequent letters (\ttx{e}+\ttx{e}, \ttx{e}+\ttx{t}, \dots) dominate the ciphertext; statistical attacks still apply. Forouzan's version is weaker still: once $k_1$ is known, $P_1 = C_1 - k_1$ is the next key, and the whole message unrolls. Since $k_1$ has only 26 values, \imp{the autokey cipher is as vulnerable to a brute-force attack as the additive cipher}.
+
+\textbf{Effect of one change.} Changing plaintext letter $P_i$ changes $C_i$ and also the one ciphertext letter that $P_i$ keys, $C_{i+m}$ ($C_{i+1}$ in Forouzan's version): exactly \textbf{2} characters, which is the past-paper answer. (Changing the \ttx{r} at position 4 of the example changes ciphertext positions 4 and 13 only.) An \emph{error} in one ciphertext letter behaves differently: Bob decrypts a wrong $P_i$, uses it as the key at position $i + m$, gets that letter wrong too, and the error propagates to every $m$-th letter until the end of the message. In Vigen\`ere an error stays in one letter.
+
+\begin{worked}[: slide example (Forouzan)]
+\textbf{Q.} Alice and Bob use an autokey cipher with initial key $k_1 = 12$. Encrypt ``Attack is today''. Then show how Eve breaks it without the key.
+
+\textbf{A.} The key stream is 12 followed by the plaintext values, shifted one place:
+\begin{center}
+\begin{tikzpicture}[x=7.2mm,y=6mm,font=\small]
+  \foreach \l/\v [count=\i] in {a/00,t/19,t/19,a/00,c/02,k/10,i/08,s/18,t/19,o/14,d/03,a/00,y/24}{
+    \node (p\i) at (\i,0) {\ttx{\l}};
+    \node[gray] at (\i,-0.55) {\scriptsize\v};
+  }
+  \node[anchor=east] at (0.4,0) {Plaintext};
+  \node[anchor=east] at (0.4,-1.6) {Key};
+  \node (k1) at (1,-1.6) {\textbf{12}};
+  \foreach \l [count=\i] in {a,t,t,a,c,k,i,s,t,o,d,a}{
+    \pgfmathtruncatemacro{\j}{\i+1}
+    \node (k\j) at (\j,-1.6) {\ttx{\l}};
+    \draw[-{Stealth[length=1.3mm]},acc] ($(p\i)+(0.15,-0.8)$) -- ($(k\j)+(-0.1,0.25)$);
+  }
+\end{tikzpicture}
+\end{center}
+\begin{center}\small\setlength{\tabcolsep}{3.6pt}
+\begin{tabular}{@{}l*{13}{c}@{}}
+\toprule
+Plaintext & a&t&t&a&c&k&i&s&t&o&d&a&y\\
+$P$ & 00&19&19&00&02&10&08&18&19&14&03&00&24\\
+Key stream & \textbf{12}&00&19&19&00&02&10&08&18&19&14&03&00\\
+$P + k$ & 12&19&\hl{38}&19&02&12&18&\hl{26}&\hl{37}&\hl{33}&17&03&24\\
+$C$ & 12&19&12&19&02&12&18&00&11&07&17&03&24\\
+Ciphertext & \textbf{M}&\textbf{T}&\textbf{M}&\textbf{T}&\textbf{C}&\textbf{M}&\textbf{S}&\textbf{A}&\textbf{L}&\textbf{H}&\textbf{R}&\textbf{D}&\textbf{Y}\\
+\bottomrule
+\end{tabular}
+\end{center}
+Ciphertext: \textbf{\ttx{MTMTCMSALHRDY}}. Each plaintext letter becomes the key one position later (arrows), and the last letter \ttx{y} keys nothing.
+
+\textbf{Brute force.} Eve tries each $k_1$ and unrolls the chain $P_1 = C_1 - k_1$, $P_2 = C_2 - P_1$, \dots:
+$k_1 = 11$ gives \ttx{bsuzdjjrunezz}, $k_1 = 13$ gives \ttx{zusbblhtspcbx}, and only $k_1 = 12$ gives readable text, \ttx{attackistoday}. At most 26 trials are needed.
+\end{worked}
+
+\subsection{Vernam cipher}
+The autokey key is not independent of the message (it \emph{is} the message), so its statistics leak. The next step was taken by \textbf{Gilbert Vernam}, an AT\&T engineer, in \textbf{1918}: use a key stream \textbf{as long as the message} that \textbf{does not repeat} and has no statistical relationship to the plaintext, so that no pattern is left for a statistical attack. Vernam's cipher works on \textbf{binary bits}, not letters, because it was built for teletype machines that send each character as a short binary code. Each plaintext bit is combined with one key bit by exclusive-OR.
+
+\begin{minipage}[c]{0.5\textwidth}
+\[
+C_i = P_i \oplus K_i \qquad\qquad P_i = C_i \oplus K_i
+\]
+Here $\oplus$ is XOR: the output is 1 if the two bits differ and 0 if they are equal. Decryption works because XOR undoes itself:
+\[
+C_i \oplus K_i = P_i \oplus K_i \oplus K_i = P_i \oplus 0 = P_i
+\]
+\end{minipage}\hfill
+\begin{minipage}[c]{0.45\textwidth}
+\centering\small
+\begin{tabular}{cc|c}
+\toprule
+$a$ & $b$ & $a\oplus b$\\
+\midrule
+0&0&0\\ 0&1&1\\ 1&0&1\\ 1&1&0\\
+\bottomrule
+\end{tabular}
+\qquad
+\begin{tabular}{@{}r@{\;}l@{}}
+$P$ & \ttx{1011}\\
+$K$ & \ttx{0110}\\
+\midrule
+$C$ & \ttx{1101}\\
+$C\oplus K$ & \ttx{1011} $= P$
+\end{tabular}\\[2pt]
+{\footnotesize (bit example is mine, not from the lecture)}
+\end{minipage}
+
+XOR is addition modulo 2, so Vernam is the Vigen\`ere idea applied to the two-letter alphabet $\{0, 1\}$: each key bit selects one of two ``Caesar ciphers'' (keep the bit, or flip it). XOR is the natural choice for two reasons. It is its own inverse, so the same operation and the same key stream encrypt and decrypt. And if a key bit is 0 or 1 with probability $\tfrac12$ each, independently of everything else, the ciphertext bit is also 0 or 1 with probability $\tfrac12$ whatever the plaintext bit is, so a single ciphertext bit reveals nothing about the plaintext bit.
+
+\begin{center}
+\begin{tikzpicture}[node distance=6mm]
+  \node[box,fill=gray!15,text width=32mm] (g1) {Cryptographic stream generator};
+  \node[draw,circle,below=6mm of g1,font=\large,inner sep=1pt] (x1) {$\oplus$};
+  \node[left=10mm of x1,font=\small] (p1) {Plaintext $P_i$};
+  \node[box,fill=gray!15,text width=32mm,right=38mm of g1] (g2) {Cryptographic stream generator};
+  \node[draw,circle,below=6mm of g2,font=\large,inner sep=1pt] (x2) {$\oplus$};
+  \node[right=10mm of x2,font=\small] (p2) {Plaintext $P_i$};
+  \draw[arr] (g1) -- node[right,font=\scriptsize]{$K_i$} (x1);
+  \draw[arr] (g2) -- node[right,font=\scriptsize]{$K_i$} (x2);
+  \draw[arr] (p1) -- (x1);
+  \draw[arr] (x1) -- node[above,font=\scriptsize]{Ciphertext $C_i$ (sent)} (x2);
+  \draw[arr] (x2) -- (p2);
+  \node[below=1mm of x1,font=\scriptsize] {encryption};
+  \node[below=1mm of x2,font=\scriptsize] {decryption};
+\end{tikzpicture}
+\end{center}
+Both sides need the \textbf{same, synchronised key stream}: the receiver's generator must produce exactly the bits the sender used, in the same order.
+
+\textbf{Weakness.} Vernam's machine read the key from a \textbf{loop of paper tape}, so the key eventually \textbf{repeated}, and with enough ciphertext, and some known or probable plaintext, the cipher can be broken. The reason is that whenever two stretches of plaintext are encrypted with the same key bits, the key cancels: $C_1 \oplus C_2 = (P_1 \oplus K) \oplus (P_2 \oplus K) = P_1 \oplus P_2$. For example, with $P_1 = \ttx{10110010}$, $P_2 = \ttx{01100111}$ and $K = \ttx{11010100}$, the ciphertexts are $C_1 = \ttx{01100110}$ and $C_2 = \ttx{10110011}$, and $C_1 \oplus C_2 = \ttx{11010101} = P_1 \oplus P_2$, with no trace of $K$. The XOR of two English texts is full of structure; guessing a probable word in one plaintext reveals the matching part of the other, and then $K = C \oplus P$.
+\textbf{Fix:} make the key truly random, as long as the message, and never reused. That is the \textbf{one-time pad} (\S\ref{sec:otp}), which gives perfect secrecy.
+
+\subsection{The classical substitution ciphers compared}
+Each cipher in this chapter was designed to remove the weakness that broke the one before it, and the summary below is the usual answer to a ``differentiate'' question.
+
+\begin{mustknow}[: polyalphabetic ciphers]
+\textbf{Vigen\`ere:} $C_i = (P_i + K_{i \bmod m}) \bmod 26$, keyword repeated; weakness: the period $m$ (Kasiski, then $m$ Caesar ciphers).
+\textbf{Autokey:} key = keyword followed by the plaintext ($k_{i+m} = P_i$; Forouzan: $k_1$, then $k_i = P_{i-1}$); no period, but the key is English, and with a single $k_1$ only 26 keys; one plaintext change alters 2 ciphertext letters.
+\textbf{Vernam (1918):} $C_i = P_i \oplus K_i$ on bits, key stream as long as the message; weakness: the tape loop repeats, and reused key bits cancel ($C_1 \oplus C_2 = P_1 \oplus P_2$). Random, never-reused key = one-time pad.
+\end{mustknow}
+
+\begin{center}\small\setlength{\tabcolsep}{4pt}
+\begin{tabular}{@{}llllll@{}}
+\toprule
+Cipher & Unit & Key & Keys & Fixed substitute? & Main attack\\
+\midrule
+Shift (Caesar) & letter & shift $k$ & 25 & yes & brute force\\
+Monoalphabetic & letter & permutation & $26!$ & yes & letter frequencies\\
+Playfair & digram & $5\times5$ square & $25!$ & per digram & digram frequencies\\
+Hill & $m$ letters & invertible $m\times m$ matrix & $< 26^{m^2}$ & per block & known plaintext\\
+Vigen\`ere & letter & keyword, repeated & $26^m$ & no (period $m$) & Kasiski + Caesar\\
+Autokey & letter & keyword + plaintext & $26^m$ & no (no period) & key is English\\
+Vernam & bit & bit stream (tape) & -- & no & reused key stream\\
+One-time pad & letter/bit & random, used once & -- & no & none (perfect)\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\begin{trap}[: the usual slips in Hill and Vigen\`ere answers]
+In Hill, state the convention ($C = PK$ with row vectors, or $C = KP$ with columns) and keep it for decryption; check $\gcd(\det K, 26) = 1$ \emph{before} computing the inverse; turn negative entries into $0$--$25$ by adding 26; and always verify $KK^{-1} \equiv I$. In the known-plaintext attack the inverse goes on the left: $K = P^{-1}C$. In Vigen\`ere, remove the spaces first so the keyword runs continuously across words; in autokey, decrypt strictly left to right.
+\end{trap}
+
+\begin{fixbox}
+\begin{itemize}
+  \item The notes put ``key and plaintext share letter frequencies'' under Vigen\`ere cryptanalysis. That point is really about the autokey system, where the key \emph{is} plaintext, so it is placed there above.
+  \item Slide L5 (autokey) is correct: \ttx{attackistoday} with $k_1 = 12$ gives \ttx{MTMTCMSALHRDY}; slide L5 (Vigen\`ere, PASCAL) is correct: \ttx{HHWKSWXSLGNTCG} (both checked by script).
+\end{itemize}
+\end{fixbox}

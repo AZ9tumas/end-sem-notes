@@ -1,5 +1,5 @@
 % Neso videos on modular exponentiation, part 1 (base reduction) and part 2 (repeated squaring) (notes8.md); Forouzan 9.4
-% (square-and-multiply, right-to-left); Stallings 9.? (fast exponentiation, left-to-right). Every number recomputed by script (scratchpad/r4/verify.py, v2.py).
+% (square-and-multiply, right-to-left); Stallings (fast modular exponentiation, left-to-right). Every number recomputed by script (scratchpad/r4/verify.py, v2.py).
 \section{Modular Exponentiation \hot}\label{sec:modexp}
 \asked{2024--25 Q5(ii): $100^{95} \bmod 9$, $658^{17} \bmod 17$, $145^{102} \bmod 101$. \new\ This year every RSA/ElGamal numerical also needs it (\S\ref{sec:rsa}).}
 
@@ -151,7 +151,7 @@ $i$ & $b_i$ & $c$ & Square & Multiply by 3 (if $b_i = 1$)\\
 \bottomrule
 \end{tabular}
 \end{center}
-The result, 20, agrees with Example 3. The left-to-right order always multiplies by the same fixed base $a$, which is cheap when $a$ is small (the Fermat and Miller--Rabin tests use $a = 2$) and needs only one variable. The right-to-left order computes the squarings independently of the bits, so they can be precomputed or run in parallel with the multiplications, and it matches the hand table.
+The result, 20, agrees with Example 3. The left-to-right order always multiplies by the same fixed base $a$, which is cheap when $a$ is small (primality tests often use $a = 2$) and needs only one variable. The right-to-left order computes the squarings independently of the bits, so they can be precomputed or run in parallel with the multiplications, and it matches the hand table.
 
 \textbf{Cost: why it is $O(\log b)$.} Let the exponent have $k = \lfloor \log_2 b \rfloor + 1$ bits. Both orders perform one squaring per bit, of which one is free (squaring $f = 1$ at the start, or the unused last squaring), so $k - 1$ squarings in all. They perform one multiplication per 1-bit, at most $k$, and one of these is again free (a multiplication by 1). The total is therefore at most $2(k - 1) = 2\lfloor \log_2 b \rfloor$ modular multiplications, and about $1.5 \log_2 b$ on average, since about half the bits of a random exponent are 1. For $3^{100}$ (7 bits, three 1-bits) this is 6 squarings and 2 multiplications, 8 in all, against 99 for repeated multiplication. Each modular multiplication works on numbers below $n$ and needs one reduction, so with schoolbook arithmetic it costs $O((\log n)^2)$ bit operations, and the whole exponentiation costs $O(\log b \cdot (\log n)^2)$, which is polynomial in the length of the input. Repeated multiplication needs $b - 1 \approx 2^k$ steps, exponential in the length $k$ of the exponent. For a 2048-bit exponent the difference is about 4000 multiplications against $2^{2048}$.
 

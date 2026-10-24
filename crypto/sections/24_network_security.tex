@@ -741,3 +741,324 @@ where $PU_g$ is the gateway's key-exchange public key. The merchant cannot open 
 \textbf{Payment authorisation.} The merchant's \textbf{authorisation request} to the gateway contains the cardholder's envelope, an authorisation block with the transaction ID signed with the merchant's private key and encrypted under a new one-time key (in its own digital envelope for the gateway), and the certificates. The gateway verifies all certificates, opens both envelopes, verifies the merchant's signature and the \textbf{dual signature}, checks that the transaction ID in the merchant's block matches the one in PI, and obtains authorisation from the issuer over the bank network. It returns a signed \textbf{authorisation response} with a capture token. Later the merchant sends a \textbf{capture request} with the token to obtain the money.
 
 \textbf{Advantages and disadvantages.} SET gave strong privacy (the merchant never learns the card number, the bank never learns the order) and strong authentication of all parties by certificates. It failed in practice because every cardholder needed software and a certificate, and the many public-key operations made it slow and expensive. Card payments today use TLS between browser and merchant plus issuer-side checks (3-D Secure) and tokenisation, but the dual-signature idea remains the standard example of linking two messages for different recipients.
+
+\section{System Security: Intruders, Malicious Software, Firewalls and Trusted Systems}\label{sec:syssec}
+
+\subsection{Intruders \new}
+\likely{``Classify intruders; list intrusion techniques'' (3 marks).}
+
+The protocols above protect data on the wire; the remaining threats attack the computer systems themselves. One of the two most publicised threats is the \textbf{intruder}, a hacker or cracker who gains, or tries to gain, unauthorised access (the other is malicious software). Anderson's classification has three classes.
+\begin{itemize}
+  \item A \textbf{masquerader} is an individual who is not authorised to use the computer and who penetrates the system's access controls to exploit a legitimate user's account. Masqueraders are usually outsiders.
+  \item A \textbf{misfeasor} is a legitimate user who accesses data, programs or resources for which he is not authorised, or who is authorised but misuses his privileges. Misfeasors are usually insiders.
+  \item A \textbf{clandestine user} is an individual who seizes supervisory (administrator) control of the system and uses it to evade auditing and access controls or to suppress audit collection. He may be an outsider or an insider.
+\end{itemize}
+\textbf{Intrusion techniques.} The intruder's goal is to gain access to a system or to increase his privileges, and the information he needs most is a password. The system protects its password file either by a one-way function (only hashed passwords are stored) or by access control. The intruder therefore tries default passwords shipped with the system, all short passwords, words from dictionaries and lists of likely passwords, and personal data of the users (names, birthdays, phone numbers, car numbers); he also installs a Trojan horse that captures passwords, or taps the line between a remote user and the host.
+
+\subsection{Intrusion detection \new}
+\likely{``Differentiate statistical anomaly detection and rule-based detection; what is a honeypot?'' (4 marks).}
+
+\textbf{Idea.} Prevention eventually fails, so a second line of defence watches for intruders. Intrusion detection is motivated by three facts: an intruder detected quickly can be ejected before he does damage; an effective detection system deters intrusions; and it collects information about intrusion techniques that strengthens prevention. It rests on the assumption that the behaviour of an intruder differs from that of a legitimate user in ways that can be quantified. The two behaviour profiles overlap, however, so every detector trades \textbf{false positives} (legitimate users flagged as intruders) against \textbf{false negatives} (intruders missed): a looser threshold catches more intruders and annoys more users.
+\begin{center}
+\begin{tikzpicture}[xscale=1.0, yscale=1.6, font=\footnotesize]
+\draw[nsA] (0,0) -- (10,0) node[right, align=left]{measurable\\behaviour\\parameter};
+\draw[nsA] (0,0) -- (0,1.25) node[above]{probability density};
+\fill[warn!15, domain=4.7:8.5, samples=50] plot (\x, {exp(-((\x-3.4)^2)/1.6)}) -- (8.5,0) -- (4.7,0) -- cycle;
+\fill[gold!25, domain=0.5:4.7, samples=50] (0.5,0) -- plot (\x, {exp(-((\x-6.2)^2)/1.6)}) -- (4.7,0) -- cycle;
+\draw[thick, warn, domain=0.5:8.5, samples=80] plot (\x, {exp(-((\x-3.4)^2)/1.6)});
+\draw[thick, acc, domain=1.5:9.8, samples=80] plot (\x, {exp(-((\x-6.2)^2)/1.6)});
+\node[warn, align=center] at (2.0,1.15) {profile of\\intruder behaviour};
+\node[acc, align=center] at (8.0,1.15) {profile of authorised\\user behaviour};
+\draw[dashed] (4.7,0) -- (4.7,1.05) node[above]{threshold};
+\node[font=\scriptsize] at (2.9,-0.22) {gold: authorised users flagged $=$ false positives};
+\node[font=\scriptsize] at (7.4,-0.42) {red: intruders passed $=$ false negatives};
+\end{tikzpicture}
+\end{center}
+\textbf{Approaches.} \textbf{Statistical anomaly detection} collects data on the behaviour of legitimate users over a period of time and applies statistical tests to observed behaviour to decide with high confidence whether it is legitimate. It has two forms: \emph{threshold detection}, which sets user-independent thresholds on the frequency of events (e.g.\ failed logins per minute), and \emph{profile-based} detection, which builds a profile of each user's activity (login times, programs used, CPU and I/O usage) and detects changes in it, using counters, gauges, interval timers and tests such as mean and standard deviation, multivariate correlation and Markov models. \textbf{Rule-based detection} defines a set of rules that decide whether a given behaviour is that of an intruder: \emph{anomaly} rules are derived from past usage patterns, and \emph{penetration identification} is an expert system that searches for known suspicious sequences (attack signatures). Statistical detection is effective against \textbf{masqueraders}, who are unlikely to imitate the behaviour of the accounts they steal, but not against misfeasors, who act within their normal profile; rule-based penetration identification catches misfeasors and known attacks, since it recognises the events themselves.
+
+\textbf{Audit records.} Detection runs on audit records of user activity. \emph{Native} audit records come from the operating system's accounting software, so no extra software is needed, but they may lack the needed information; \emph{detection-specific} records are generated for the detector alone, which makes them vendor-independent at the cost of running two accounting packages. Denning's record has six fields: \textbf{subject} (initiator of the action), \textbf{action} (login, read, execute, \dots), \textbf{object} (file, program, device), \textbf{exception condition} (any error raised), \textbf{resource usage} (CPU time, lines printed, records read) and \textbf{time-stamp}. For example, the command \ttx{COPY GAME.EXE TO <Library>GAME.EXE} issued by Smith produces records such as (Smith, execute, \ttx{<Library>COPY.EXE}, 0, CPU $= 00002$, 11058721678) and (Smith, write, \ttx{<Library>GAME.EXE}, write-violation, RECORDS $= 0$, 11058721679).
+
+\textbf{Honeypots.} A \textbf{honeypot} is a decoy system designed to lure a potential attacker away from critical systems. It is filled with fabricated information that looks valuable but that no legitimate user would ever access, so \emph{any} access to it is suspect, and it is instrumented with monitors and event loggers. It diverts the attacker, collects information about his activity, and encourages him to stay long enough for the administrators to respond.
+
+\subsection{Password management \new}
+\likely{``Explain the UNIX password scheme with salt; why is the salt used?'' (4 marks), possibly with a cost calculation.}
+
+\textbf{The UNIX scheme.} Each user selects a password of up to eight printable characters, which is converted into a 56-bit value (7-bit ASCII) and used as the \emph{key} of an encryption routine. The routine, \ttx{crypt(3)}, is DES modified by a 12-bit \textbf{salt}, which in older systems is derived from the time the password was assigned; it encrypts a 64-bit block of zeros, feeds the output back as input, and repeats 25 times. The 64-bit result is translated into an 11-character string, and the password file stores, for each user ID, this hashed password together with a \emph{plaintext copy} of the salt. At login the user gives his ID and password; the system uses the ID to find the salt and the stored hash, runs crypt on the typed password with that salt, and compares the result with the stored value.
+
+\textbf{Why the salt.} The salt serves three purposes. It prevents duplicate passwords from being visible in the password file: two users with the same password almost certainly get different salts and hence different hashes. It effectively lengthens the password without the user remembering more: each password has $2^{12} = 4096$ possible hashed forms, so a precomputed dictionary must be 4096 times larger. And the modified DES defeats off-the-shelf DES hardware for brute-force guessing. Since the hash is one-way, the scheme does not need to keep the file secret, but in practice the hashes are moved to a \textbf{shadow password file} readable only by the system, and modern systems use salted, deliberately slow hashes (bcrypt, PBKDF2, scrypt, Argon2) because a stolen file can be attacked offline.
+
+\textbf{Password selection strategies.} Users choose guessable passwords, so four strategies are used: \emph{user education} (often ignored); \emph{computer-generated} passwords (random, hence hard to remember and likely to be written down); \emph{reactive checking}, in which the system periodically runs its own password cracker and cancels the passwords it guesses (costly, and weak passwords stay vulnerable until found); and \textbf{proactive checking}, in which the system checks a password at the moment it is chosen against rules (length, character mix) and a dictionary of bad passwords, rejecting weak ones while still letting the user choose a memorable password.
+
+\begin{worked}[: what the salt costs the attacker]
+\textbf{Q.} An attacker has a stolen UNIX password file with 1000 users, all with different salts, and a dictionary of $2^{20}$ candidate passwords. Compare the number of crypt evaluations needed to test the dictionary against every user (a) if there were no salt, (b) with 12-bit salts; and (c) the size of a table that precomputes the dictionary for every salt.
+
+\textbf{A.} (a) Without salt one pass of $2^{20}$ hashes, each compared with all 1000 stored hashes, tests every user at once: $\mathbf{2^{20}} \approx 10^6$ evaluations.\\
+(b) With salt each user's hashes must be computed with his own salt: $1000 \times 2^{20} \approx \mathbf{1.05 \times 10^{9}}$ evaluations, 1000 times more.\\
+(c) $2^{20} \times 2^{12} = \mathbf{2^{32}} \approx 4.3 \times 10^{9}$ entries, 4096 times the size of the plain dictionary.\\
+\emph{Check}: the salt does not make any single password harder to guess ($2^{20}$ per user); it removes the attacker's ability to share work across users.
+\end{worked}
+
+\subsection{Malicious software: taxonomy \hot\new}
+\likely{``Define virus, worm, Trojan horse, logic bomb, trapdoor, zombie'' / ``Differentiate virus and worm'' (4--5 marks).}
+
+\textbf{Malicious software} (malware) is software designed to damage or misuse a system. Stallings divides it into programs that \textbf{need a host program} (they are fragments that cannot exist independently: trapdoors, logic bombs, Trojan horses, viruses) and \textbf{independent} programs that the operating system can schedule and run (worms, zombies), and, across that, into programs that \textbf{replicate} (viruses, worms) and those that do not.
+\begin{center}\small
+\begin{tabularx}{\textwidth}{@{}l c c >{\raggedright\arraybackslash}X@{}}
+\toprule
+Type & Needs host & Replicates & Definition\\
+\midrule
+Trapdoor (backdoor) & yes & no & a secret entry point into a program that lets someone who knows it gain access without the usual security procedures; legitimately used by programmers for debugging (maintenance hooks)\\
+Logic bomb & yes & no & code embedded in a legitimate program that ``explodes'' when certain conditions are met (a date, the presence or absence of a file, a particular user), then deletes data or halts the machine\\
+Trojan horse & yes & no & a useful or apparently useful program containing hidden code that, when invoked, performs an unwanted or harmful function, typically one the attacker could not perform directly\\
+Virus & yes & yes & a program that infects other programs by modifying them to include a copy of itself, which then infects further programs\\
+Worm & no & yes & a program that replicates itself and sends copies from computer to computer across network connections\\
+Zombie (bot) & no & no$^{*}$ & a program that secretly takes over an Internet-attached computer and uses it to launch attacks that are hard to trace to its creator (DDoS, spam); many bots form a botnet\\
+Ransomware & no$^{*}$ & varies & malware that encrypts the victim's files and demands payment for the decryption key\\
+\bottomrule
+\end{tabularx}
+\end{center}
+{\small $^{*}$Bots and ransomware are usually installed by a worm or a Trojan horse, which does the spreading.}
+
+The difference to remember between a virus and a worm is that \imp{a virus needs a host program and spreads when infected programs are run or copied, whereas a worm is a standalone program that actively propagates itself across the network.} Other common classes are spyware and keyloggers, which steal information, and rootkits, which hide the attacker's presence by modifying the operating system.
+
+\subsection{Viruses: phases, structure and types \hot\new}
+\likely{``Explain the phases of a virus and the types of viruses'' (5 marks).}
+
+\textbf{Phases.} During its lifetime a typical virus goes through four phases.
+\begin{itemize}
+  \item \textbf{Dormant phase}: the virus is idle and will eventually be activated by some event, such as a date, the presence of another program or file, or the disk exceeding some capacity. Not all viruses have this phase.
+  \item \textbf{Propagation phase}: the virus places an identical copy of itself into other programs or into certain system areas on the disk. Each infected program now contains a clone of the virus, which will itself enter a propagation phase.
+  \item \textbf{Triggering phase}: the virus is activated to perform the function for which it was intended, caused by a system event, which can include the count of how many times this copy has replicated itself.
+  \item \textbf{Execution phase}: the function is performed. It may be harmless (a message on the screen) or damaging (destruction of programs and data files).
+\end{itemize}
+
+\textbf{Structure.} A virus can be prepended or appended to an executable program, or embedded in it some other way. The key is that when the infected program is invoked, the virus code runs first and the original program runs afterwards, so the user notices nothing.
+\begin{keybox}[title=Structure of a simple virus (Stallings)]
+\footnotesize
+\begin{verbatim}
+program V :=
+{goto main;
+  1234567;
+  subroutine infect-executable :=
+    {loop: file := get-random-executable-file;
+     if (first-line-of-file = 1234567) then goto loop
+     else prepend V to file; }
+  subroutine do-damage := {whatever damage is to be done}
+  subroutine trigger-pulled := {return true if some condition holds}
+main: main-program :=
+    {infect-executable;
+     if trigger-pulled then do-damage;
+     goto next;}
+next:
+}
+\end{verbatim}
+\end{keybox}
+The marker \ttx{1234567} lets the virus recognise programs it has already infected, so that it does not infect them twice. Such a virus is easy to detect because an infected program is longer than the original; a \emph{compression virus} therefore compresses the host program so that the infected version has the same length.
+
+\textbf{Types.}
+\begin{itemize}
+  \item A \textbf{parasitic virus}, the traditional and most common form, attaches itself to executable files and replicates by finding other executables to infect whenever an infected program runs.
+  \item A \textbf{memory-resident virus} lodges in main memory as part of a resident system program and from then on infects every program that executes.
+  \item A \textbf{boot sector virus} infects the master boot record or boot record and spreads when the system is booted from the disk containing it.
+  \item A \textbf{stealth virus} is designed to hide itself from antivirus software, for example by compression or by intercepting disk I/O so that a read of an infected area returns the original, uninfected program.
+  \item A \textbf{polymorphic virus} mutates with every infection, making detection by a fixed ``signature'' impossible. It creates functionally equivalent copies with different bit patterns, by inserting superfluous instructions or reordering independent ones, or more effectively by \emph{encryption}: a mutation engine encrypts the body of the virus with a fresh random key at each infection and stores the key and a small decryption routine with it; only that routine stays visible, and it is itself varied.
+  \item A \textbf{metamorphic virus} also mutates with every infection, but rewrites itself completely each time, possibly changing its behaviour as well as its appearance.
+  \item A \textbf{macro virus} is written in the macro language of an application such as Word or Excel and infects documents rather than executable code. It is particularly threatening because it is platform-independent, documents are shared far more often than programs, it spreads easily by e-mail, and file-system access controls are of little use since users are expected to modify documents.
+  \item An \textbf{e-mail virus} (Melissa, 1999) arrives as an attachment, typically a macro, and when it is opened sends itself to everyone in the user's address book, so it spreads in hours instead of months.
+\end{itemize}
+
+\subsection{Worms, bots and ransomware \new}
+\likely{``How does a worm propagate? Give an example'' (3 marks).}
+
+A \textbf{worm} actively seeks out more machines to infect, and each infected machine serves as a launching pad for further attacks. To replicate it uses a network vehicle: the \textbf{e-mail} facility (mailing a copy of itself), a \textbf{remote execution} capability (running a copy on another system), or a \textbf{remote login} capability (logging in to a remote system and copying itself there). It has the same four phases as a virus; in its propagation phase it searches for other systems to infect (by examining host tables or address books), establishes a connection with a remote system, and copies itself there and causes the copy to run, often by exploiting a software vulnerability so that no user action is needed. The \textbf{Morris worm} (1988) exploited UNIX \ttx{finger}, \ttx{sendmail} and password guessing; \textbf{Code Red} (2001) and \textbf{SQL Slammer} (2003) infected hundreds of thousands of servers within hours by scanning random addresses.
+
+\textbf{Bots} (zombies) wait for commands from a controller over a command-and-control channel, and a \textbf{botnet} of thousands of them is used for distributed denial-of-service attacks, spam and click fraud; the attacks come from innocent machines, which makes them hard to trace. \textbf{Ransomware} turns cryptography against the victim: the malware generates a symmetric key, encrypts the user's files (AES), and encrypts that key under the attacker's RSA \emph{public} key, which is embedded in the malware. Only the attacker's private key can recover the file key, so neither analysing the malware nor the victim's machine helps; WannaCry (2017) combined this with a worm that spread through a Windows file-sharing vulnerability. The defences are offline backups and prompt patching.
+
+\subsection{Virus countermeasures \new}
+\likely{``Explain the generations of antivirus software; what is generic decryption?'' (3--4 marks).}
+
+The ideal solution is \textbf{prevention}, by not allowing a virus into the system, but in general this is impossible, so antivirus software aims at \textbf{detection} (determine that an infection has occurred), \textbf{identification} (determine which virus it is) and \textbf{removal} (remove all traces and restore the program to its original state); if removal fails, the infected program is discarded and a clean backup reloaded. Stallings identifies four generations of antivirus software.
+\begin{itemize}
+  \item \textbf{First generation: simple scanners} require a virus signature (the virus's fixed structure and bit pattern) to identify it, so they are limited to known viruses; others merely record program lengths and look for changes.
+  \item \textbf{Second generation: heuristic scanners} use heuristic rules to search for probable infection, such as code fragments typical of viruses (e.g.\ the start of a decryption loop of a polymorphic virus), and \textbf{integrity checking}: a checksum of each program is stored and recomputed. A plain checksum or hash can be recomputed by a virus that changes the program, so the check uses a \emph{keyed} hash (a MAC, \S\ref{sec:integrity}) whose key is kept away from the programs.
+  \item \textbf{Third generation: activity traps} are memory-resident programs that identify a virus by its \emph{actions} rather than its structure, so no signature is needed.
+  \item \textbf{Fourth generation: full-featured protection} packages combine scanning, activity traps and access control, which limits the ability of a virus to penetrate the system and to update files.
+\end{itemize}
+\textbf{Generic decryption} (GD) catches polymorphic viruses: the suspect file is run in a \textbf{CPU emulator}, a software computer under the control of an \textbf{emulation control module}, while a \textbf{virus signature scanner} watches the emulated memory. A polymorphic virus must decrypt its body to run, so after enough emulated instructions the plaintext virus appears in memory and is recognised, without risk to the real machine. \textbf{Behaviour-blocking software} integrates with the operating system and monitors programs in real time for malicious actions (opening, deleting or modifying files, formatting disks, changing executables or system settings, initiating network connections), blocking them before they take effect. IBM's \textbf{digital immune system} adds automation: a suspicious program on one client is sent to a central virus-analysis machine, which runs it safely, derives a prescription (signature and removal), and distributes it to all clients.
+
+\subsection{Firewalls: design goals and control techniques \hot\new}
+\likely{``What are the design goals of a firewall? List the four control techniques'' (4 marks).}
+
+\textbf{Problem.} An organisation with hundreds of hosts on the Internet cannot secure every one of them individually: each runs different software with different flaws. A \textbf{firewall} is inserted between the premises network and the Internet to establish a controlled link and an outer security wall or perimeter, so that security is enforced at a single choke point. Bellovin and Cheswick give three design goals.
+\begin{enumerate}
+  \item \textbf{All traffic} from inside to outside, and vice versa, must pass through the firewall; this is achieved by physically blocking all access to the local network except via the firewall.
+  \item \textbf{Only authorised traffic}, as defined by the local security policy, is allowed to pass.
+  \item The firewall itself is \textbf{immune to penetration}, which implies a trusted system with a secure operating system.
+\end{enumerate}
+\textbf{Control techniques.} \textbf{Service control} decides which types of Internet services can be accessed, inbound or outbound (by IP address and port number, by proxy software, or by hosting the service on the firewall). \textbf{Direction control} decides in which direction particular service requests may be initiated and allowed to flow. \textbf{User control} controls access to a service according to which user is attempting it, usually for local users, and for remote users with secure authentication such as IPSec. \textbf{Behaviour control} controls how particular services are used, e.g.\ filtering spam out of e-mail or giving external users access to only part of the web server.
+
+\textbf{Capabilities.} The single choke point keeps unauthorised users out, prohibits vulnerable services from entering or leaving, and protects against IP spoofing and routing attacks; it gives one location for monitoring, audits and alarms; it is a convenient platform for functions such as network address translation and usage logging; and it can serve as the endpoint of IPSec tunnels for a VPN.
+
+\subsection{Types of firewall \hot\new}
+\likely{``Explain packet filter, stateful inspection, application-level and circuit-level gateways; design a packet-filter rule set'' (5--8 marks).}
+
+\textbf{Packet-filtering router.} A packet filter applies a set of rules to each incoming and outgoing IP packet and then forwards or discards it. The rules match fields of the packet: source and destination IP address, source and destination port (which identifies the application, e.g.\ 25 for SMTP, 80 for HTTP), the IP protocol field, TCP flags, and the router interface the packet arrived on or leaves by. The rules are checked in order and the first match decides; if no rule matches, a \textbf{default policy} applies. \emph{Default discard} (that which is not expressly permitted is prohibited) is the conservative choice: everything is blocked at first and services are added case by case. \emph{Default forward} (that which is not expressly prohibited is permitted) is easier for users but means the administrator must react to each new threat.
+
+\begin{center}\small\setlength{\tabcolsep}{4pt}
+\begin{tabular}{@{}c l l l l l l l l@{}}
+\toprule
+\# & Dir & Source address & Src port & Dest.\ address & Dst port & Flag & Action & Purpose\\
+\midrule
+1 & in & 192.168.1.0/24 & * & * & * & & deny & spoofed inside address from outside\\
+2 & in & * & $>1023$ & 192.168.1.10 & 80, 443 & & allow & requests to our web server\\
+3 & out & 192.168.1.10 & 80, 443 & * & $>1023$ & ACK & allow & web server's replies\\
+4 & in & * & * & 192.168.1.20 & 25 & & allow & mail to our SMTP server\\
+5 & out & 192.168.1.20 & 25 & * & * & ACK & allow & SMTP server's replies\\
+6 & out & 192.168.1.0/24 & $>1023$ & * & 80, 443 & & allow & inside users browse the web\\
+7 & in & * & 80, 443 & 192.168.1.0/24 & $>1023$ & ACK & allow & replies to their requests\\
+8 & * & * & * & * & * & & deny & default: discard everything else\\
+\bottomrule
+\end{tabular}
+\end{center}
+The \textbf{ACK flag} in rules 3, 5 and 7 is essential. The first packet of a TCP connection (SYN) has no ACK, and every later packet has it, so a rule that requires ACK only admits packets of connections that were opened from the other side. Without it, rule 7 would let an outsider open a connection to \emph{any} high port inside, simply by sending from source port 80. Rule 1 is anti-spoofing: a packet arriving from the Internet cannot legitimately carry an inside source address.
+
+\textbf{Advantages and disadvantages.} Packet filters are simple, transparent to users and very fast. But they do not examine upper-layer data, so they cannot block application-specific attacks or commands; their logging is limited; most do not support user authentication; they are open to attacks on TCP/IP itself; and rule sets are easy to get wrong. Three attacks and their countermeasures are standard. In \textbf{IP address spoofing}, an outsider sends packets with an internal source address; the filter discards packets with an inside source address that arrive on the external interface (rule 1). In a \textbf{source routing attack} the sender specifies the route, hoping to bypass checks; the filter discards all packets that use the source-route option. In a \textbf{tiny fragment attack} the intruder fragments a packet so finely that the TCP header falls into a second fragment, which escapes rules that test TCP fields; the filter requires the first fragment to contain a minimum amount of the transport header, and if it rejects the first fragment it remembers the packet and discards all later fragments.
+
+\textbf{Stateful inspection firewall.} A client normally uses a port number above 1023 for its side of a TCP connection, so a simple packet filter must admit inbound traffic to all high-numbered ports (rule 7), a large hole. A stateful inspection firewall tightens this by keeping a \textbf{directory (state table) of outbound TCP connections}, one entry per established connection (source and destination addresses and ports, connection state), and admits inbound packets to high ports only if they fit an entry in the directory. Some also track TCP sequence numbers to stop session hijacking.
+
+\textbf{Application-level gateway} (proxy server). The gateway relays application-level traffic. The user contacts it with an application such as Telnet or FTP, the gateway asks for the remote host and for authentication, and then opens its own connection to the remote application and relays the application data between the two connections. If the gateway has no proxy code for an application, that service is simply not available, and each proxy can be restricted to the commands the administrator considers acceptable. \emph{Advantages}: it is more secure than a packet filter, since it only has to scrutinise a few allowed applications instead of all combinations at TCP/IP level, and it can log and audit all traffic at application level. \emph{Disadvantage}: the extra processing on every connection, since the gateway splices two connections and examines all traffic in both directions.
+
+\textbf{Circuit-level gateway.} The gateway does not permit an end-to-end TCP connection either; it sets up two TCP connections, one with the inside host and one with the outside host, but once both exist it relays TCP segments \emph{without examining their contents}. Its security function is deciding which connections are allowed. A typical use is with trusted inside users: application-level proxies for inbound connections and circuit-level relaying for outbound ones, which avoids the processing overhead of examining outgoing data. SOCKS is the standard circuit-level gateway.
+\begin{center}\small
+\begin{tabularx}{\textwidth}{@{}l l l >{\raggedright\arraybackslash}X@{}}
+\toprule
+Type & Layer examined & Speed & Main strength / weakness\\
+\midrule
+Packet filter & IP and TCP/UDP headers & fastest & simple and transparent / blind to application data, no state\\
+Stateful inspection & headers $+$ connection state & fast & closes the high-port hole / still blind to application data\\
+Application-level gateway & application data & slowest & per-command control, logging, authentication / overhead, one proxy per application\\
+Circuit-level gateway & TCP connection set-up & fast & controls which connections exist / does not inspect contents\\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\subsection{Bastion host and firewall configurations \hot\new}
+\likely{``Explain screened host and screened subnet firewall configurations with diagrams; what is a bastion host / DMZ?'' (5 marks).}
+
+A \textbf{bastion host} is a system identified by the firewall administrator as a critical strong point in the network's security; it usually hosts the application-level or circuit-level gateways. It runs a secure (trusted) version of its operating system; only the essential services (proxies for Telnet, DNS, FTP, SMTP, user authentication) are installed; it may demand extra authentication before allowing access to a proxy; each proxy supports only a subset of its application's commands, allows access only to specific hosts, logs all traffic, is a small program that can be checked for flaws, is independent of the other proxies, does no disk access beyond reading its configuration, and runs as an unprivileged user in a private directory.
+
+\begin{center}
+\begin{tikzpicture}[font=\scriptsize]
+\tikzset{cl/.style={cloud, draw, cloud puffs=10, aspect=1.8, inner sep=0pt, fill=gray!8},
+         rt/.style={draw, circle, fill=acc!15, inner sep=1pt, minimum size=6mm},
+         hb/.style={draw, fill=white, inner sep=2pt, minimum height=0.45cm},
+         bh/.style={draw, fill=gold!30, inner sep=2pt, minimum height=0.45cm}}
+% (a) single-homed
+\node[cl] (i1) at (0,0) {Internet};
+\node[rt] (r1) at (1.9,0) {R};
+\draw (i1) -- (r1); \draw[thick] (3.0,1.1) -- (3.0,-1.1);
+\draw (r1) -- (3.0,0);
+\node[bh] (b1) at (4.3,0.75) {bastion host}; \draw (3.0,0.75) -- (b1);
+\node[hb] (s1) at (4.3,0) {information server}; \draw (3.0,0) -- (s1);
+\node[hb] (p1) at (4.3,-0.75) {private hosts}; \draw (3.0,-0.75) -- (p1);
+\node[font=\scriptsize\itshape] at (2.6,-1.5) {(a) screened host, single-homed bastion};
+% (b) dual-homed
+\begin{scope}[xshift=8.2cm]
+\node[cl] (i2) at (0,0) {Internet};
+\node[rt] (r2) at (1.9,0) {R};
+\draw (i2) -- (r2); \draw[thick] (2.9,1.1) -- (2.9,-1.1);
+\draw (r2) -- (2.9,0);
+\node[hb] (s2) at (2.9,1.45) {information server}; \draw (2.9,1.1) -- (s2);
+\node[bh, align=center] (b2) at (4.2,0) {bastion\\host}; \draw (2.9,0) -- (b2);
+\draw[thick] (5.4,1.1) -- (5.4,-1.1); \draw (b2) -- (5.4,0);
+\node[hb] (p2a) at (6.6,0.5) {private host}; \draw (5.4,0.5) -- (p2a);
+\node[hb] (p2b) at (6.6,-0.5) {private host}; \draw (5.4,-0.5) -- (p2b);
+\node[font=\scriptsize\itshape] at (3.3,-1.5) {(b) screened host, dual-homed bastion};
+\end{scope}
+% (c) screened subnet
+\begin{scope}[yshift=-3.5cm, xshift=1.2cm]
+\node[cl] (i3) at (0,0) {Internet};
+\node[rt] (r3) at (1.9,0) {R$_1$};
+\draw (i3) -- (r3);
+\draw[thick] (r3) -- (7.3,0);
+\node[bh] (b3) at (3.6,0.85) {bastion host}; \draw (3.6,0) -- (b3);
+\node[hb] (s3) at (5.8,0.85) {information server}; \draw (5.8,0) -- (s3);
+\node[hb] (m3) at (3.6,-0.85) {modem / mail server}; \draw (3.6,0) -- (m3);
+\node[font=\scriptsize, warn] at (5.9,-0.35) {screened subnet (DMZ)};
+\node[rt] (r4) at (7.9,0) {R$_2$};
+\draw (7.3,0) -- (r4);
+\draw[thick] (9.0,1.0) -- (9.0,-1.0); \draw (r4) -- (9.0,0);
+\node[hb] (p3a) at (10.2,0.5) {private host}; \draw (9.0,0.5) -- (p3a);
+\node[hb] (p3b) at (10.2,-0.5) {private host}; \draw (9.0,-0.5) -- (p3b);
+\node[font=\scriptsize\itshape] at (5.2,-1.55) {(c) screened subnet: outside router R$_1$, inside router R$_2$};
+\end{scope}
+\end{tikzpicture}
+\end{center}
+
+\textbf{Screened host firewall, single-homed bastion} (a). The firewall consists of a packet-filtering router and a bastion host. The router is configured so that from the Internet only packets destined for the bastion host are allowed in, and from the internal network only packets from the bastion host are allowed out; the bastion host performs authentication and proxy functions. This is more secure than either component alone, because it combines packet-level and application-level filtering and an intruder must generally penetrate two separate systems; the router can also let some traffic, such as public web information, go directly to an information server. \emph{Weakness}: if the router is completely compromised, traffic can flow directly between the Internet and the private hosts.
+
+\textbf{Screened host firewall, dual-homed bastion} (b). The bastion host has two network interfaces, one on the router's side and one on the internal network, so traffic between the Internet and the private hosts physically has to pass through the bastion host. This removes the weakness of (a): even a compromised router cannot bypass the bastion. An information server can still be placed on the outer segment for direct access.
+
+\textbf{Screened subnet firewall} (c), the most secure configuration. Two packet-filtering routers are used, one between the bastion host and the Internet and one between the bastion host and the internal network, creating an isolated subnetwork, the \textbf{screened subnet} or \textbf{DMZ} (demilitarised zone), which holds the bastion host and public servers. Both the Internet and the internal network can reach the DMZ, but traffic across it is blocked. \emph{Advantages}: there are three levels of defence (outer router, bastion host, inner router); the outer router advertises only the DMZ to the Internet, so the internal network is invisible from outside; and the inner router advertises only the DMZ to the internal network, so inside systems cannot build direct routes to the Internet.
+
+\textbf{Limitations of firewalls.} A firewall cannot protect against attacks that bypass it (an inside system with its own dial-out or mobile connection, a modem pool for travelling staff); it does not protect against internal threats (a disgruntled employee, or one who unwittingly helps an outside attacker); it cannot practically scan every file transferred for viruses, given the variety of formats; a laptop or USB drive infected outside can be carried in and attached inside; and it cannot inspect traffic that is encrypted end to end.
+
+\subsection{Trusted systems: Bell--LaPadula and the reference monitor \hot\new}
+\likely{``Explain the Bell--LaPadula model (no read up, no write down) and the reference monitor; how does a trusted system defeat a Trojan horse?'' (5--6 marks).}
+
+\textbf{Problem.} Ordinary access control (an access matrix of subjects, objects and rights, stored per object as an access control list or per subject as capability tickets) lets the owner of a file pass its contents to anyone, and any program a user runs acts with all of the user's rights. Military and many commercial settings need a stronger guarantee: information classified at one level must never flow to a lower level, whatever users or programs do. Data and users are therefore given \textbf{security levels}, for example unclassified (U) $<$ confidential (C) $<$ secret (S) $<$ top secret (TS); a subject's level is its \textbf{clearance} and an object's level is its \textbf{classification}. A system that enforces such levels is a \textbf{multilevel secure} system.
+
+\textbf{Bell--LaPadula model} (1973). A multilevel secure system must enforce two rules:
+\begin{itemize}
+  \item \textbf{No read up} (simple security property): a subject can only read an object of less or equal security level.
+  \item \textbf{No write down} ($*$-property): a subject can only write into an object of greater or equal security level.
+\end{itemize}
+\textbf{Why both are needed.} No read up alone stops a secret-cleared user from reading top-secret data, but it does not stop information from leaking downwards: a secret-level process could read a secret file (allowed) and write its contents into an unclassified file, which any unclassified user may then read. The $*$-property closes that path: whatever a subject at level $L$ has read is at level $\le L$, and it can only write at level $\ge L$, so information can only flow upwards. Writing up is harmless for confidentiality (it is a blind append). Together the two rules guarantee that information never moves from a higher to a lower level.
+
+\begin{worked}[: applying Bell--LaPadula]
+\textbf{Q.} Levels are U $<$ C $<$ S $<$ TS. Subjects: General (TS), Officer (S), Clerk (C). Objects: War plan (TS), Report (S), Memo (C), Notice (U). Give the read (r) and write (w) operations allowed to each subject.
+
+\textbf{A.} Read is allowed if subject level $\ge$ object level, write if subject level $\le$ object level; equal levels give both.
+\begin{center}\small
+\begin{tabular}{@{}l c c c c@{}}
+\toprule
+Subject \textbackslash\ Object & War plan (TS) & Report (S) & Memo (C) & Notice (U)\\
+\midrule
+General (TS) & r, w & r & r & r\\
+Officer (S) & w & r, w & r & r\\
+Clerk (C) & w & w & r, w & r\\
+\bottomrule
+\end{tabular}
+\end{center}
+\emph{Check}: the Officer may not write the Memo (write down), so nothing he has read from the Report can reach the Clerk; he may append to the War plan (write up) but not read it.
+\end{worked}
+
+\textbf{Reference monitor.} The rules are enforced by a \textbf{reference monitor}, a controlling element in the hardware and operating system of a computer that regulates the access of subjects to objects on the basis of their security parameters. It consults the \textbf{security kernel database}, which lists the access privileges (security clearance) of each subject and the protection attributes (classification level) of each object, and it records important security events, such as detected violations and authorised changes to the kernel database, in an \textbf{audit file}.
+\begin{center}
+\begin{tikzpicture}[font=\footnotesize]
+\node[draw, fill=gray!10, minimum width=1.8cm, minimum height=1.2cm] (sub) at (0,0) {Subjects};
+\node[draw, fill=gold!25, align=center, minimum width=3.2cm, minimum height=1.2cm] (rm) at (4,0) {Reference monitor\\(policy: no read up,\\no write down)};
+\node[draw, fill=gray!10, minimum width=1.8cm, minimum height=1.2cm] (obj) at (8,0) {Objects};
+\node[draw, align=center, fill=acc!8] (db) at (2.6,-1.7) {Security kernel database\\subject: clearance; object: classification};
+\node[draw, fill=acc!8] (au) at (6.6,-1.7) {Audit file};
+\draw[nsA] (sub) -- node[above]{request} (rm); \draw[nsA] (rm) -- node[above]{access} (obj);
+\draw[nsA] (db) -- (rm); \draw[nsA] (rm) -- (au);
+\end{tikzpicture}
+\end{center}
+The reference monitor must have three properties.
+\begin{itemize}
+  \item \textbf{Complete mediation}: the security rules are enforced on \emph{every} access, not only, for example, when a file is opened.
+  \item \textbf{Isolation}: the reference monitor and its database are protected from unauthorised modification.
+  \item \textbf{Verifiability}: the reference monitor's correctness must be provable, i.e.\ it must be possible to demonstrate mathematically that it enforces the security rules and provides complete mediation and isolation.
+\end{itemize}
+A system that can provide such verification is called a \textbf{trusted system}. These requirements are demanding: complete mediation in software would be too slow, so it needs hardware support; isolation requires that an attacker cannot change the monitor's logic or data; and formal verification is only feasible for a small, simple kernel. Evaluation criteria such as the US Orange Book (TCSEC, classes D to A1) and the international Common Criteria grade systems by how far these properties are achieved.
+
+\textbf{Trojan horse defence.} Stallings' example shows why access control lists are not enough. Bob keeps a sensitive string in a file that only he may read and write. Alice, a legitimate but hostile user, installs a Trojan horse program and creates a private ``back-pocket'' file, giving herself read/write access and Bob write access to it. She persuades Bob to run her program, advertised as a useful utility. Running with Bob's rights, the program reads Bob's file and copies the string into the back-pocket file; both operations satisfy the ACLs, and Alice later reads her own file. In a trusted system, subjects get security levels at logon, say \emph{sensitive} for Bob's processes and files and \emph{public} for Alice's. When Bob runs the Trojan horse it acquires Bob's level, so it may read the sensitive string (no read up is satisfied), but its attempt to write into the public back-pocket file violates the $*$-property and is \textbf{refused by the reference monitor}, even though the ACL permits it. The security policy takes precedence over the discretionary ACL mechanism, and the leak is stopped.
+
+\begin{fixbox}
+\begin{itemize}
+  \item No class slides cover this chapter; the notes follow Stallings (which gives most of the detail on PGP, S/MIME, IPSec, SSL, SET, intruders, malware, firewalls and trusted systems) and Forouzan (PGP, S/MIME, IPSec, SSL/TLS). Answer in the books' terms, but know that the details have aged.
+  \item Algorithms: the lists for PGP (CAST-128, IDEA, 3DES, SHA-1), S/MIME (3DES, RC2/40, SHA-1) and IPSec (HMAC-MD5-96, 3DES) are the books' historical defaults; current versions use AES and SHA-2. SSL 2.0/3.0 and TLS 1.0/1.1 are deprecated; TLS 1.2 and 1.3 are current. IKEv1 (main/aggressive mode) has been replaced by IKEv2. SET was never widely deployed and was dropped from later Stallings editions.
+  \item Stallings words the $*$-property as ``a subject can only write into an object of greater or equal security level''. Some texts state a strong $*$-property (write only at the \emph{same} level), which also protects integrity; the exam usually wants the standard version.
+\end{itemize}
+\end{fixbox}

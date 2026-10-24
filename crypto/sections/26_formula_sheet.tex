@@ -11,10 +11,10 @@ Everything below is derived and explained in the chapter named in the right-hand
 \toprule
 \fsrow{Shift (Caesar)}{$C = (P + k) \bmod 26$, $P = (C - k) \bmod 26$; 26 keys (25 useful)}{\S\ref{sec:caesar}}
 \fsrow{Multiplicative / affine}{$C = (P \cdot k_1 + k_2) \bmod 26$, $P = ((C - k_2) \cdot k_1^{-1}) \bmod 26$; $k_1 \in \mathbb{Z}_{26}^*$ (12 values); affine key space $12 \times 26 = 312$}{\S\ref{sec:classextra}}
-\fsrow{Monoalphabetic}{key = a permutation of the alphabet, $26! \approx 4 \times 10^{26}$ keys; broken by letter frequencies}{\S\ref{sec:schemes}}
+\fsrow{Monoalphabetic}{key = a permutation of the alphabet, $26! \approx 4 \times 10^{26}$ keys; broken by letter frequencies}{\S\ref{sec:monoalpha}}
 \fsrow{Playfair}{digrams (split doubles with \ttx{x}, pad odd length); same row $\to$ right, same column $\to$ below, rectangle $\to$ same row, other corner}{\S\ref{sec:playfair}}
 \fsrow{Vigen\`ere / autokey}{$C_i = (P_i + K_{i \bmod m}) \bmod 26$; autokey: $k_1$ given, then $k_i = P_{i-1}$}{\S\ref{sec:poly}}
-\fsrow{Hill}{$C = P K \bmod 26$, $P = C K^{-1} \bmod 26$; $K$ invertible iff $\gcd(\det K, 26) = 1$}{\S\ref{sec:poly}}
+\fsrow{Hill}{$C = P K \bmod 26$, $P = C K^{-1} \bmod 26$; $K$ invertible iff $\gcd(\det K, 26) = 1$}{\S\ref{sec:hill}}
 \fsrow{One-time pad}{$C_i = P_i \oplus K_i$ (or $+ \bmod 26$); key random, as long as the message, used once $\Rightarrow$ perfect secrecy}{\S\ref{sec:otp}}
 \bottomrule
 \end{tabularx}\par}

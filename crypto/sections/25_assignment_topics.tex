@@ -630,7 +630,7 @@ Ronald Rivest designed \textbf{MD4} (1990) for speed on 32-bit processors: 512-b
 
 \textbf{MD5 processing.}
 \begin{itemize}[leftmargin=1.4em]
-  \item \textbf{Padding and length.} A 1 bit and then 0 bits are appended until the length is $448 \bmod 512$, followed by the original length as a 64-bit number, so the result is a multiple of 512 bits; the padding is between 1 and 512 bits. For ``abc'' (24 bits): $424$ padding bits $+ 64 = 488$ bits, filling one block.
+  \item \textbf{Padding and length.} A 1 bit and then 0 bits are appended until the length is $448 \bmod 512$, followed by the original length as a 64-bit number, so the result is a multiple of 512 bits; the padding is between 1 and 512 bits. For ``abc'' (24 bits): $24 + 424$ (padding) $+ 64$ (length) $= 512$ bits, exactly one block.
   \item \textbf{Buffer.} Four 32-bit words $A, B, C, D$ start from the fixed IV \ttx{67452301}, \ttx{EFCDAB89}, \ttx{98BADCFE}, \ttx{10325476} (the bytes 01 23 45 \dots\ in little-endian order).
   \item \textbf{Compression: 4 rounds $\times$ 16 steps = 64 steps.} Each block is viewed as sixteen 32-bit words $X[0..15]$, each used once per round in a round-specific order. Step $i$ updates one word:
   \[
@@ -662,7 +662,7 @@ The rotation by 1 is the only change from SHA-0. Without it each bit position of
 \subsection{The SHA-2 family \new}
 \likely{``List the SHA-2 variants with block size, word size, rounds and digest size'' (3 marks).}
 
-SHA-2 (FIPS 180-2, 2001; extended in FIPS 180-4) contains two genuinely different compression functions: \textbf{SHA-256} on 32-bit words (512-bit blocks, 64 rounds) and \textbf{SHA-512} on 64-bit words (1024-bit blocks, 80 rounds, \S\ref{sec:integrity}). The other four members are \emph{truncations} of these two, each with its own initial value: SHA-224 from SHA-256, and SHA-384, SHA-512/224 and SHA-512/256 from SHA-512. The separate IVs make the truncated digest unrelated to a prefix of the full one, so the variants act as independent functions. SHA-512/256 gives SHA-256's security level but runs faster than SHA-256 on 64-bit processors. No attack on the full SHA-2 functions better than the generic birthday and brute-force bounds is known.
+SHA-2 (published in 2001, standardised in FIPS 180-2 in 2002 and extended in FIPS 180-4) contains two genuinely different compression functions: \textbf{SHA-256} on 32-bit words (512-bit blocks, 64 rounds) and \textbf{SHA-512} on 64-bit words (1024-bit blocks, 80 rounds, \S\ref{sec:integrity}). The other four members are \emph{truncations} of these two, each with its own initial value: SHA-224 from SHA-256, and SHA-384, SHA-512/224 and SHA-512/256 from SHA-512. The separate IVs make the truncated digest unrelated to a prefix of the full one, so the variants act as independent functions. SHA-512/256 gives SHA-256's security level but runs faster than SHA-256 on 64-bit processors. No attack on the full SHA-2 functions better than the generic birthday and brute-force bounds is known.
 \begin{center}\small
 \begin{tabular}{@{}lccccccc@{}}
 \toprule
@@ -679,7 +679,7 @@ SHA-512/256 & 1024 & 64 & 80 & 256 & $2^{128} - 1$ & 128 / 256 & resistant\\
 \end{center}
 (Sizes in bits.) Test value: $\mathrm{SHA\text{-}256}(\text{``abc''}) = $ \ttx{ba7816bf 8f01cfea 414140de 5dae2223 b00361a3 96177a9c b410ff61 f20015ad}; for ``abd'' 122 of the 256 bits change.
 
-\textbf{The length-extension attack.} In every MD hash the digest \emph{is} the final chaining value $H_t$. Suppose someone authenticates messages with the naive MAC $T = h(K \,\|\, M)$ for a secret key $K$. Eve knows $T$ and the length of $K \| M$ (not $K$). She sets the chaining value to $T$, appends the padding block that $h$ would have added (computable from the length alone; call it \emph{pad}), and continues hashing any extra text $X$. The result equals $h(K \,\|\, M \,\|\, \text{pad} \,\|\, X)$, a valid tag for the longer message $M \| \text{pad} \| X$, obtained without $K$. A script confirms this for SHA-256 with a 10-byte key, $M = $ ``amount=100'', $X = $ ``\&to=eve'' and 44 bytes of glue padding. The truncated variants resist it because Eve does not see the whole chaining value (SHA-384 hides 128 of 512 bits; SHA-224 hides only 32, which can be guessed). HMAC defeats it for all MD hashes by hashing a second time with an outer key, so the attacker never sees the inner chaining value.
+\textbf{The length-extension attack.} In every MD hash the digest \emph{is} the final chaining value $H_t$. Suppose someone authenticates messages with the naive MAC $T = h(K \,\|\, M)$ for a secret key $K$. Eve knows $T$ and the length of $K \| M$ (not $K$). She sets the chaining value to $T$, appends the padding block that $h$ would have added (computable from the length alone; call it \emph{pad}), and continues hashing any extra text $X$. The result equals $h(K \,\|\, M \,\|\, \text{pad} \,\|\, X)$, a valid tag for the longer message $M \| \text{pad} \| X$, obtained without $K$. A script confirms this for SHA-256 with a 10-byte key, $M = $ ``amount=100'', $X = $ ``\&to=eve'' and 44 bytes of glue padding. The truncated variants resist it because Eve does not see the whole chaining value (SHA-384 hides 128 of 512 bits; SHA-224 hides only 32, which can be guessed). HMAC (\S\ref{sec:mac}) defeats it for all MD hashes by hashing a second time with an outer key, so the attacker never sees the inner chaining value.
 
 \subsection{SHA-3 (Keccak) and the sponge construction \new}
 \likely{``Explain the sponge construction of SHA-3; why is SHA-3 not vulnerable to length extension?'' (5 marks).}
@@ -786,7 +786,7 @@ SHA3-256 & 2015 & sponge & $r = 1088$ & 64 & 24 rounds & 256 & secure\\
 MD5: 512-bit blocks, 128-bit digest, $4 \times 16 = 64$ steps, functions $F, G, H, I$; collisions since 2004. SHA-1: 160-bit digest, 80 steps, the $\lll 1$ in the word expansion is its only difference from SHA-0; first collision SHAttered 2017. SHA-2: SHA-256 (32-bit words, 64 rounds) and SHA-512 (64-bit words, 80 rounds) plus truncations; secure. SHA-3: sponge, 1600-bit state, $r + c = 1600$, $c = 2d$, 24 rounds of $\theta\rho\pi\chi\iota$; immune to length extension because the capacity is never output.
 \end{mustknow}
 
-\textbf{Attacks on digital signature schemes.} The assignment also covers attacks on signature schemes (key-only, known-message and chosen-message attacks; existential versus selective forgery; the RSA multiplicative and ``choose the signature first'' forgeries; the danger of reusing the random number in ElGamal or DSS). These are treated with the signature schemes themselves in \S\ref{sec:dsig}. The link with this chapter is that a signature is computed on a \emph{hash} of the message, so a collision in the hash is a signature forgery: Eve gets the harmless document of a colliding pair signed and transfers the signature to the harmful one, which is exactly what the MD5 rogue-certificate and Flame attacks did.
+\textbf{Attacks on digital signature schemes.} The assignment also covers attacks on signature schemes (key-only, known-message and chosen-message attacks; existential versus selective forgery; the RSA multiplicative and ``choose the signature first'' forgeries; the danger of reusing the random number in ElGamal or DSS). These are treated with the signature schemes themselves in \S\ref{sec:dsig} (attacks in \S\ref{sec:dsig-attacks}). The link with this chapter is that a signature is computed on a \emph{hash} of the message, so a collision in the hash is a signature forgery: Eve gets the harmless document of a colliding pair signed and transfers the signature to the harmful one, which is exactly what the MD5 rogue-certificate and Flame attacks did.
 
 %=====================================================================
 \section{WhatsApp End-to-End Encryption (the Signal Protocol)}\label{sec:whatsapp}
@@ -883,17 +883,17 @@ uses the message key $MK$ once and deletes it. In WhatsApp, $MK$ is expanded wit
 \node[ky] (ca0) at (3.4,-1.3) {$CK_{A,0}$};
 \node[ky] (ca1) at (3.4,-2.6) {$CK_{A,1}$};
 \node[ky] (ca2) at (3.4,-3.9) {$CK_{A,2}$};
-\node[mk] (ma1) at (6.4,-1.95) {$MK_{A,1}$: Alice's message 1};
-\node[mk] (ma2) at (6.4,-3.25) {$MK_{A,2}$: Alice's message 2};
+\node[mk] (ma1) at (6.9,-1.3) {$MK_{A,1}$: Alice's message 1};
+\node[mk] (ma2) at (6.9,-2.6) {$MK_{A,2}$: Alice's message 2};
 \draw[->] (k1) -- (ca0);
 \draw[->] (ca0) -- node[left] {HMAC$(CK, 2)$} (ca1); \draw[->] (ca1) -- node[left] {HMAC$(CK, 2)$} (ca2);
-\draw[->] (ca0.east) -- node[above, sloped, font=\scriptsize] {HMAC$(CK,1)$} (ma1.west);
-\draw[->] (ca1.east) -- (ma2.west);
+\draw[->] (ca0.east) -- node[above, font=\scriptsize] {HMAC$(CK, 1)$} (ma1.west);
+\draw[->] (ca1.east) -- node[above, font=\scriptsize] {HMAC$(CK, 1)$} (ma2.west);
 \node[ky] (cb0) at (9.8,-1.3) {$CK_{B,0}$};
 \node[ky] (cb1) at (9.8,-2.6) {$CK_{B,1}$};
-\node[mk] (mb1) at (12.6,-1.95) {$MK_{B,1}$: Bob's message 1};
+\node[mk] (mb1) at (13.0,-1.3) {$MK_{B,1}$: Bob's message 1};
 \draw[->] (k2) -- (cb0); \draw[->] (cb0) -- (cb1);
-\draw[->] (cb0.east) -- (mb1.west);
+\draw[->] (cb0.east) -- node[above, font=\scriptsize] {HMAC$(CK, 1)$} (mb1.west);
 \end{tikzpicture}\\[2pt]
 {\footnotesize Horizontal: the DH ratchet (a new DH value at each change of speaker). Vertical: the symmetric ratchet (one HMAC step per message).}
 \end{center}
@@ -915,7 +915,7 @@ The combination is needed because each alone is insufficient: the symmetric ratc
 
 \textbf{Attachments.} A photo or document is encrypted with a fresh random AES-256 key and authenticated with HMAC-SHA256, and the ciphertext is uploaded to a storage server. The key, a hash of the encrypted file and a pointer to it are then sent in an ordinary end-to-end encrypted message, so the storage server holds only ciphertext.
 
-\textbf{Safety numbers against a man-in-the-middle.} Every protection above assumes that Alice received Bob's real identity key. The server distributes identity keys, so a malicious or compromised server could give Alice a key of its own and relay between two separate sessions (the classic Diffie--Hellman man-in-the-middle). The prekey signature does not help, since the attacker would sign with its own identity key. The defence is out-of-band verification: WhatsApp displays a \textbf{security code} (Signal: \emph{safety number}), a 60-digit number (also shown as a QR code) formed from the fingerprints of both users' identity keys. If Alice and Bob compare it in person or scan each other's QR code and it matches, no man-in-the-middle is present. The app also warns when a contact's security code changes (new phone or reinstall), which is when an interception would show up.
+\textbf{Safety numbers against a man-in-the-middle.} Every protection above assumes that Alice received Bob's real identity key. The server distributes identity keys, so a malicious or compromised server could give Alice a key of its own and relay between two separate sessions (the classic Diffie--Hellman man-in-the-middle, \S\ref{sec:keymgmt}). The prekey signature does not help, since the attacker would sign with its own identity key. The defence is out-of-band verification: WhatsApp displays a \textbf{security code} (Signal: \emph{safety number}), a 60-digit number (also shown as a QR code) formed from the fingerprints of both users' identity keys. If Alice and Bob compare it in person or scan each other's QR code and it matches, no man-in-the-middle is present. The app also warns when a contact's security code changes (new phone or reinstall), which is when an interception would show up.
 
 \textbf{What E2EE does not cover.} The server still learns metadata (who talks to whom, when, phone numbers, IP addresses). Messages are readable on the endpoints, so malware on the phone defeats E2EE. Cloud backups are protected only if the user enables WhatsApp's optional end-to-end encrypted backup. The connection between phone and server is separately protected by a transport protocol (Noise Pipes with Curve25519 and AES-GCM), which hides even the metadata of the encrypted messages from network observers.
 
@@ -927,7 +927,7 @@ The combination is needed because each alone is insufficient: the symmetric ratc
 
 Online banking is attacked less through its cryptography than through its users and their devices: the attacker steals or tricks out the credentials (phishing, malware, SIM swap) or persuades the customer to authorise a payment himself. The controls are therefore layered so that no single stolen secret is enough.
 \begin{itemize}[leftmargin=1.4em]
-  \item \textbf{TLS (HTTPS) with certificates.} All traffic is encrypted and integrity-protected by TLS, and the bank's server proves its identity with an X.509 certificate issued by a certification authority. This defeats eavesdropping and man-in-the-middle attacks on the network, and it lets the user check the padlock and the exact domain before typing a password, which is the technical defence against look-alike phishing sites.
+  \item \textbf{TLS (HTTPS) with certificates.} All traffic is encrypted and integrity-protected by TLS, and the bank's server proves its identity with an X.509 certificate issued by a certification authority (\S\ref{sec:pki}, \S\ref{sec:tls}). This defeats eavesdropping and man-in-the-middle attacks on the network, and it lets the user check the padlock and the exact domain before typing a password, which is the technical defence against look-alike phishing sites.
   \item \textbf{Multi-factor authentication.} Login and transactions require something the user \emph{knows} (password, transaction password) plus something he \emph{has} (a one-time password (OTP) sent by SMS or generated by an app, or the registered phone itself), so a phished password alone is useless. Indian regulation requires such an additional factor of authentication for online card and banking payments.
   \item \textbf{Transaction controls.} Per-transaction and daily limits, OTP confirmation and a cooling period with a reduced limit after adding a new beneficiary, and SMS/e-mail alerts for every login and debit. These limit the damage of a compromised account and let the customer react quickly.
   \item \textbf{Session controls.} Automatic logout after a short idle time, one active session at a time, display of the last login time, CAPTCHA and account lock-out after a few wrong passwords (against password guessing).
@@ -949,8 +949,8 @@ The \textbf{Unified Payments Interface} (UPI), launched by the National Payments
 }
 \draw[->, thick] (0,-1.4) -- node[above, align=center] {(1) payee VPA, amount,\\ PIN encrypted by CL} (3.7,-1.4);
 \draw[->, thick] (3.7,-2.4) -- node[above, align=center] {(2) signed pay request\\ (device binding checked)} (7.4,-2.4);
-\draw[->, thick] (7.4,-3.4) -- node[above, align=center] {(3) debit request with\\ encrypted PIN (payee VPA resolved)} (11.1,-3.4);
-\node[draw, fill=acc!8, align=center, font=\scriptsize] at (11.1,-4.2) {verify PIN (HSM),\\ balance, limits; debit};
+\draw[->, thick] (7.4,-3.4) -- node[above, align=center] {(3) debit request,\\ encrypted PIN} (11.1,-3.4);
+\node[draw, fill=acc!8, align=center, font=\scriptsize] at (12.95,-4.2) {verify PIN (HSM),\\ balance, limits; debit};
 \draw[->, thick] (11.1,-5.0) -- node[above] {(4) debit OK} (7.4,-5.0);
 \draw[->, thick] (7.4,-5.6) -- node[above] {(5) credit request} (14.8,-5.6);
 \draw[->, thick] (14.8,-6.2) -- node[above] {(6) credit OK} (7.4,-6.2);
