@@ -9,7 +9,7 @@ Everything below is derived and explained in the chapter named in the right-hand
 {\small\renewcommand{\arraystretch}{1.18}\noindent
 \begin{tabularx}{\textwidth}{@{}p{0.25\textwidth} X l@{}}
 \toprule
-\fsrow{Shift (Caesar)}{$C = (P + k) \bmod 26$, $P = (C - k) \bmod 26$; 26 keys (25 useful)}{\S\ref{sec:schemes}}
+\fsrow{Shift (Caesar)}{$C = (P + k) \bmod 26$, $P = (C - k) \bmod 26$; 26 keys (25 useful)}{\S\ref{sec:caesar}}
 \fsrow{Multiplicative / affine}{$C = (P \cdot k_1 + k_2) \bmod 26$, $P = ((C - k_2) \cdot k_1^{-1}) \bmod 26$; $k_1 \in \mathbb{Z}_{26}^*$ (12 values); affine key space $12 \times 26 = 312$}{\S\ref{sec:classextra}}
 \fsrow{Monoalphabetic}{key = a permutation of the alphabet, $26! \approx 4 \times 10^{26}$ keys; broken by letter frequencies}{\S\ref{sec:schemes}}
 \fsrow{Playfair}{digrams (split doubles with \ttx{x}, pad odd length); same row $\to$ right, same column $\to$ below, rectangle $\to$ same row, other corner}{\S\ref{sec:playfair}}
