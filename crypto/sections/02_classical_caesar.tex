@@ -1,16 +1,15 @@
-% Videos: classical techniques, Caesar part 1 & 2 (shift cipher, brute force)
-\section{Classical Encryption Techniques}
+% Sources: Neso videos (classical techniques, Caesar part 1 & 2: shift cipher, brute force; crypto/notes2.md), slides L1
+% (Caesar, monoalphabetic), older L4b/L5 slides (additive cipher, Forouzan Examples 3.3--3.5), Stallings 2.2.
+% Every ciphertext and table recomputed by script (scratchpad/r1/verify.py, stat.py).
+\section{Classical Encryption Techniques}\label{sec:classical}
 
-Plaintext sent in the open over a channel invites attacks:
-\textbf{passive} (eavesdropping, reading the data) and \textbf{active} (altering or injecting data).
-Encryption turns plaintext into ciphertext so an interceptor learns nothing.
+Plaintext sent in the open over a public channel invites both kinds of attack (\S\ref{sec:attacks}): \textbf{passive} attacks, in which the opponent eavesdrops and reads the data, and \textbf{active} attacks, in which he alters or injects data. Encryption turns the plaintext into ciphertext so that an interceptor learns nothing from it.
 
-Classical techniques are \textbf{obsolete}: easy to break, keys recovered quickly. We study them because modern ciphers are built on the same two ideas: \emph{substitution} and \emph{transposition}.
+\textbf{Classical} techniques are the ciphers used before computers, operating on the letters of a natural-language alphabet. All of them are now \textbf{obsolete}: they are easy to break and their keys are recovered quickly, often by hand. They are still studied for two reasons. Every modern cipher is built from the same two operations, \emph{substitution} and \emph{transposition}, only applied to bits and repeated over many rounds (\S\ref{sec:modern}); and the ways classical ciphers fail (small key space, preserved letter frequencies, linearity) are exactly the weaknesses that modern designs are built to avoid.
 
 \subsection{Substitution technique}
-\begin{keybox}
-Letters are \textbf{replaced} by other letters or symbols. Positions stay the same.
-\end{keybox}
+In a \textbf{substitution} cipher each letter of the plaintext is \textbf{replaced} by another letter, number or symbol, while the \emph{positions} of the letters stay the same. The cipher is a mapping from the plaintext alphabet to the ciphertext alphabet, and this mapping must be one-to-one: if two plaintext letters were sent to the same ciphertext letter, the receiver could not tell which one was meant, and decryption would be ambiguous. Decryption applies the inverse mapping.
+
 \begin{minipage}[t]{0.48\textwidth}
 Key (a mapping table):\quad a$\to$M,\; b$\to$X,\; g$\to$A,\; x$\to$Z\\[3pt]
 \begin{tabular}{@{}lccc@{}}
@@ -20,23 +19,22 @@ Ciphertext & \textbf{X} & \textbf{M} & \textbf{A}
 \end{tabular}
 \end{minipage}\hfill
 \begin{minipage}[t]{0.48\textwidth}
-\begin{itemize}
-  \item The mapping table \emph{is} the key.
-  \item Sender and receiver share the same table $\Rightarrow$ symmetric encryption.
-\end{itemize}
+In the lecture's example the plaintext \ttx{bag} becomes \ttx{XMA}: each letter is looked up in the table and replaced. The mapping table \emph{is} the key. Sender and receiver must share the same table, so this is symmetric encryption.
 \end{minipage}
+\medskip
+
+If a given plaintext letter is always replaced by the same ciphertext letter, wherever it occurs, the cipher is \textbf{monoalphabetic} (a one-to-one relationship between plaintext and ciphertext symbols). The Caesar cipher and the general monoalphabetic cipher are of this kind. If the same plaintext letter can be replaced by different ciphertext letters at different positions, the cipher is \textbf{polyalphabetic} (one-to-many), like Vigen\`ere and the one-time pad (\S\ref{sec:poly}, \S\ref{sec:otp}); Playfair and Hill, which substitute groups of letters at once, are filed with them by Forouzan. A monoalphabetic substitution only renames the letters, so the ciphertext has the same frequency profile as the plaintext moved onto different symbols, and that is what frequency analysis exploits.
 
 \subsection{Transposition technique}
-\begin{keybox}
-Apply a \textbf{permutation}: the same letters are \textbf{rearranged}. No new letters appear.
-\end{keybox}
+A \textbf{transposition} cipher does not replace any letter. It applies a \textbf{permutation}, a rearrangement, to the positions of the plaintext letters, so the ciphertext consists of exactly the plaintext letters in a different order. The permutation is the key.
+
 Plaintext \ttx{NESO} $\to$ \ttx{ESON}, \ttx{SONE}, \ttx{ONES}, \ttx{ENOS}, \dots
 \quad e.g.\ \ttx{ESON} takes letters in order $(2,3,4,1)$; \ttx{SONE} takes $(3,4,1,2)$.
 
-A 4-letter word has only $4! = 24$ arrangements, so short messages are easy to guess.
-Transposition is only effective for \textbf{long} plaintexts ($n!$ grows fast).
+The number of possible keys for a block of $n$ letters is the number of orderings of $n$ positions: $n$ choices for the first position, $n - 1$ for the second, and so on, giving $n!$. A 4-letter word has only $4! = 24$ arrangements, so short messages are easy to guess. Since $n!$ grows fast ($10! = 3\,628\,800$, $20! \approx 2.4 \times 10^{18}$), transposition is only effective for \textbf{long} plaintexts. Even then it has a built-in weakness: the letter frequencies of the ciphertext are \emph{identical} to those of the plaintext, so a cryptanalyst sees at once that a transposition was used (English frequencies, but no English words) and can rebuild the text by anagramming common pairs such as \ttx{th} and \ttx{he}. Rail fence and row--column transposition (Transposition Ciphers section) and keyed transposition (\S\ref{sec:classextra}) are the standard examples.
 
 \subsection{Substitution vs.\ transposition}
+The two techniques attack the structure of the plaintext from opposite sides: substitution hides \emph{which} letters occur, transposition hides \emph{where} they occur. Neither alone hides everything, which is why practical ciphers combine them (ADFGVX in 1918, every round of DES and AES today).
 \begin{center}\small
 \begin{tabularx}{\textwidth}{@{}l X X@{}}
 \toprule
@@ -46,6 +44,8 @@ What changes & The letters themselves & The order of the letters \\
 Positions & Unchanged & Permuted \\
 Letters in ciphertext & New letters / symbols & Exactly the plaintext letters \\
 Letter frequencies & Moved onto different symbols & Identical to plaintext \\
+Key & a mapping of the alphabet (e.g.\ a shift) & a permutation of positions \\
+Weak against & frequency analysis (monoalphabetic) & anagramming; short messages ($n!$ small) \\
 \bottomrule
 \end{tabularx}
 \end{center}
@@ -62,13 +62,19 @@ Letter frequencies & Moved onto different symbols & Identical to plaintext \\
 \end{tikzpicture}
 \end{center}
 
-\section{Caesar Cipher}
+\section{Caesar Cipher}\label{sec:caesar}
 
-\begin{keybox}
-Earliest and simplest substitution cipher, used by Julius Caesar. Replace each letter with the letter \textbf{three places further down} the alphabet, wrapping from \ttx{z} back to \ttx{a}.
-\end{keybox}
+The Caesar cipher is the earliest known and simplest substitution cipher, used by Julius Caesar for military messages. \imp{Each letter of the alphabet is replaced by the letter standing three places further down the alphabet,} and the alphabet is treated as a circle, so that after \ttx{z} it wraps round to \ttx{a}:
+\begin{center}\small\ttfamily\setlength{\tabcolsep}{3.2pt}
+\begin{tabular}{@{}l*{26}{c}@{}}
+\rmfamily plain: & a&b&c&d&e&f&g&h&i&j&k&l&m&n&o&p&q&r&s&t&u&v&w&x&y&z\\
+\rmfamily cipher: & D&E&F&G&H&I&J&K&L&M&N&O&P&Q&R&S&T&U&V&W&X&Y&Z&A&B&C\\
+\end{tabular}
+\end{center}
+Since every letter is moved by the same amount and a letter is always replaced by the same letter, it is a monoalphabetic substitution. Stallings' classic example: \ttx{meet me after the toga party} $\to$ \ttx{PHHW PH DIWHU WKH WRJD SDUWB}.
 
 \subsection{Letters as numbers (start at 0)}
+To write the rule as a formula, each letter is replaced by its position in the alphabet, starting from 0:
 \begin{center}\small\setlength{\tabcolsep}{4pt}
 \begin{tabular}{*{13}{c}}
 \toprule
@@ -80,24 +86,25 @@ N&O&P&Q&R&S&T&U&V&W&X&Y&Z\\
 \bottomrule
 \end{tabular}
 \end{center}
-Numbering from 0 matches the remainders mod 26, which are exactly $0,1,\dots,25$.
+Numbering from 0 matches the remainders mod 26, which are exactly $0,1,\dots,25$. The wrap-around from \ttx{z} to \ttx{a} is then simply reduction modulo 26, i.e.\ arithmetic in $\mathbb{Z}_{26}$ (\S\ref{sec:modular}). If the letters were numbered 1 to 26, \ttx{z} would be 26, which reduces to 0, a number that stands for no letter.
 
 \subsection{Algorithm}
-\begin{minipage}[c]{0.55\textwidth}
-\begin{keybox}[title=Encryption and decryption]
+With $p$ the number of a plaintext letter, $C$ the number of the ciphertext letter and $k$ the key (the shift), encryption adds the key and decryption subtracts it, both modulo 26.
+\begin{mustknow}[: Caesar / shift cipher]
 \vspace{-6pt}
 \begin{align*}
 C &= E(p,k) = (p + k) \bmod 26\\
 p &= D(C,k) = (C - k) \bmod 26
 \end{align*}
-Caesar cipher: $k = 3$.
-\end{keybox}
-\begin{itemize}
-  \item $p$ = plaintext letter's number, $C$ = ciphertext letter's number, $k$ = key (shift).
-  \item Convention: plaintext in lowercase, ciphertext in UPPERCASE.
-  \item \textbf{mod gives the remainder, not the quotient.} $27 \bmod 26 = 1$.
-  \item Negative during decryption? Add 26. \;$-2 \bmod 26 = 24$.
-\end{itemize}
+Caesar cipher: $k = 3$. Shift cipher: any $k \in \{1, \dots, 25\}$.
+\end{mustknow}
+
+\begin{minipage}[c]{0.55\textwidth}
+\textbf{Why decryption works.} Decrypting the encryption gives $\big((p + k) \bmod 26 - k\big) \bmod 26 = p \bmod 26$, because reducing modulo 26 before or after the subtraction gives the same remainder. Since $0 \le p \le 25$, this is exactly $p$.
+
+\textbf{Computing the remainder.} \textbf{mod gives the remainder, not the quotient}: $27 \bmod 26 = 1$, because $27 = 1 \times 26 + 1$. During decryption $C - k$ can be negative; the remainder must lie in $0, \dots, 25$, so add 26: $-2 \bmod 26 = 24$, because $-2 = (-1) \times 26 + 24$.
+
+\textbf{Convention.} Plaintext is written in lowercase and ciphertext in UPPERCASE, which keeps the two apart in a worked answer. For letters away from the end of the alphabet one can simply count $k$ letters forward; the formula matters at the wrap-around.
 \end{minipage}\hfill
 \begin{minipage}[c]{0.42\textwidth}
 \centering
@@ -117,6 +124,10 @@ Caesar cipher: $k = 3$.
 \end{minipage}
 
 \subsection{Worked example: encrypt ``neso academy'' ($k=3$)}
+\begin{worked}[: Caesar encryption (lecture example)]
+\textbf{Q.} Encrypt ``neso academy'' using the Caesar cipher.
+
+\textbf{A.} Convert each letter to its number, add 3, reduce mod 26, convert back:
 \begin{center}\small\setlength{\tabcolsep}{5pt}
 \begin{tabular}{@{}l*{4}{c}|*{7}{c}@{}}
 \toprule
@@ -131,8 +142,14 @@ Ciphertext & \textbf{Q}&\textbf{H}&\textbf{V}&\textbf{R} & \textbf{D}&\textbf{F}
 Answer: \textbf{\ttx{QHVR DFDGHPB}}.
 The only wrap-around is \ttx{y}: $24+3 = 27$, and $27 = 26\times 1 + \mathbf{1}$, so $C = 1 = $ \ttx{B}.
 (Counting on: y $\to$ z $\to$ a $\to$ \textbf{b}.) For the other letters you can just count three letters forward.
+\textbf{Check:} $B = 1$, $1 - 3 = -2 \equiv 24 = $ \ttx{y} \checkmark.
+\end{worked}
 
 \subsection{Homework 1: decrypt ``QHWZRUN VHFXULWB'' ($k=3$)}
+\begin{worked}[: Caesar decryption (lecture homework)]
+\textbf{Q.} Decrypt ``QHWZRUN VHFXULWB'' using the Caesar cipher.
+
+\textbf{A.} Apply $p = (C - 3) \bmod 26$ to every letter:
 \begin{center}\small\setlength{\tabcolsep}{3.6pt}
 \begin{tabular}{@{}l*{7}{c}|*{8}{c}@{}}
 \toprule
@@ -145,16 +162,21 @@ Plaintext & n&e&t&w&o&r&k & s&e&c&u&r&i&t&y\\
 \end{tabular}
 \end{center}
 Answer: \textbf{network security}. Note the last letter: $1-3=-2$, add 26 $\Rightarrow 24 =$ \ttx{y}.
+\end{worked}
 
-\section{Shift Cipher (the general form)}
+\section{Shift Cipher (the general form)}\label{sec:shift}
 
-\begin{keybox}
-Same formulas, but the key $k$ can be any of $1,2,\dots,25$. \textbf{Caesar cipher = shift cipher with $k=3$.}
-\end{keybox}
+The Caesar cipher has no real key: the shift is always 3, so anyone who knows the method can read every message. The obvious repair is to let the shift vary and keep it secret. The \textbf{shift cipher} uses the same two formulas with a secret key $k$; Forouzan calls it the \textbf{additive cipher}, because encryption is addition in $\mathbb{Z}_{26}$. \textbf{Caesar cipher = shift cipher with $k=3$.}
+
+\textbf{How many keys?} A key $k$ and the key $k + 26$ give the same cipher, since $(p + k + 26) \bmod 26 = (p + k) \bmod 26$; so every key can be reduced modulo 26 (a shift of 29 is a Caesar shift of 3), and there are only 26 different keys, $0$ to $25$. One of them is useless:
 \begin{itemize}
   \item $k=0$ is useless: $C = (p+0) \bmod 26 = p$, so the ciphertext equals the plaintext. (Homework: ``Neso'', $k=0$ $\Rightarrow$ \ttx{NESO}.)
   \item $k=26$ is the same as $k=0$. So there are only \textbf{25 usable keys}.
 \end{itemize}
+
+\textbf{Decryption is encryption with $26 - k$.} Subtracting $k$ modulo 26 is the same as adding its additive inverse $26 - k$: $(C - k) \bmod 26 = (C + 26 - k) \bmod 26$. Decrypting the Caesar cipher is therefore the same as encrypting with key 23, and an attacker who tries all forward shifts tries all decryption keys too. This is why the forward and backward shifts in the brute-force table below always add up to 26.
+
+\textbf{Encrypting twice does not help.} Shifting by $k_1$ and then by $k_2$ gives $(p + k_1 + k_2) \bmod 26$, which is a single shift by $(k_1 + k_2) \bmod 26$. Double encryption with two shift keys is just another shift cipher, still with 25 keys to search. (In algebraic terms, the shift ciphers are closed under composition.)
 
 \textbf{Example:} ``Neso'', $k=4$: \;
 N $13{+}4{=}17\to$\textbf{R},\;
@@ -178,30 +200,54 @@ Answer: \textbf{\ttx{GVCTXSKVETLC}} (both \ttx{y}'s wrap: $24+4=28 \equiv 2$).
 \textbf{In code:} the 0--25 numbering is a convention. With ASCII (\ttx{A}=65, \ttx{a}=97), shift to 0 first, then back:
 \;$C = \big((p - 65 + k) \bmod 26\big) + 65$ for uppercase (use 97 for lowercase).
 
+\begin{worked}[: Forouzan Example 3.3 (additive cipher)]
+\textbf{Q.} Use the additive cipher with key $= 15$ to encrypt the message ``hello''. Decrypt the result to verify.
+
+\textbf{Encryption}, $C = (p + 15) \bmod 26$:
+\begin{center}\small\setlength{\tabcolsep}{6pt}
+\begin{tabular}{@{}l*{5}{c}@{}}
+\toprule
+Plaintext & h&e&l&l&o\\
+$p$ & 7&4&11&11&14\\
+$p + 15$ & 22&19&\hl{26}&\hl{26}&\hl{29}\\
+$\bmod 26$ & 22&19&0&0&3\\
+Ciphertext & \textbf{W}&\textbf{T}&\textbf{A}&\textbf{A}&\textbf{D}\\
+\bottomrule
+\end{tabular}
+\qquad
+\begin{tabular}{@{}l*{5}{c}@{}}
+\toprule
+Ciphertext & W&T&A&A&D\\
+$C$ & 22&19&0&0&3\\
+$C - 15$ & 7&4&\hl{$-15$}&\hl{$-15$}&\hl{$-12$}\\
+$\bmod 26$ & 7&4&11&11&14\\
+Plaintext & h&e&l&l&o\\
+\bottomrule
+\end{tabular}
+\end{center}
+Ciphertext \textbf{\ttx{WTAAD}}; decryption with $p = (C - 15) \bmod 26$ (adding 26 to the negative values) returns \textbf{hello} \checkmark. Note that the double \ttx{l} gives the double \ttx{A}: a monoalphabetic cipher keeps repeated letters visible.
+\end{worked}
+
 \subsection{Pros and cons of the Caesar cipher}
-\begin{minipage}[t]{0.3\textwidth}
-\textbf{Pros}
+\textbf{Advantages.} The cipher is \textbf{simple} and \textbf{easy to implement}: it needs one addition per letter and can be done by hand or written in a few lines of code.
+
+\textbf{Disadvantages.} The lecture lists three, and together they are exactly what makes a brute-force attack succeed.
 \begin{enumerate}[leftmargin=1.5em]
-  \item Simple.
-  \item Easy to implement.
+  \item \textbf{The encryption and decryption algorithms are known.} By itself this is normal (Kerckhoff's principle, \S\ref{sec:attacks}); it means the attacker knows the cipher is a shift and only has to find $k$.
+  \item \textbf{There are only 25 keys to try}, so the cipher is vulnerable to a \textbf{brute-force attack}: trying all of them takes seconds.
+  \item \textbf{The language of the plaintext is known and easily recognisable}, so the attacker can tell when he has hit the right key, because exactly one trial produces readable text.
 \end{enumerate}
-\end{minipage}\hfill
-\begin{minipage}[t]{0.66\textwidth}
-\textbf{Cons}
-\begin{enumerate}[leftmargin=1.5em]
-  \item The encryption and decryption algorithms are known.
-  \item Only 25 keys to try $\Rightarrow$ vulnerable to \textbf{brute-force attack}.
-  \item The plaintext language is known and easily recognisable, so you can tell when you have hit the right key.
-\end{enumerate}
-\end{minipage}
+A fourth weakness follows from being monoalphabetic with a single shift: letter frequencies survive, so even without trying keys, one correct guess of a single plaintext--ciphertext letter pair reveals the key (statistical attack below).
 
-\section{Brute-Force Attack on the Caesar/Shift Cipher}
+\section{Brute-Force Attack on the Caesar/Shift Cipher}\label{sec:bruteforce}
 
-\begin{keybox}
-\textbf{Brute force}: try every possible key until readable plaintext appears. With 25 keys this takes seconds by hand.
-\end{keybox}
+A \textbf{brute-force} (exhaustive key search) attack tries every possible key until readable plaintext appears. For the shift cipher this is trivial. There are 25 keys and the right one is equally likely to be any of them, so on average the attacker needs $(1 + 2 + \cdots + 25)/25 = 13$ trials and at worst 25. By hand that is a few minutes of counting; a computer doing $10^9$ trials per second needs about $10^{-8}$ seconds. Compare $2^{128} \approx 3.4 \times 10^{38}$ keys for AES (\S\ref{sec:schemes}): the attack is the same, only the size of the key space differs.
 
-Ciphertext: \ttx{SQDYMZK}. Shift every letter forward by 0, 1, 2, \dots, 25 and look for a real word:
+\begin{mustknow}[: when brute force works (Stallings)]
+Three conditions make brute-force cryptanalysis of the Caesar cipher easy: (1) the encryption and decryption algorithms are known; (2) there are only 25 keys to try; (3) the language of the plaintext is known and easily recognisable. A cipher defeats brute force by making (2) false: a key space of $2^{128}$ or more.
+\end{mustknow}
+
+\textbf{The lecture example.} Ciphertext: \ttx{SQDYMZK}. Shift every letter forward by 0, 1, 2, \dots, 25 and look for a real word:
 
 \begin{center}\small\ttfamily\setlength{\tabcolsep}{6pt}
 \begin{tabular}{@{}ccl@{}}
@@ -246,27 +292,50 @@ Ciphertext: \ttx{SQDYMZK}. Shift every letter forward by 0, 1, 2, \dots, 25 and 
 \end{center}
 {\footnotesize $^\ast$ Recomputed; the notes had these rows slightly wrong (see corrections box).}
 
-\begin{itemize}
-  \item Forward $+$ back $= 26$, because shifting forward 14 is the same as shifting back 12: $\;C + 14 \equiv C - 12 \pmod{26}$.
-  \item Only one row is English: \textbf{GERMANY}. The attacker now has the plaintext \emph{and} the key.
-  \item \textbf{Which number is the key?} The sender encrypted with $k = \mathbf{12}$ (G $6+12=18=$ S, \dots, Y $24+12=36\equiv10=$ K). The 14 is the forward shift that \emph{undoes} it. The lecture calls 14 ``the key''; be clear which one you mean in an exam.
-\end{itemize}
+Forward $+$ back $= 26$ in every row, because shifting forward 14 is the same as shifting back 12: $\;C + 14 \equiv C - 12 \pmod{26}$ (\S\ref{sec:shift}). Only one row is English, \textbf{GERMANY}, so the attacker now has the plaintext \emph{and} the key.
 
-\begin{keybox}[title=Decryption vs.\ cryptanalysis]
-\textbf{Decryption}: the receiver \emph{has} the key and reverses the encryption.\\
-\textbf{Cryptanalysis}: an attacker \emph{without} the key recovers the plaintext and/or the key (e.g.\ by brute force).
-\end{keybox}
+\textbf{Which number is the key?} The sender encrypted with $k = \mathbf{12}$ (G $6+12=18=$ S, \dots, Y $24+12=36\equiv10=$ K). The 14 is the forward shift that \emph{undoes} it. The lecture calls 14 ``the key''; be clear which one you mean in an exam: write ``encryption key $k = 12$; decryption is a forward shift of 14 (a backward shift of 12)''.
 
-\begin{examtip}
-\begin{itemize}
-  \item Substitution = replace letters; transposition = rearrange letters. Know the list of ciphers under each.
-  \item Write both formulas: $C=(p+k)\bmod 26$, $p=(C-k)\bmod 26$. Caesar is $k=3$.
-  \item Always show the wrap-around step (e.g.\ $27 \bmod 26 = 1$) and fix negatives by adding 26.
-  \item Key space is 25 (not 26): $k=0$ changes nothing.
-  \item Three cons of Caesar: algorithms known, only 25 keys, language recognisable.
-  \item For brute force: draw the table, box the readable row, state the key.
-\end{itemize}
-\end{examtip}
+\textbf{Decryption versus cryptanalysis.} \imp{Decryption is done by the receiver, who has the key and reverses the encryption; cryptanalysis is done by an attacker who does not have the key and recovers the plaintext and/or the key}, here by brute force. The table above is cryptanalysis, not decryption.
+
+\textbf{A caution.} Brute force assumes that exactly one trial gives meaningful text. For a long ciphertext this is practically certain, but a very short ciphertext (three or four letters) may decrypt to two different words under two keys, and then the attacker cannot decide without more ciphertext or context.
+
+\begin{worked}[: Forouzan Example 3.4 (brute force)]
+\textbf{Q.} Eve has intercepted the ciphertext \ttx{UVACLYFZLJBYL}. Show how she can use a brute-force attack to break the cipher.
+
+\textbf{A.} Eve knows the cipher is additive and that the key domain is $\{1, \dots, 25\}$. She decrypts with $p = (C - k) \bmod 26$ for $k = 1, 2, 3, \dots$ and stops at the first meaningful text:
+\begin{center}\small\setlength{\tabcolsep}{8pt}
+\begin{tabular}{@{}cl|cl@{}}
+\toprule
+Key & Plaintext & Key & Plaintext\\
+\midrule
+1 & \ttx{tuzbkxeykiaxk} & 5 & \ttx{pqvxgtaugewtg}\\
+2 & \ttx{styajwdxjhzwj} & 6 & \ttx{opuwfsztfdvsf}\\
+3 & \ttx{rsxzivcwigyvi} & \cellcolor{warn!18}\textbf{7} & \cellcolor{warn!18}\textbf{\ttx{notverysecure}}\\
+4 & \ttx{qrwyhubvhfxuh} & & \\
+\bottomrule
+\end{tabular}
+\end{center}
+The plaintext is \textbf{``not very secure''} and the key is $\mathbf{k = 7}$. \textbf{Check:} \ttx{n} $= 13$, $13 + 7 = 20 = $ \ttx{U}, the first ciphertext letter \checkmark. (The remaining keys 8--25 were also tried by script; none gives English.)
+\end{worked}
+
+\textbf{Statistical attack.} The shift cipher also falls without trying keys. Since every letter is shifted by the same $k$, a single correct pair is enough: if ciphertext letter $c$ stands for plaintext letter $p$, then $k = (c - p) \bmod 26$. The attacker counts the ciphertext letters and assumes the most frequent one stands for \ttx{e}, the most common letter in English (about 12.5\% of letters on the slide's chart; then \ttx{t}, \ttx{a}, \ttx{o}). If the result is not readable, the next most frequent letter is tried as \ttx{e}, or the top letter as \ttx{t}. The attack needs a reasonably long ciphertext, because the frequencies of a short text can differ from the averages.
+
+\begin{worked}[: Forouzan Example 3.5 (statistical attack)]
+\textbf{Q.} Eve has intercepted the following ciphertext. Using a statistical attack, find the plaintext.\\
+\ttx{XLILSYWIMWRSAJSVWEPIJSVJSYVQMPPMSRHSPPEVWMXMWASVX}\\
+\ttx{LQSVILYVVCFIJSVIXLIWIPPIVVIGIMZIWQSVISJJIVW}
+
+\textbf{A.} Count the 92 ciphertext letters. The most frequent are \ttx{I} (14 times), \ttx{V} (13) and \ttx{S} (12). Assume \ttx{I} $\to$ \ttx{e}: $k = (8 - 4) \bmod 26 = \mathbf{4}$. Decrypt with $p = (C - 4) \bmod 26$:
+\begin{center}\small
+\emph{the house is now for sale for four million dollars it is worth more hurry before the seller receives more offers}
+\end{center}
+The text is English, so the key is $\mathbf{4}$. \textbf{Check:} \ttx{t} $= 19$, $19 + 4 = 23 = $ \ttx{X} \checkmark. (Taking \ttx{V} as \ttx{e} would give $k = 17$ and gibberish; \ttx{V} actually stands for \ttx{r}, which is unusually common in this text.)
+\end{worked}
+
+\begin{trap}[: the usual slips with shift ciphers]
+The key space is 25, not 26, since $k = 0$ changes nothing. Show the wrap-around step ($27 \bmod 26 = 1$) and turn a negative value into a remainder by adding 26. In a brute-force answer, draw the table, box the readable row and state the \emph{encryption} key (12 in the \ttx{SQDYMZK} example, not 14). Know the three cons of the Caesar cipher, and do not call ``the algorithm is public'' a violation of Kerckhoff's principle: it is what the principle assumes.
+\end{trap}
 
 \begin{fixbox}
 \begin{itemize}
@@ -274,5 +343,6 @@ Ciphertext: \ttx{SQDYMZK}. Shift every letter forward by 0, 1, 2, \dots, 25 and 
   \item Brute-force table: row 11 is \ttx{DBOJXKV} and row 22 is \ttx{OMZUIVG}. Row 12 (\ttx{ECPKYLW}) was already correct.
   \item The notes call con \#1 a ``Kerckhoffs violation''. It isn't: public algorithms are normal (see the intro sheet). The problem is a public algorithm \emph{plus} only 25 keys.
   \item Slide typo: ``used \emph{be} Julius Caesar'' $\to$ ``used \emph{by}''.
+  \item Shift-cipher slide: ``Key = 2, 3, 4, 5, \dots'' leaves out $k = 1$, which is a valid key; the usable keys are $1, \dots, 25$.
 \end{itemize}
 \end{fixbox}

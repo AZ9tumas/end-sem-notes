@@ -788,3 +788,224 @@ MD5: 512-bit blocks, 128-bit digest, $4 \times 16 = 64$ steps, functions $F, G, 
 
 \textbf{Attacks on digital signature schemes.} The assignment also covers attacks on signature schemes (key-only, known-message and chosen-message attacks; existential versus selective forgery; the RSA multiplicative and ``choose the signature first'' forgeries; the danger of reusing the random number in ElGamal or DSS). These are treated with the signature schemes themselves in \S\ref{sec:dsig}. The link with this chapter is that a signature is computed on a \emph{hash} of the message, so a collision in the hash is a signature forgery: Eve gets the harmless document of a colliding pair signed and transfers the signature to the harmful one, which is exactly what the MD5 rogue-certificate and Flame attacks did.
 
+%=====================================================================
+\section{WhatsApp End-to-End Encryption (the Signal Protocol)}\label{sec:whatsapp}
+
+\subsection{The problem and the keys \hot\new}
+\likely{``How does WhatsApp provide end-to-end encryption? Explain with a diagram'' (8--10 marks): keys, X3DH, Double Ratchet, safety numbers.}
+
+Every WhatsApp message passes through WhatsApp's servers, which store it until the recipient comes online. Encrypting each link with TLS-style transport security would protect the message on the wire but leave it readable on the server. \textbf{End-to-end encryption} (E2EE) means that only the two endpoints hold the keys, so the server relays ciphertext it cannot read. This raises three design problems. The server must not be trusted, yet it is the only party that can hand out public keys. Two users must agree on a key even when the recipient is \emph{offline} (asynchronous messaging), so an interactive Diffie--Hellman exchange is impossible. And a conversation lasts months, so the theft of a key at one moment must expose neither the earlier messages (\textbf{forward secrecy}) nor, for long, the later ones (\textbf{post-compromise security}). WhatsApp solves them with the \textbf{Signal Protocol} (designed by Open Whisper Systems; fully deployed in WhatsApp in 2016), whose two parts are the \textbf{X3DH} key agreement and the \textbf{Double Ratchet}.
+
+\textbf{Keys.} All public-key operations are elliptic-curve Diffie--Hellman on \textbf{Curve25519} (ECC, \S\ref{sec:elgamal}); $\mathrm{DH}(X, Y)$ below denotes the shared secret computed from the private key of one pair and the public key of the other.
+\begin{itemize}[leftmargin=1.4em]
+  \item \textbf{Identity key} $IK$: a long-term key pair generated at installation; it identifies the user's device.
+  \item \textbf{Signed prekey} $SPK$: a medium-term key pair, \emph{signed} with $IK$ and replaced periodically.
+  \item \textbf{One-time prekeys} $OPK_1, OPK_2, \dots$: a batch of key pairs, each to be used in exactly one session.
+\end{itemize}
+At registration the phone uploads the public halves (and the signature on $SPK$) to the server; private keys never leave the phone. The server hands out each $OPK$ only once and deletes it, and the phone uploads new ones when the stock runs low.
+
+\subsection{X3DH: agreeing on a key with an offline user \hot\new}
+\likely{``Explain X3DH; why are four Diffie--Hellman computations used?'' (5--6 marks).}
+
+\begin{center}
+\begin{tikzpicture}[font=\footnotesize, >=Stealth]
+\foreach \x/\n in {0/Alice (initiator), 6/WhatsApp server, 12/Bob (offline)} {
+  \node[draw, fill=gray!12, minimum width=2.6cm, minimum height=0.55cm] at (\x,0) {\textbf{\n}};
+  \draw[gray, dashed] (\x,-0.3) -- (\x,-7.7);
+}
+\draw[->, thick] (12,-1.25) -- node[above, align=center] {(1) at registration: $IK_B$, $SPK_B$,\\ $\mathrm{Sig}_{IK_B}(SPK_B)$, $OPK_B^{1}, OPK_B^{2}, \dots$} (6,-1.25);
+\draw[->, thick] (0,-2.0) -- node[above] {(2) ``prekey bundle for Bob?''} (6,-2.0);
+\draw[->, thick] (6,-2.8) -- node[above] {(3) $IK_B$, $SPK_B$, $\mathrm{Sig}_{IK_B}(SPK_B)$, one $OPK_B$} (0,-2.8);
+\node[draw, fill=acc!8, align=left, anchor=north west] at (-1.4,-3.1) {verify Sig; new ephemeral $EK_A$;\\ $DH_1 = \mathrm{DH}(IK_A, SPK_B)$, \;$DH_2 = \mathrm{DH}(EK_A, IK_B)$\\ $DH_3 = \mathrm{DH}(EK_A, SPK_B)$, \;$DH_4 = \mathrm{DH}(EK_A, OPK_B)$\\ $SK = \mathrm{KDF}(DH_1 \| DH_2 \| DH_3 \| DH_4)$; delete $EK_A$};
+\draw[->, thick] (0,-5.5) -- node[above, align=center] {(4) $IK_A$, $EK_A$, id of $OPK_B$,\\ $\mathrm{Enc}_{SK}(\text{first message})$} (6,-5.5);
+\draw[->, thick] (6,-6.2) -- node[above] {(5) forwarded when Bob is online} (12,-6.2);
+\node[draw, fill=acc!8, align=left, anchor=north east] at (13.4,-6.5) {same four DH values from his private keys;\\ $SK$; decrypt; delete the private $OPK_B$};
+\end{tikzpicture}
+\end{center}
+
+\textbf{The messages.} (1) Bob publishes a \emph{prekey bundle} in advance, which is what makes the protocol asynchronous: Alice can use it while Bob's phone is off. (2--3) Alice fetches the bundle and verifies the signature on $SPK_B$ with $IK_B$; this stops the server from substituting a signed prekey of its own while keeping Bob's identity key. (4) Alice generates an \textbf{ephemeral} key pair $EK_A$, computes four DH values, derives the shared key $SK$ with a key-derivation function (HKDF; WhatsApp derives the initial root key and chain key from it), deletes $EK_A$'s private key, and sends her public keys with the first message encrypted under $SK$. The two identity keys are included as associated data, so the ciphertext is bound to these two identities. (5) Bob, possibly hours later, computes the same four values with his private keys, $\mathrm{DH}(SPK_B, IK_A)$, $\mathrm{DH}(IK_B, EK_A)$, $\mathrm{DH}(SPK_B, EK_A)$, $\mathrm{DH}(OPK_B, EK_A)$, obtains the same $SK$, and deletes the used one-time prekey.
+
+\textbf{Why each of the four DH computations is there.}
+\begin{itemize}[leftmargin=1.4em]
+  \item $DH_1 = \mathrm{DH}(IK_A, SPK_B)$ uses Alice's \emph{identity} key, so only the real Alice can compute $SK$: it \textbf{authenticates Alice to Bob}.
+  \item $DH_2 = \mathrm{DH}(EK_A, IK_B)$ uses Bob's \emph{identity} key, so only the real Bob can compute $SK$: it \textbf{authenticates Bob to Alice}. Together, $DH_1$ and $DH_2$ give mutual authentication without any signature on the messages.
+  \item $DH_3 = \mathrm{DH}(EK_A, SPK_B)$ involves no long-term key, so it gives \textbf{forward secrecy}: an attacker who later steals both identity keys still cannot recompute $SK$, because $EK_A$ was deleted and $SPK_B$ has been rotated away.
+  \item $DH_4 = \mathrm{DH}(EK_A, OPK_B)$ uses a key that exists for one session only, so even before $SPK_B$ is rotated, a later theft of Bob's keys does not expose this session, and a replayed first message cannot produce a second valid session. If the server has run out of one-time prekeys, the protocol runs without $DH_4$.
+\end{itemize}
+A single $\mathrm{DH}(IK_A, IK_B)$ would not do: it is the same value in every session, so one stolen identity key would decrypt all past and future sessions. Since no message is signed, either party could have produced the transcript, which gives WhatsApp conversations a degree of \textbf{deniability}.
+
+\begin{worked}[: toy X3DH in $\mathbb{Z}_{23}^*$ (new)]
+\textbf{Q.} Replace Curve25519 by modular Diffie--Hellman with $p = 23$ and generator $g = 5$. Alice has identity key $a = 6$ and ephemeral key $x = 15$; Bob has identity key $b = 9$, signed prekey $s = 3$ and one-time prekey $o = 13$. Compute the public keys and show that both sides obtain the same four DH values.
+
+\textbf{Public keys} ($g^k \bmod 23$): $IK_A = 5^6 = 8$, $EK_A = 5^{15} = 19$, $IK_B = 5^9 = 11$, $SPK_B = 5^3 = 10$, $OPK_B = 5^{13} = 21$.
+\begin{center}\small
+\begin{tabular}{@{}llllc@{}}
+\toprule
+ & Alice computes & Bob computes & Exponent of $g$ & Value\\
+\midrule
+$DH_1$ & $SPK_B^{\,a} = 10^6$ & $IK_A^{\,s} = 8^3 = 512$ & $as = 18$ & 6\\
+$DH_2$ & $IK_B^{\,x} = 11^{15}$ & $EK_A^{\,b} = 19^9$ & $xb = 135 \equiv 3 \pmod{22}$ & 10\\
+$DH_3$ & $SPK_B^{\,x} = 10^{15}$ & $EK_A^{\,s} = 19^3 \equiv (-4)^3 = -64$ & $xs = 45 \equiv 1$ & 5\\
+$DH_4$ & $OPK_B^{\,x} = 21^{15}$ & $EK_A^{\,o} = 19^{13}$ & $xo = 195 \equiv 19$ & 7\\
+\bottomrule
+\end{tabular}
+\end{center}
+Both sides get $(6, 10, 5, 7)$, because each DH value is $g$ raised to the product of the two private keys involved, and exponents may be reduced modulo $p - 1 = 22$. $SK = \mathrm{KDF}(6 \| 10 \| 5 \| 7)$. \textbf{Check.} $8^3 = 512 = 22 \cdot 23 + 6$ \checkmark; $-64 + 3 \cdot 23 = 5$ \checkmark.
+\end{worked}
+
+\subsection{The Double Ratchet: a fresh key for every message \hot\new}
+\likely{``Explain the Double Ratchet; derive how it gives forward secrecy and post-compromise security'' (5 marks).}
+
+After X3DH the two phones share a \textbf{root key} $RK$ and a \textbf{chain key} $CK$. Using one key for the whole conversation would mean that stealing it (by malware, or by seizing the phone) exposes everything. The Double Ratchet instead derives a new 32-byte key for every message, by combining two ``ratchets'' (mechanisms that only turn forward).
+
+\textbf{Symmetric-key (KDF) ratchet.} Each sending direction has a chain key. For every message the sender computes
+\[
+MK = \mathrm{HMAC\text{-}SHA256}(CK, \texttt{0x01}), \qquad CK \leftarrow \mathrm{HMAC\text{-}SHA256}(CK, \texttt{0x02}),
+\]
+uses the message key $MK$ once and deletes it. In WhatsApp, $MK$ is expanded with HKDF into 80 bytes: a 32-byte AES-256 key, a 32-byte HMAC-SHA256 key and a 16-byte IV, and the message is encrypted with \textbf{AES-256 in CBC mode} and authenticated with \textbf{HMAC-SHA256} (encrypt-then-MAC). \emph{What it gives}: since HMAC is one-way, the current $CK_i$ yields $CK_{i+1}, MK_{i+1}, \dots$ but not $CK_{i-1}$ or $MK_{i-1}$, which would require inverting HMAC. Old message keys are deleted, so a thief who copies the current state cannot decrypt earlier messages: \textbf{forward secrecy}. It does not give post-compromise security, because all \emph{future} keys of that chain follow from the stolen $CK$.
+
+\textbf{Diffie--Hellman ratchet.} Every message also carries the sender's current \textbf{ratchet public key}, a Curve25519 key. Whenever the conversation changes direction, the new sender generates a fresh ratchet key pair and computes a DH value with the other side's latest ratchet public key; this DH output is fed with the root key into the KDF, $(RK, CK) \leftarrow \mathrm{HKDF}(RK,\ \mathrm{DH}(\text{own new ratchet key}, \text{peer's ratchet key}))$, which gives a new root key and a new chain key for the next run of messages. \emph{What it gives}: suppose Eve copied all of Bob's secrets at some moment. She can follow the symmetric chain, but at the next DH ratchet step the new chain key depends on a DH value computed from a private key generated \emph{after} the theft, which she never saw. As long as she is passive, she is locked out after one round trip: \textbf{post-compromise security} (break-in recovery, ``self-healing'').
+
+\begin{center}
+\begin{tikzpicture}[font=\footnotesize, >=Stealth,
+  kdf/.style={draw, fill=acc!12, minimum width=1.4cm, minimum height=0.55cm},
+  ky/.style={draw, rounded corners=2pt, fill=gray!8, minimum height=0.5cm, inner sep=2pt},
+  mk/.style={draw, rounded corners=2pt, fill=gold!20, minimum height=0.5cm, inner sep=2pt}]
+\node[ky] (rk0) at (0,0) {$RK_0$ (from X3DH)};
+\node[kdf] (k1) at (3.4,0) {root KDF};
+\node[ky] (rk1) at (6.6,0) {$RK_1$};
+\node[kdf] (k2) at (9.8,0) {root KDF};
+\node[ky] (rk2) at (13.0,0) {$RK_2 \cdots$};
+\node[align=center] (dh1) at (3.4,1.15) {$\mathrm{DH}(A_1, B_0)$\\ Alice's new ratchet key $A_1$};
+\node[align=center] (dh2) at (9.8,1.15) {$\mathrm{DH}(B_1, A_1)$\\ Bob's new ratchet key $B_1$};
+\draw[->] (rk0) -- (k1); \draw[->] (k1) -- (rk1); \draw[->] (rk1) -- (k2); \draw[->] (k2) -- (rk2);
+\draw[->] (dh1) -- (k1); \draw[->] (dh2) -- (k2);
+\node[ky] (ca0) at (3.4,-1.3) {$CK_{A,0}$};
+\node[ky] (ca1) at (3.4,-2.6) {$CK_{A,1}$};
+\node[ky] (ca2) at (3.4,-3.9) {$CK_{A,2}$};
+\node[mk] (ma1) at (6.4,-1.95) {$MK_{A,1}$: Alice's message 1};
+\node[mk] (ma2) at (6.4,-3.25) {$MK_{A,2}$: Alice's message 2};
+\draw[->] (k1) -- (ca0);
+\draw[->] (ca0) -- node[left] {HMAC$(CK, 2)$} (ca1); \draw[->] (ca1) -- node[left] {HMAC$(CK, 2)$} (ca2);
+\draw[->] (ca0.east) -- node[above, sloped, font=\scriptsize] {HMAC$(CK,1)$} (ma1.west);
+\draw[->] (ca1.east) -- (ma2.west);
+\node[ky] (cb0) at (9.8,-1.3) {$CK_{B,0}$};
+\node[ky] (cb1) at (9.8,-2.6) {$CK_{B,1}$};
+\node[mk] (mb1) at (12.6,-1.95) {$MK_{B,1}$: Bob's message 1};
+\draw[->] (k2) -- (cb0); \draw[->] (cb0) -- (cb1);
+\draw[->] (cb0.east) -- (mb1.west);
+\end{tikzpicture}\\[2pt]
+{\footnotesize Horizontal: the DH ratchet (a new DH value at each change of speaker). Vertical: the symmetric ratchet (one HMAC step per message).}
+\end{center}
+
+\begin{center}\small
+\begin{tabular}{@{}llll@{}}
+\toprule
+Ratchet & Turns when & Built from & Gives\\
+\midrule
+Symmetric (KDF chain) & every message & HMAC-SHA256 (one-way) & forward secrecy, per-message keys\\
+DH ratchet & every change of speaker & fresh Curve25519 DH + root KDF & post-compromise security\\
+\bottomrule
+\end{tabular}
+\end{center}
+The combination is needed because each alone is insufficient: the symmetric ratchet cannot recover from a theft, and a pure DH ratchet would need a new DH exchange for every message, which is impossible when one side sends several messages without a reply. Because message keys can be derived ahead along a chain, messages that arrive out of order or are lost can still be decrypted (skipped keys are kept briefly, then deleted).
+
+\subsection{Groups, attachments and verifying keys}
+\textbf{Group messages: sender keys.} Encrypting every group message separately for each member (pairwise) would multiply the upload by the group size. Instead, each member, when first sending to a group, generates a random 32-byte \textbf{sender chain key} and a Curve25519 \textbf{signature key pair}, and distributes both to every other member over the existing pairwise Signal sessions. Each group message is then encrypted once, with a message key from that sender's chain (the same HMAC ratchet, giving forward secrecy), signed with the signature key so members know who sent it, and uploaded once; the server fans the single ciphertext out to all members. When a member leaves, all members discard their sender keys and distribute new ones, so the departed member cannot read later messages. Sender keys have no DH ratchet, so post-compromise security inside a group comes only from such re-keying.
+
+\textbf{Attachments.} A photo or document is encrypted with a fresh random AES-256 key and authenticated with HMAC-SHA256, and the ciphertext is uploaded to a storage server. The key, a hash of the encrypted file and a pointer to it are then sent in an ordinary end-to-end encrypted message, so the storage server holds only ciphertext.
+
+\textbf{Safety numbers against a man-in-the-middle.} Every protection above assumes that Alice received Bob's real identity key. The server distributes identity keys, so a malicious or compromised server could give Alice a key of its own and relay between two separate sessions (the classic Diffie--Hellman man-in-the-middle). The prekey signature does not help, since the attacker would sign with its own identity key. The defence is out-of-band verification: WhatsApp displays a \textbf{security code} (Signal: \emph{safety number}), a 60-digit number (also shown as a QR code) formed from the fingerprints of both users' identity keys. If Alice and Bob compare it in person or scan each other's QR code and it matches, no man-in-the-middle is present. The app also warns when a contact's security code changes (new phone or reinstall), which is when an interception would show up.
+
+\textbf{What E2EE does not cover.} The server still learns metadata (who talks to whom, when, phone numbers, IP addresses). Messages are readable on the endpoints, so malware on the phone defeats E2EE. Cloud backups are protected only if the user enables WhatsApp's optional end-to-end encrypted backup. The connection between phone and server is separately protected by a transport protocol (Noise Pipes with Curve25519 and AES-GCM), which hides even the metadata of the encrypted messages from network observers.
+
+%=====================================================================
+\section{Internet Banking and UPI Security}\label{sec:upi}
+
+\subsection{Threats and the controls of internet banking \new}
+\likely{``Discuss the security measures in internet banking'' (5 marks).}
+
+Online banking is attacked less through its cryptography than through its users and their devices: the attacker steals or tricks out the credentials (phishing, malware, SIM swap) or persuades the customer to authorise a payment himself. The controls are therefore layered so that no single stolen secret is enough.
+\begin{itemize}[leftmargin=1.4em]
+  \item \textbf{TLS (HTTPS) with certificates.} All traffic is encrypted and integrity-protected by TLS, and the bank's server proves its identity with an X.509 certificate issued by a certification authority. This defeats eavesdropping and man-in-the-middle attacks on the network, and it lets the user check the padlock and the exact domain before typing a password, which is the technical defence against look-alike phishing sites.
+  \item \textbf{Multi-factor authentication.} Login and transactions require something the user \emph{knows} (password, transaction password) plus something he \emph{has} (a one-time password (OTP) sent by SMS or generated by an app, or the registered phone itself), so a phished password alone is useless. Indian regulation requires such an additional factor of authentication for online card and banking payments.
+  \item \textbf{Transaction controls.} Per-transaction and daily limits, OTP confirmation and a cooling period with a reduced limit after adding a new beneficiary, and SMS/e-mail alerts for every login and debit. These limit the damage of a compromised account and let the customer react quickly.
+  \item \textbf{Session controls.} Automatic logout after a short idle time, one active session at a time, display of the last login time, CAPTCHA and account lock-out after a few wrong passwords (against password guessing).
+  \item \textbf{Virtual keyboards.} The password is entered by clicking a randomly arranged on-screen keyboard, so a keylogger that records keystrokes captures nothing useful.
+  \item \textbf{Device binding and risk scoring} (mobile banking). The app is registered to one phone and SIM; a login from a new device, location or pattern triggers extra verification or a block.
+\end{itemize}
+Regulation backs these controls: the RBI's directions on digital payment security require banks to implement multi-factor authentication, fraud monitoring, limits and secure application development, and RBI rules on customer liability make the customer's liability zero for an unauthorised electronic transaction caused by a third-party breach if he reports it within three working days. Frauds can also be reported on the national cyber-crime helpline 1930.
+
+\subsection{UPI: architecture and the path of a payment \hot\new}
+\likely{``Explain how a UPI transaction is secured; draw the flow'' (6--8 marks).}
+
+The \textbf{Unified Payments Interface} (UPI), launched by the National Payments Corporation of India (NPCI) in 2016, lets any bank account be debited from a phone in real time. Four kinds of parties are involved: the customer's UPI app, provided by a \textbf{Payment Service Provider} (PSP: a bank, or a third-party app such as Google Pay or PhonePe operating through partner PSP banks); the \textbf{NPCI UPI switch}, which routes every transaction; the payer's \textbf{remitter (issuer) bank}, which holds the account and verifies the PIN; and the payee's \textbf{beneficiary bank}. Users are addressed by a \textbf{Virtual Payment Address} (VPA, or UPI ID, such as \ttx{name@bank}) instead of an account number and IFSC, so the account number is never revealed to the payee.
+
+\begin{center}
+\begin{tikzpicture}[font=\footnotesize, >=Stealth]
+\foreach \x/\n in {0/Payer app + CL, 3.7/Payer PSP, 7.4/NPCI UPI switch, 11.1/Remitter bank, 14.8/Beneficiary bank} {
+  \node[draw, fill=gray!12, minimum width=2.5cm, minimum height=0.55cm, align=center] at (\x,0) {\textbf{\n}};
+  \draw[gray, dashed] (\x,-0.3) -- (\x,-7.1);
+}
+\draw[->, thick] (0,-1.4) -- node[above, align=center] {(1) payee VPA, amount,\\ PIN encrypted by CL} (3.7,-1.4);
+\draw[->, thick] (3.7,-2.4) -- node[above, align=center] {(2) signed pay request\\ (device binding checked)} (7.4,-2.4);
+\draw[->, thick] (7.4,-3.4) -- node[above, align=center] {(3) debit request with\\ encrypted PIN (payee VPA resolved)} (11.1,-3.4);
+\node[draw, fill=acc!8, align=center, font=\scriptsize] at (11.1,-4.2) {verify PIN (HSM),\\ balance, limits; debit};
+\draw[->, thick] (11.1,-5.0) -- node[above] {(4) debit OK} (7.4,-5.0);
+\draw[->, thick] (7.4,-5.6) -- node[above] {(5) credit request} (14.8,-5.6);
+\draw[->, thick] (14.8,-6.2) -- node[above] {(6) credit OK} (7.4,-6.2);
+\draw[->, thick] (7.4,-6.8) -- node[above] {(7) success (via PSP); SMS alerts from banks} (0,-6.8);
+\end{tikzpicture}
+\end{center}
+
+\textbf{The messages.} (1) The payer enters the payee's VPA (or scans a QR code that contains it) and the amount, then types the UPI PIN into a screen drawn by NPCI's \textbf{Common Library} (CL), which encrypts it on the phone. (2) The PSP checks that the request comes from the registered device and SIM and forwards a digitally signed request to NPCI; links between PSPs, NPCI and banks are encrypted and mutually authenticated. (3) NPCI translates the payee VPA into an account (through the payee's PSP) and asks the remitter bank to debit the payer, passing the encrypted PIN. The bank verifies the PIN in a hardware security module, checks balance and limits, and debits. (4--6) NPCI instructs the beneficiary bank to credit the payee and collects the confirmation. (7) The result returns to the app, and both banks send SMS alerts. The whole exchange completes in seconds.
+
+\subsection{Why the UPI design is secure \new}
+\likely{``How does UPI achieve two-factor authentication? Why can the app not see the PIN?'' (3--4 marks).}
+
+\textbf{Device binding (possession factor).} During registration the app sends an SMS from the phone to the PSP; since an SMS reveals the sending SIM's number, this proves that the SIM registered with the bank account is in this phone. The app then binds the account to the combination of mobile number, SIM and device. A thief who learns the PIN cannot use it from his own phone, and removing or changing the SIM forces a fresh registration.
+
+\textbf{UPI PIN (knowledge factor).} The 4- or 6-digit UPI PIN is set using the debit card's last six digits and expiry date plus an OTP from the bank (or an Aadhaar-based OTP), so setting it requires both the card details and the registered phone. Every payment needs the PIN, so UPI is two-factor: \emph{the registered device} and \emph{the PIN}.
+
+\textbf{The PIN never leaves the phone in clear.} The PIN is captured only by the CL, a library supplied and certified by NPCI that every UPI app must embed, and it is encrypted inside the CL with a public key published by NPCI before the app's own code ever handles it. The PSP app and its servers therefore see only ciphertext, and the PIN is decrypted and verified only inside hardware security modules on the NPCI and issuer-bank side. As a result, a malicious or breached UPI app or PSP server cannot collect customers' PINs, and all UPI apps have the same protection here.
+
+\textbf{VPA instead of account details, and limits.} Payees learn a VPA, not an account number and IFSC, which reduces the information available for fraud. NPCI and the banks impose per-transaction and daily limits (for ordinary transfers, ₹1 lakh per transaction, with higher limits for specified categories), and newly registered devices may get lower limits for a while.
+
+\subsection{Frauds and countermeasures \new}
+\likely{``Discuss common UPI frauds and how they are prevented'' (5 marks).}
+
+Since the cryptographic core (device binding plus an encrypted PIN verified by the bank) is hard to break, nearly all UPI frauds trick the user into authorising the payment himself or into handing over the second factor.
+\begin{center}\small
+\begin{tabularx}{\textwidth}{@{}l >{\raggedright\arraybackslash}X >{\raggedright\arraybackslash}X@{}}
+\toprule
+Attack & How it works & Countermeasures\\
+\midrule
+Phishing / vishing & Fake bank, KYC or refund messages and calls, or fake ``customer care'' numbers found by web search, obtain the PIN, OTP or card details. & Banks never ask for PIN or OTP; verify domains and official numbers; awareness campaigns; report to 1930.\\
+Collect-request fraud & The fraudster sends a \emph{collect} (payment request) labelled ``refund'' or ``prize''; the victim enters the PIN, believing it receives money, and pays instead. & \imp{The UPI PIN is needed only to pay, never to receive.} Apps show the direction and payee clearly, flag spam requests; NPCI has restricted person-to-person collect requests.\\
+QR-code scams & ``Scan this QR to receive money''; scanning a QR always starts a payment. Fake QR stickers pasted over a shop's QR divert payments. & Check the payee name shown before entering the PIN; merchants use sound-box confirmations.\\
+SIM swap & The attacker obtains a duplicate SIM, receives the victim's OTPs and SMS, and re-registers banking or UPI on his phone. & Operators hold SMS for a period after a SIM change; banks flag new-device registrations; card details must also be known to set a PIN.\\
+Remote-access / malware & The victim is persuaded to install a screen-sharing app, or malware reads SMS and draws overlays, exposing PIN and OTP or operating the app. & Apps block screenshots and screen sharing on the PIN screen, detect overlays and rooted devices; install apps only from official stores.\\
+Money mules & Stolen money is moved quickly through accounts rented from third parties. & Bank fraud monitoring, account freezing, KYC.\\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\subsection{Model answer: which UPI app is safer, and why? \new}
+\likely{An opinion question with justification (5 marks); the marks are for the reasoning, not for naming an app.}
+
+\begin{keybox}[title={Model answer}]
+\textbf{Common core.} Every UPI app (BHIM, a bank's own app, Google Pay, PhonePe, Paytm and others) runs on the same NPCI rails. Each must be certified by NPCI, uses the same Common Library to capture and encrypt the UPI PIN, the same SMS-based device binding, and the same verification of the PIN by the customer's own bank; the money stays in the bank account, not in the app. The core cryptographic protection is therefore identical: no app can read the PIN, and a breach of one app's servers does not reveal PINs.
+
+\textbf{Where apps differ: app-level controls.} (i) App lock with biometrics or a device PIN before the app opens; (ii) the quality of fraud and risk engines that flag suspicious payees, spam collect requests and new-device logins; (iii) protection against screen sharing, overlays and rooted or tampered phones; (iv) how quickly security updates are released, and whether the app has been independently audited or runs a bug bounty; (v) privacy: permissions requested and use of transaction data; (vi) dispute resolution and how fast a compromised account can be blocked; (vii) attack surface: a feature-rich ``super-app'' (shopping, loans, mini-apps) contains more code that can fail, while BHIM or a bank's own app is simpler.
+
+\textbf{Conclusion.} No app is intrinsically safer at the protocol level; an app is safer only to the extent that its own controls are stronger. A reasoned choice is an app from a regulated bank or a large NPCI-certified provider, installed from the official store, kept updated, with app lock enabled. Since almost all UPI fraud is social engineering, the user's behaviour (never sharing the PIN or OTP, never entering the PIN to ``receive'' money, checking the payee name) matters more than the choice of app.
+\end{keybox}
+
+\begin{fixbox}
+\begin{itemize}[leftmargin=1.2em,itemsep=0pt]
+  \item The slides list Pollard $p - 1$, Pollard rho, NFS, QS, AKS and OAEP only as ``Tutorial'' items without content; the material above follows Forouzan and Stallings and the original papers.
+  \item AKS's complexity is often quoted as $O(\log^{12} n)$: that is the first (2002) analysis. The same algorithm is $\tilde O(\log^{10.5} n)$ by a sharper count, and the Lenstra--Pomerance variant is $\tilde O(\log^{6} n)$.
+  \item ``Pollard rho takes $O(n^{1/4})$ steps'' is a worst-case bound for $n = pq$; precisely, it needs about $\sqrt p$ steps for the smallest prime factor $p$.
+  \item Wiener's bound $d < \frac13 n^{1/4}$ assumes $q < p < 2q$ (primes of similar size), as in the derivation above.
+\end{itemize}
+\end{fixbox}

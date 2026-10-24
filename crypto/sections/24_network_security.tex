@@ -483,7 +483,7 @@ One SA implements either AH or ESP, but not both, and a packet may need differen
 \textbf{Cookies.} Each side sends a pseudorandom number, the cookie, in its first message, and the other side must echo it in the first message of the Diffie--Hellman exchange. A cookie is sent to the claimed source address, so an attacker who forges the address never receives it and cannot echo it. As a result \imp{the attacker can only make the victim generate cookies, never perform the expensive exponentiation.} A cookie must satisfy three requirements: it must depend on the specific parties (so that a cookie obtained with the attacker's real address cannot be reused from forged addresses and ports); it must be impossible for anyone but the issuer to generate a cookie the issuer will accept (so it depends on a local secret, which cannot be deduced from any cookie); and generating and checking it must be fast. The recommended construction is a fast hash over the source and destination IP addresses, the source and destination ports and a locally generated secret value, $\mathrm{CKY} = H(\mathrm{IP}_s \| \mathrm{IP}_d \| \mathrm{port}_s \| \mathrm{port}_d \| \text{secret})$; the issuer stores nothing and simply recomputes the hash when the cookie comes back.
 
 \begin{center}
-\begin{tikzpicture}[font=\scriptsize]
+\begin{tikzpicture}[font=\footnotesize]
 \node[draw, fill=gray!10, font=\footnotesize] (i) at (0,0) {Initiator I};
 \node[draw, fill=gray!10, font=\footnotesize] (r) at (12,0) {Responder R};
 \draw[gray] (i) -- (0,-4.6); \draw[gray] (r) -- (12,-4.6);
@@ -501,3 +501,243 @@ One SA implements either AH or ESP, but not both, and a packet may need differen
 Both sides then compute $K = g^{xy} \bmod p$ and derive the keys from it. The aggressive mode saves messages but makes R compute $g^y$ before it has seen its own cookie echoed; the six-message \textbf{main mode} first exchanges cookies and the SA proposal (messages 1--2), then the Diffie--Hellman values and nonces (3--4), and only then the identities and authentication, encrypted under the new key (5--6), which also hides the identities from eavesdroppers.
 
 \textbf{ISAKMP and the IKE phases.} An ISAKMP message starts with a header holding the initiator and responder cookies (64 bits each), the type of the next payload, version numbers, the exchange type, flags, a message ID and the length, followed by a chain of payloads (SA, proposal, transform, key exchange, identification, certificate, certificate request, hash, signature, nonce, notification, delete). IKE works in two phases. \textbf{Phase 1} (main or aggressive mode) authenticates the peers and builds a protected \textbf{IKE SA} between them. \textbf{Phase 2} (``quick mode'') runs under the protection of the IKE SA and quickly negotiates the actual AH/ESP SAs, and can be repeated to create more SAs or to rekey without a new Diffie--Hellman exchange. The current version, IKEv2, does the same with four messages (IKE\_SA\_INIT and IKE\_AUTH) and lets a busy responder answer the first message statelessly with a cookie, the same anti-clogging idea.
+
+\section{Web Security: SSL/TLS, HTTPS and SET}\label{sec:tls}
+
+\subsection{Web security threats and the SSL/TLS architecture \hot\new}
+\likely{``Explain the SSL architecture (protocol stack); differentiate an SSL session and an SSL connection'' (4 marks).}
+
+\textbf{Problem.} The web is a client/server application over the Internet: anyone can publish a server, users are often unskilled, and web servers are complex and a doorway into an organisation's systems. The threats are to \emph{integrity} (modification of user data or messages in transit), \emph{confidentiality} (eavesdropping on the network, theft of data from the server or client), \emph{authentication} (impersonation of legitimate users or servers, forged data) and \emph{availability} (denial of service). Encryption, MACs and certificates answer the first three; denial of service is hard to prevent by cryptography.
+
+\textbf{Secure Sockets Layer} (SSL, Netscape; version 3.0 in 1996) and its IETF successor \textbf{Transport Layer Security} (TLS 1.0, 1999, essentially SSL 3.1) provide a secure channel on top of TCP. SSL is not one protocol but two layers of protocols:
+\begin{center}
+\begin{tikzpicture}[font=\footnotesize]
+\tikzset{sl/.style={draw, minimum height=0.5cm, inner sep=1pt, anchor=west}}
+\node[sl, minimum width=2.2cm, fill=gold!20] at (0,1.0) {Handshake};
+\node[sl, minimum width=2.6cm, fill=gold!20] at (2.2,1.0) {Change Cipher Spec};
+\node[sl, minimum width=1.6cm, fill=gold!20] at (4.8,1.0) {Alert};
+\node[sl, minimum width=2.3cm] at (6.4,1.0) {HTTP (FTP, \dots)};
+\node[sl, minimum width=8.7cm, fill=acc!15] at (0,0.5) {SSL / TLS Record Protocol};
+\node[sl, minimum width=8.7cm] at (0,0) {TCP};
+\node[sl, minimum width=8.7cm] at (0,-0.5) {IP};
+\end{tikzpicture}
+\end{center}
+The \textbf{Record Protocol} provides confidentiality and integrity to whatever higher-layer data it carries, in particular HTTP. Three higher-layer protocols manage the channel: the \textbf{Handshake Protocol} authenticates the parties and negotiates algorithms and keys, the \textbf{Change Cipher Spec Protocol} switches to the newly negotiated parameters, and the \textbf{Alert Protocol} reports errors and closure.
+
+\textbf{Session and connection.} An SSL \textbf{connection} is a transport (in the OSI sense) that provides a suitable type of service; connections are peer-to-peer, transient, and each is associated with one session. An SSL \textbf{session} is an association between a client and a server created by the Handshake Protocol; it defines a set of cryptographic security parameters that can be shared among \emph{multiple connections}. Sessions exist to avoid the expensive negotiation of new parameters for every connection: a browser that opens ten connections to a site runs the full public-key handshake once and resumes the session for the others. The \emph{session state} holds the session identifier, the peer's X.509 certificate, the compression method, the cipher spec (bulk encryption and MAC algorithms), the 48-byte \textbf{master secret} and an ``is resumable'' flag. The \emph{connection state} holds the server and client randoms, the server and client write MAC secrets, the server and client write keys, the IVs and the sequence numbers; each direction has its own keys.
+
+\subsection{The Record Protocol \hot\new}
+\likely{``Explain the operation of the SSL Record Protocol with a diagram'' (4 marks).}
+
+The Record Protocol takes an application message and processes it in five steps.
+\begin{center}
+\begin{tikzpicture}[font=\footnotesize]
+\node[nsB, fill=white] (a) at (0,0) {Application\\data};
+\node[nsB] (f) at (2.3,0) {Fragment\\($\le 2^{14}$ bytes)};
+\node[nsB] (c) at (4.7,0) {Compress\\(optional)};
+\node[nsB] (m) at (6.9,0) {Add MAC};
+\node[nsB] (e) at (8.9,0) {Encrypt};
+\node[nsB] (h) at (11.1,0) {Append record\\header (5 bytes)};
+\draw[nsA] (a) -- (f); \draw[nsA] (f) -- (c); \draw[nsA] (c) -- (m); \draw[nsA] (m) -- (e); \draw[nsA] (e) -- (h);
+\begin{scope}[yshift=-1.9cm, font=\scriptsize]
+\nsrect{0}{0}{1.6}{0.5}{Content type}{gold!20}\nsrect{1.6}{0}{1.3}{0.5}{Major ver.}{gold!20}\nsrect{2.9}{0}{1.3}{0.5}{Minor ver.}{gold!20}\nsrect{4.2}{0}{2.2}{0.5}{Length (16 bits)}{gold!20}
+\nsrect{6.4}{0}{4.4}{0.5}{Plaintext (optionally compressed)}{acc!10}\nsrect{10.8}{0}{1.4}{0.5}{MAC}{acc!10}
+\draw[nsBr] (12.2,-0.08) -- node[below=2pt]{encrypted} (6.4,-0.08);
+\draw[nsBr] (0,0.58) -- node[above=2pt]{record header, 5 bytes, in the clear} (6.4,0.58);
+\end{scope}
+\end{tikzpicture}
+\end{center}
+\begin{enumerate}
+  \item \textbf{Fragmentation.} The message is split into blocks of at most $2^{14} = 16\,384$ bytes.
+  \item \textbf{Compression} (optional, lossless). It must not increase the length by more than 1024 bytes; in practice it is not used.
+  \item \textbf{MAC.} A MAC is computed over the (compressed) fragment with the shared MAC write secret. In SSLv3 it is a precursor of HMAC, $\mathrm{hash}(K \| \mathrm{pad}_2 \| \mathrm{hash}(K \| \mathrm{pad}_1 \| \mathrm{seq\_num} \| \mathrm{type} \| \mathrm{length} \| \mathrm{fragment}))$; TLS uses true HMAC over $\mathrm{seq\_num} \| \mathrm{type} \| \mathrm{version} \| \mathrm{length} \| \mathrm{fragment}$. The 64-bit \textbf{sequence number} is not transmitted; both sides count records, so a deleted, reordered or replayed record makes the MAC fail.
+  \item \textbf{Encryption.} The fragment and MAC are encrypted with the write key, using a block cipher in CBC mode (DES, 3DES, IDEA, AES; \S\ref{sec:modes}) with padding, or a stream cipher (RC4). Encryption may add at most 1024 bytes, so a record body is at most $2^{14} + 2048$ bytes.
+  \item \textbf{Header.} A 5-byte header is prepended: \textbf{content type} (8 bits: change\_cipher\_spec, alert, handshake or application\_data), \textbf{major and minor version} (8 bits each; 3.0 for SSLv3, 3.1 for TLS 1.0) and the \textbf{length} of the record body in bytes (16 bits).
+\end{enumerate}
+The receiver decrypts, verifies the MAC, decompresses and reassembles before delivering the data to the application. SSL/TLS up to version 1.2 is \textbf{MAC-then-encrypt}, the opposite of IPSec ESP; this order later enabled padding-oracle attacks on CBC (Lucky 13, POODLE) and is one reason TLS 1.3 abandoned it.
+
+\subsection{Change Cipher Spec and Alert protocols \new}
+\likely{``What is the purpose of the Change Cipher Spec and Alert protocols?'' (2 marks).}
+
+The \textbf{Change Cipher Spec Protocol} is the simplest of the three: it consists of a single message of one byte with value 1. Its effect is to copy the \emph{pending} state, negotiated during the handshake, into the \emph{current} state, so that all following records use the new cipher suite and keys. Each direction switches separately, when its sender sends this message.
+
+The \textbf{Alert Protocol} conveys SSL-related alerts to the peer. Each alert message has two bytes: a \textbf{level}, warning (1) or fatal (2), and a \textbf{code}. Fatal alerts (unexpected\_message, bad\_record\_mac, decompression\_failure, handshake\_failure, illegal\_parameter) make SSL terminate the connection immediately; other connections of the same session may continue, but no new connections may be opened on the session. Warnings include close\_notify (the sender will send no more data; each side must send it before closing the write side, which detects truncation attacks), no\_certificate, bad\_certificate, unsupported\_certificate, certificate\_revoked, certificate\_expired and certificate\_unknown.
+
+\subsection{The Handshake Protocol \hot\new}
+\likely{``Draw and explain the SSL/TLS handshake in four phases'' (6--8 marks).}
+
+\textbf{Problem.} Before any data are protected, the client and server must agree on a protocol version and a cipher suite, the server (and optionally the client) must be authenticated, and both must end up with the same fresh secret keys, all over a channel that the attacker controls. The Handshake Protocol does this in four phases; each message has a 1-byte type, a 3-byte length and the content.
+
+\begin{center}
+\begin{tikzpicture}[font=\footnotesize]
+\node[draw, fill=gray!10] (cl) at (0,0) {Client};
+\node[draw, fill=gray!10] (sv) at (8,0) {Server};
+\draw[gray] (cl) -- (0,-7.6); \draw[gray] (sv) -- (8,-7.6);
+\foreach \y/\m/\d/\st in {0.6/client\_hello/r/solid, 1.15/server\_hello/l/solid,
+   1.9/certificate*/l/dashed, 2.45/server\_key\_exchange*/l/dashed, 3.0/certificate\_request*/l/dashed, 3.55/server\_hello\_done/l/solid,
+   4.3/certificate*/r/dashed, 4.85/client\_key\_exchange/r/solid, 5.4/certificate\_verify*/r/dashed,
+   6.15/change\_cipher\_spec/r/solid, 6.6/finished/r/solid, 7.05/change\_cipher\_spec/l/solid, 7.5/finished/l/solid} {
+  \if\d r \draw[nsA, \st] (0,-\y) -- node[above=-1pt, font=\scriptsize]{\m} (8,-\y);
+  \else \draw[nsA, \st] (8,-\y) -- node[above=-1pt, font=\scriptsize]{\m} (0,-\y); \fi
+}
+\draw[nsBr] (8.4,-0.35) -- node[right=4pt, align=left, font=\scriptsize]{Phase 1: establish security capabilities\\(version, randoms, session ID, cipher suite)} (8.4,-1.25);
+\draw[nsBr] (8.4,-1.6) -- node[right=4pt, align=left, font=\scriptsize]{Phase 2: server authentication and key\\exchange; server ends its hello} (8.4,-3.65);
+\draw[nsBr] (8.4,-4.0) -- node[right=4pt, align=left, font=\scriptsize]{Phase 3: client authentication and key\\exchange} (8.4,-5.5);
+\draw[nsBr] (8.4,-5.85) -- node[right=4pt, align=left, font=\scriptsize]{Phase 4: change cipher suite and\\finish the handshake} (8.4,-7.6);
+\end{tikzpicture}
+\end{center}
+Messages marked * are optional or depend on the key-exchange method (dashed).
+
+\textbf{Phase 1: establish security capabilities.} The client sends \textbf{client\_hello} with: the highest SSL/TLS \textbf{version} it understands; a \textbf{random} of 32 bytes (a 4-byte timestamp and 28 bytes from a secure generator), which serves as a nonce against replay; a \textbf{session ID} (zero for a new session, nonzero to resume an existing one); the \textbf{cipher suite} list in decreasing order of preference, each entry naming a key-exchange method (RSA, fixed Diffie--Hellman, ephemeral Diffie--Hellman, anonymous Diffie--Hellman, Fortezza) and a cipher spec (bulk cipher, MAC algorithm, cipher type, hash size, key material, IV size); and the compression methods it supports. The server replies with \textbf{server\_hello}: the lower of the two highest versions, its own independent random, the session ID, and the \emph{one} cipher suite and compression method it selected from the client's lists.
+
+\textbf{Phase 2: server authentication and key exchange.} The server sends its \textbf{certificate} (an X.509 chain), required for every method except anonymous Diffie--Hellman. It sends \textbf{server\_key\_exchange} only when the certificate does not already contain what the client needs: for anonymous or ephemeral Diffie--Hellman (the server's $p$, $g$ and $g^y \bmod p$) or when the server's RSA key is for signing only. These parameters are \textbf{signed} by the server over $\mathrm{hash}(\text{ClientHello.random} \| \text{ServerHello.random} \| \text{ServerParams})$; including both randoms ties the signature to this handshake, so an old signed message cannot be replayed. A server that wants client authentication sends \textbf{certificate\_request} (acceptable certificate types and CAs). Finally \textbf{server\_hello\_done}, which is always sent, says that the server's part of the hello is complete, and the server waits.
+
+\textbf{Phase 3: client authentication and key exchange.} The client checks that the server's certificate is valid (signature chain, dates, host name) and that the server's parameters are acceptable. If a certificate was requested, it sends its \textbf{certificate} (or a no\_certificate alert). It then sends \textbf{client\_key\_exchange}, which is mandatory: with RSA, the client generates a 48-byte \textbf{pre-master secret} and sends it encrypted under the server's public key; with ephemeral or anonymous Diffie--Hellman it sends its public value $g^x \bmod p$; with fixed Diffie--Hellman the value is in its certificate and the message is empty. If the client sent a certificate with signing capability, it also sends \textbf{certificate\_verify}, a signature over a hash of all preceding handshake messages and the master secret. This proves that the client owns the private key of its certificate: anyone could send a copy of the certificate, but only the owner can sign the transcript.
+
+\textbf{Phase 4: finish.} The client sends \textbf{change\_cipher\_spec} (through the Change Cipher Spec Protocol, not the handshake) and copies the pending cipher spec into the current one, then immediately sends \textbf{finished} under the new algorithms and keys. Finished contains a keyed hash of the master secret and the whole handshake transcript; in TLS 1.0/1.1
+\[
+\text{verify\_data} = \mathrm{PRF}\big(\text{master\_secret}, \text{``client finished''}, \mathrm{MD5}(\text{handshake\_msgs}) \,\|\, \mathrm{SHA\text{-}1}(\text{handshake\_msgs})\big)[0..11].
+\]
+The server does the same: its own change\_cipher\_spec and finished. Since each side checks the other's Finished against its own view of the transcript, \textbf{any tampering with the earlier, unprotected handshake messages is detected}, for example an attacker who deleted the strong cipher suites from client\_hello to force a weak one (a downgrade attack). After Phase 4 the client and server exchange application data.
+
+\subsection{Master secret and key derivation \new}
+\likely{``How are the master secret and the session keys generated in SSL/TLS?'' (3--4 marks).}
+
+The keys are created in two stages. First a \textbf{pre-master secret} is shared: with RSA the client generates it and sends it encrypted under the server's public key; with Diffie--Hellman both sides compute $g^{xy} \bmod p$. Then both sides compute the 48-byte \textbf{master secret} from it and the two randoms. In SSLv3,
+\[
+\begin{aligned}
+\text{master\_secret} = {}& \mathrm{MD5}(\text{pre\_master} \| \mathrm{SHA}(\text{`A'} \| \text{pre\_master} \| \text{ClientHello.random} \| \text{ServerHello.random})) \;\|\\
+& \mathrm{MD5}(\text{pre\_master} \| \mathrm{SHA}(\text{`BB'} \| \text{pre\_master} \| \text{ClientHello.random} \| \text{ServerHello.random})) \;\|\\
+& \mathrm{MD5}(\text{pre\_master} \| \mathrm{SHA}(\text{`CCC'} \| \text{pre\_master} \| \text{ClientHello.random} \| \text{ServerHello.random})),
+\end{aligned}
+\]
+three 16-byte MD5 outputs. TLS replaces this by a \textbf{pseudorandom function} built from HMAC:
+\[
+\text{master\_secret} = \mathrm{PRF}(\text{pre\_master\_secret}, \text{``master secret''}, \text{ClientHello.random} \| \text{ServerHello.random})[0..47],
+\]
+\[
+P\_\mathrm{hash}(\text{secret}, \text{seed}) = \mathrm{HMAC}(\text{secret}, A(1) \| \text{seed}) \,\|\, \mathrm{HMAC}(\text{secret}, A(2) \| \text{seed}) \,\|\, \cdots,
+\]
+\[
+A(0) = \text{seed}, \qquad A(i) = \mathrm{HMAC}(\text{secret}, A(i-1)),
+\]
+which expands a short secret into as many bytes as needed (TLS 1.0/1.1 XOR a P\_MD5 and a P\_SHA-1 stream computed on the two halves of the secret; TLS 1.2 uses P\_SHA-256). Finally the master secret is expanded into the \textbf{key block}, $\mathrm{PRF}(\text{master\_secret}, \text{``key expansion''}, \text{ServerHello.random} \| \text{ClientHello.random})$, which is cut into the client and server write MAC secrets, the client and server write keys, and the client and server IVs.
+
+\textbf{Why both randoms.} The master secret depends on both parties' fresh randoms, so neither side alone controls the keys, and every session has new keys even if a pre-master secret were reused. In particular, an attacker who replays a recorded client\_key\_exchange to the server gets nowhere: the server has chosen a new random, so the replay leads to a different master secret and fails at the Finished check.
+
+\begin{worked}[: size of the TLS key block]
+\textbf{Q.} A TLS 1.0 session uses the cipher suite TLS\_RSA\_WITH\_AES\_128\_CBC\_SHA. How many bytes of key block must the PRF produce, and how many iterations of P\_SHA-1 and P\_MD5 does that need?
+
+\textbf{A.} MAC secrets: HMAC-SHA-1, 20 bytes each, $2 \times 20 = 40$. Write keys: AES-128, 16 bytes each, $2 \times 16 = 32$. IVs: one AES block each, $2 \times 16 = 32$. Key block $= 40 + 32 + 32 = \mathbf{104}$ \textbf{bytes}. P\_SHA-1 gives 20 bytes per iteration: $\lceil 104/20 \rceil = \mathbf{6}$; P\_MD5 gives 16: $\lceil 104/16 \rceil = \mathbf{7}$; both streams are truncated to 104 bytes and XORed.\\
+\emph{Check}: for TLS\_RSA\_WITH\_3DES\_EDE\_CBC\_SHA the block is $2 \times 20 + 2 \times 24 + 2 \times 8 = 104$ bytes as well (24-byte 3DES keys, 8-byte IVs).
+\end{worked}
+
+\subsection{From SSL to TLS 1.3 \new}
+\likely{``What are the differences between SSL and TLS?'' / ``What did TLS 1.3 change?'' (3 marks).}
+
+\textbf{TLS 1.0--1.2 versus SSLv3.} The version number is 3.1--3.3; the MAC is standard HMAC with the version in its input; keys come from the HMAC-based PRF instead of SSL's ad hoc MD5/SHA construction; there are more alert codes; Fortezza is dropped from the cipher suites; the certificate\_verify and finished computations use the PRF; and the padding before encryption may be any amount up to 255 bytes (to hide message lengths) instead of the minimum.
+
+\textbf{TLS 1.3} (RFC 8446, 2018) is a redesign. It removes RSA key transport and static Diffie--Hellman, keeping only ephemeral (EC)DHE, so that every session has \textbf{forward secrecy} (stealing the server's private key later does not decrypt recorded sessions). It removes compression, CBC MAC-then-encrypt and RC4, allowing only AEAD ciphers (AES-GCM, ChaCha20-Poly1305). The handshake takes one round trip: the client sends its key share in client\_hello, and everything after server\_hello, including the server certificate, is encrypted. Keys are derived with HKDF, renegotiation is gone, Change Cipher Spec survives only as a dummy for middlebox compatibility, and a resumed session can send data in its first flight (0-RTT), at the cost of possible replay of that data.
+
+\subsection{HTTPS \new}
+\likely{``What is HTTPS? Which parts of an HTTP exchange are protected?'' (2 marks).}
+
+\textbf{HTTPS} is HTTP over SSL/TLS. The URL begins with \ttx{https://} and the server listens on port \textbf{443} instead of 80. When HTTPS is used, the URL of the requested document, the document contents, the contents of browser forms, the cookies sent in both directions and the contents of the HTTP headers are all encrypted; only the server's IP address and port (and, in older TLS, the host name in the certificate) are visible. The client opens a TCP connection, runs the TLS handshake, and only then sends the first HTTP request. The browser checks that the server's certificate is valid and issued for the host name in the URL; this check is what stops a man in the middle, who can present a certificate only for his own name. At the end, each side sends a TLS close\_notify alert before closing the TCP connection, so that an attacker who forges a TCP close cannot silently truncate a page.
+
+\subsection{SET: purpose and participants \new}\label{sec:set}
+\likely{``What is SET? List its participants and requirements'' (4 marks).}
+
+\textbf{Secure Electronic Transaction} (SET), specified by MasterCard and Visa in 1996, is an open encryption and security specification for protecting \textbf{credit card transactions} on the Internet. It is not a payment system itself but a set of security protocols and formats that lets users use the existing card payment infrastructure securely over an open network. SET provides a secure channel among all parties, trust through X.509v3 certificates, and \textbf{privacy}, because information is available to a party only when and where it is needed. Its business requirements are: confidentiality of payment and ordering information; integrity of all transmitted data; authentication that the cardholder is a legitimate user of the card account; authentication that the merchant can accept card payments through a relationship with a financial institution; use of the best security practices; and independence from transport-level security and interoperability across platforms. Confidentiality used DES, integrity RSA signatures with SHA-1, and authentication X.509v3 certificates.
+
+\textbf{Participants.}
+\begin{itemize}
+  \item The \textbf{cardholder}, an authorised holder of a payment card issued by an issuer, who buys over the Internet.
+  \item The \textbf{merchant}, who sells goods or services and must have a relationship with an acquirer to accept cards.
+  \item The \textbf{issuer}, the financial institution (bank) that issued the card and is responsible for the cardholder's payments.
+  \item The \textbf{acquirer}, the financial institution that keeps the merchant's account, authorises card transactions (the card is valid and the purchase within the limit) and transfers payments to the merchant's account; it is later reimbursed by the issuer over the payment network.
+  \item The \textbf{payment gateway}, operated by the acquirer or a third party, which processes the merchant's SET payment messages and interfaces between SET on the Internet and the existing bank-card networks.
+  \item The \textbf{certification authority} (CA), trusted to issue X.509v3 certificates to cardholders, merchants and payment gateways, in a hierarchy of CAs.
+\end{itemize}
+
+\textbf{Sequence of events.} (1) The customer opens a card account and (2) receives a certificate signed by the bank, which binds his RSA public key to the card. (3) Merchants have two certificates, one for signing and one for key exchange, and hold a copy of the payment gateway's certificate. (4) The customer places an order. (5) The merchant sends a copy of its certificate, so the customer can verify that it is a valid store. (6) The customer sends the order and the payment information together with his certificate; the payment information is encrypted so that the merchant cannot read it. (7) The merchant forwards the payment information to the payment gateway and requests authorisation. (8) The merchant confirms the order to the customer, (9) provides the goods or service, and (10) later requests payment from the gateway, which handles all payment processing.
+
+\subsection{SET: the dual signature \hot\new}
+\likely{``What is a dual signature? How is it constructed and how do the merchant and the bank verify it?'' (5 marks).}
+
+\textbf{Problem.} A purchase involves two messages for two recipients: the \textbf{order information} (OI), meant for the merchant, and the \textbf{payment information} (PI, the card details), meant for the bank. The merchant does not need the card number, and the bank does not need to know what was bought, so each should see only its own message. Yet the two must be \textbf{linked}: the customer needs to be able to prove that this payment is for this order and no other. If the customer signed OI and PI separately, a dishonest merchant could take the signed PI from one order and claim it pays for a different, more expensive order.
+
+\textbf{Construction.} The customer hashes each message separately, hashes the concatenation of the two digests, and signs that:
+\[
+\mathrm{PIMD} = H(\mathrm{PI}), \qquad \mathrm{OIMD} = H(\mathrm{OI}), \qquad \mathrm{POMD} = H(\mathrm{PIMD} \,\|\, \mathrm{OIMD}), \qquad \mathrm{DS} = E(PR_c, \mathrm{POMD}),
+\]
+where $H$ is SHA-1, $PR_c$ is the customer's private signature key, and DS is the \textbf{dual signature}.
+\begin{center}
+\begin{tikzpicture}[font=\footnotesize]
+\node[nsL] (pi) at (0,0.65) {PI};
+\node[nsL] (oi) at (0,-0.65) {OI};
+\node[nsB] (h1) at (1.1,0.65) {$H$};
+\node[nsB] (h2) at (1.1,-0.65) {$H$};
+\node[nsC] (cc) at (3.4,0) {$\|$};
+\node[nsB] (h3) at (4.5,0) {$H$};
+\node[nsB] (e) at (6.6,0) {$E$};
+\node[nsL] (pr) at (6.6,0.9) {$PR_c$};
+\node[nsL, fill=gold!25, draw] (ds) at (8.1,0) {DS};
+\draw[nsA] (pi) -- (h1); \draw[nsA] (oi) -- (h2);
+\draw[nsA] (h1) -| node[above, pos=0.3]{PIMD} (cc); \draw[nsA] (h2) -| node[below, pos=0.3]{OIMD} (cc);
+\draw[nsA] (cc) -- (h3); \draw[nsA] (h3) -- node[above]{POMD} (e); \draw[nsA] (pr) -- (e); \draw[nsA] (e) -- (ds);
+\end{tikzpicture}
+\end{center}
+
+\textbf{Verification by the merchant.} The merchant receives OI, PIMD (not PI) and DS, and has the customer's public key $PU_c$ from his certificate. He computes
+\[
+H\big(\mathrm{PIMD} \,\|\, H(\mathrm{OI})\big) \quad\text{and}\quad D(PU_c, \mathrm{DS}),
+\]
+and accepts if they are equal. The second value is POMD as signed by the customer. The first equals POMD exactly when the OI he received is the one the customer hashed, because $H(\mathrm{OI}) = \mathrm{OIMD}$; PIMD is used as received, so the merchant never needs PI.
+
+\textbf{Verification by the bank.} The bank (through the payment gateway) receives PI, OIMD (not OI) and DS, and computes
+\[
+H\big(H(\mathrm{PI}) \,\|\, \mathrm{OIMD}\big) \quad\text{and}\quad D(PU_c, \mathrm{DS}),
+\]
+which are equal exactly when the PI is the one the customer signed, so the bank never needs OI.
+
+\textbf{Why the link holds.} Both checks compare against the same signed value POMD, which depends on both PIMD and OIMD. If the merchant presented the payment with a different order OI$'$, the bank and a judge would compute $H(\mathrm{PIMD} \| H(\mathrm{OI}'))$, and since $H$ is collision resistant this differs from POMD, so the signature does not match. Only the customer, holding $PR_c$, can produce a DS for a new pair. Thus \imp{the dual signature lets each party verify its own message while seeing only the digest of the other, and binds the order and the payment together.}
+
+\begin{worked}[: a toy dual signature]
+\textbf{Q.} Let the hash be the toy function $H(x) = (7x + 3) \bmod 101$, let the concatenation of two digests $a \| b$ be the number $1000a + b$, and let the customer's RSA key be $n = 187$, $e = 7$, $d = 23$ (\S\ref{sec:rsa}). For $\mathrm{PI} = 2345$ and $\mathrm{OI} = 678$, compute the dual signature and show both verifications.
+
+\textbf{A.} $\mathrm{PIMD} = (7 \cdot 2345 + 3) \bmod 101 = 16\,418 \bmod 101 = 56$. $\mathrm{OIMD} = (7 \cdot 678 + 3) \bmod 101 = 4749 \bmod 101 = 2$.\\
+$\mathrm{PIMD} \| \mathrm{OIMD} = 56\,002$; $\mathrm{POMD} = (7 \cdot 56\,002 + 3) \bmod 101 = 392\,017 \bmod 101 = 36$.\\
+$\mathrm{DS} = 36^{23} \bmod 187 = \mathbf{60}$.\\
+Merchant (has OI, PIMD $= 56$, DS): $H(678) = 2$, $H(56\,002) = 36$; $60^{7} \bmod 187 = 36$. Equal: accepted.\\
+Bank (has PI, OIMD $= 2$, DS): $H(2345) = 56$, $H(56\,002) = 36$; $60^7 \bmod 187 = 36$. Equal: accepted.\\
+\emph{Check}: a changed order $\mathrm{OI}' = 679$ gives $H(679) = 9$ and $H(56\,009) = 85 \ne 36$, so the substitution is detected.
+\end{worked}
+
+\subsection{SET: purchase request and payment authorisation \new}
+\likely{``Explain the SET purchase request (and payment authorisation) with a diagram'' (5 marks).}
+
+\begin{center}
+\begin{tikzpicture}[font=\footnotesize]
+\foreach \x/\n in {0/Cardholder, 4.6/Merchant, 9.2/{Payment gateway}, 12.6/{Issuer (via acquirer)}} {
+  \node[draw, fill=gray!10] at (\x,0) {\n};
+  \draw[gray] (\x,-0.3) -- (\x,-6.0);
+}
+\foreach \y/\a/\b/\m in {0.75/0/4.6/{1 initiate request}, 1.35/4.6/0/{2 initiate response (certificates)}, 2.05/0/4.6/{3 purchase request},
+  2.75/4.6/9.2/{4 authorisation request}, 3.35/9.2/12.6/{5 authorisation}, 3.85/12.6/9.2/{6 approval},
+  4.45/9.2/4.6/{7 authorisation response}, 5.05/4.6/0/{8 purchase response}, 5.75/4.6/9.2/{9 capture request (later)}} {
+  \draw[nsA] (\a,-\y) -- node[above=-1pt, font=\scriptsize]{\m} (\b,-\y);
+}
+\end{tikzpicture}
+\end{center}
+
+\textbf{Initiate request and response.} After browsing and choosing, the cardholder asks the merchant for the certificates of the merchant and of the payment gateway. The merchant answers with a message signed with its private signature key that contains a transaction ID and both certificates. The cardholder verifies the certificates through their CA signatures and creates OI and PI, each containing the transaction ID.
+
+\textbf{Purchase request.} The cardholder generates a one-time symmetric key $K_s$ and sends
+\[
+\underbrace{E_{K_s}(\mathrm{PI} \,\|\, \mathrm{DS} \,\|\, \mathrm{OIMD}) \,\|\, E(PU_{g}, K_s)}_{\text{digital envelope, forwarded to the gateway}} \;\|\; \underbrace{\mathrm{PIMD} \,\|\, \mathrm{OI} \,\|\, \mathrm{DS}}_{\text{for the merchant}} \;\|\; \mathrm{Cert}_c ,
+\]
+where $PU_g$ is the gateway's key-exchange public key. The merchant cannot open the envelope, so he never sees the card details. He verifies the cardholder's certificate and the dual signature as above, processes the order, forwards the envelope to the gateway, and returns a signed \textbf{purchase response} with the transaction ID.
+
+\textbf{Payment authorisation.} The merchant's \textbf{authorisation request} to the gateway contains the cardholder's envelope, an authorisation block with the transaction ID signed with the merchant's private key and encrypted under a new one-time key (in its own digital envelope for the gateway), and the certificates. The gateway verifies all certificates, opens both envelopes, verifies the merchant's signature and the \textbf{dual signature}, checks that the transaction ID in the merchant's block matches the one in PI, and obtains authorisation from the issuer over the bank network. It returns a signed \textbf{authorisation response} with a capture token. Later the merchant sends a \textbf{capture request} with the token to obtain the money.
+
+\textbf{Advantages and disadvantages.} SET gave strong privacy (the merchant never learns the card number, the bank never learns the order) and strong authentication of all parties by certificates. It failed in practice because every cardholder needed software and a certificate, and the many public-key operations made it slow and expensive. Card payments today use TLS between browser and merchant plus issuer-side checks (3-D Secure) and tokenisation, but the dual-signature idea remains the standard example of linking two messages for different recipients.

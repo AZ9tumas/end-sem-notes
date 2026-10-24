@@ -1,22 +1,26 @@
-% Videos: Hill cipher encryption, Hill cipher decryption, Vigenere & autokey, Vernam
-\section{Hill Cipher}
+% Sources: Neso videos (Hill encryption, Hill decryption, Vigenere & autokey, Vernam; crypto/notes4.md), college Lecture 5
+% (Forouzan 3.2: Hill 4x4 "code is ready", cryptanalysis of Hill, Vigenere "She is listening", Kasiski, autokey
+% "Attack is today"), Stallings 2.2 (Hill known-plaintext "hillcipher", Vigenere/autokey "deceptive", Vernam).
+% Every number recomputed by script (scratchpad/r2/verify.py, verify2.py).
+\section{Hill Cipher}\label{sec:hill}
+\likely{Hill encryption with a $2\times2$ or $3\times3$ key, then $K^{-1}$ and decryption (5--8 marks); or the known-plaintext attack $K = P^{-1}C$ (3--4 marks).}
 
-\begin{itemize}
-  \item A \textbf{multiletter} substitution cipher by mathematician \textbf{Lester Hill (1929)}. Better security than Playfair.
-  \item Encrypts a \textbf{block of $m$ letters at a time} using an $m\times m$ \textbf{key matrix} $K$: $2\times2$ for digraphs, $3\times3$ for trigraphs, $m\times m$ for polygraphs.
-  \item Like Playfair, the same letter can become different ciphertext letters depending on its block.
-  \item Maths needed: matrix multiplication mod 26 (enough for encryption); \textbf{determinant} and \textbf{multiplicative inverse} mod 26 (needed for decryption).
-\end{itemize}
+Playfair hides single-letter frequencies, but it works only on pairs, its rules are fixed geometric moves, and each digram always has the same substitute, so digram statistics still leak. The \textbf{Hill cipher}, published by the mathematician \textbf{Lester Hill in 1929}, generalises the idea to blocks of any size $m$ and replaces the geometric rules by linear algebra modulo 26. Each ciphertext letter of a block is a weighted sum of \emph{all} $m$ plaintext letters of that block, so the same plaintext letter becomes different ciphertext letters depending on its neighbours, and for $m \ge 3$ even digram frequencies are hidden. It is a \textbf{multiletter} (polygraphic) substitution cipher: $m = 2$ encrypts digraphs, $m = 3$ trigraphs, general $m$ polygraphs. Because every character of a block contributes to the encryption of every other character of the block, Forouzan classifies Hill as a \textbf{block cipher}, while the letter-by-letter ciphers before it are stream ciphers.
 
-\begin{keybox}[title=Hill cipher]
+The mathematics needed is matrix multiplication modulo 26 for encryption, and the determinant and the multiplicative inverse modulo 26 for decryption.
+
+\subsection{Encryption: matrix multiplication mod 26}
+The letters are numbered $a = 0, \dots, z = 25$. The plaintext is cut into blocks of $m$ letters (the last block is padded with a filler such as \ttx{x}), and each block is written as a \textbf{row vector} $P = (P_1\;P_2\;\cdots\;P_m)$. The key is an $m \times m$ matrix $K$ with entries in $\mathbb{Z}_{26}$. A block is encrypted by multiplying it by the key and reducing every entry modulo 26; decryption multiplies by the inverse matrix.
+
+\begin{mustknow}[: Hill cipher]
 \vspace{-6pt}
 \[
-\text{Encrypt: } C = PK \bmod 26 \qquad\qquad \text{Decrypt: } P = CK^{-1} \bmod 26
+\text{Encrypt: } C = PK \bmod 26 \qquad\qquad \text{Decrypt: } P = CK^{-1} \bmod 26, \qquad K^{-1} = (\det K)^{-1} \cdot \operatorname{adj}(K) \bmod 26
 \]
-Works because $CK^{-1} = (PK)K^{-1} = P(KK^{-1}) = PI = P$.
-\end{keybox}
+Decryption works because $CK^{-1} = (PK)K^{-1} = P(KK^{-1}) = PI = P$. The key is valid only if $\gcd(\det K, 26) = 1$.
+\end{mustknow}
 
-For $m = 3$, the plaintext block is a \textbf{row vector} $(P_1\;P_2\;P_3)$:
+For $m = 3$ the multiplication written out is
 \[
 (C_1\;C_2\;C_3) = (P_1\;P_2\;P_3)\begin{pmatrix}K_{11}&K_{12}&K_{13}\\K_{21}&K_{22}&K_{23}\\K_{31}&K_{32}&K_{33}\end{pmatrix} \bmod 26
 \qquad
@@ -26,16 +30,26 @@ C_2 &= (P_1K_{12}+P_2K_{22}+P_3K_{32}) \bmod 26\\
 C_3 &= (P_1K_{13}+P_2K_{23}+P_3K_{33}) \bmod 26
 \end{aligned}
 \]
-Sizes: $(1\times3)(3\times3) = (1\times3)$. Each $C_j$ = plaintext row $\cdot$ column $j$ of $K$.
+The sizes are $(1\times3)(3\times3) = (1\times3)$, and each $C_j$ is the plaintext row multiplied entry by entry with column $j$ of $K$ and summed. The equations show directly that every ciphertext letter depends on every plaintext letter of the block.
 
-\textbf{$PK$ vs.\ $KP$:} this lecture uses $C = PK$ (plaintext as a row). Some books use a \textbf{column} vector: $C = KP$, and then decryption is $P = K^{-1}C$. Use one convention consistently.
+\textbf{$PK$ vs.\ $KP$.} This lecture and Forouzan use $C = PK$ (plaintext as a row). Some books (and some exam papers) write the plaintext as a \textbf{column} vector: then $C = KP$ and decryption is $P = K^{-1}C$. The two conventions give different ciphertexts for the same key (column-vector encryption with $K$ is row-vector encryption with the transpose $K^T$), so state the convention and use it consistently.
+
+\subsection{Which matrices can be keys}
+Not every square matrix has an inverse modulo 26, and a key without one is useless, because Bob could not decrypt. The test comes from the \textbf{adjugate} $\operatorname{adj}(K)$, the transpose of the matrix of cofactors $C_{ij} = (-1)^{i+j} M_{ij}$, where the minor $M_{ij}$ is the determinant of $K$ with row $i$ and column $j$ deleted. Over the integers every square matrix satisfies
+\[
+K \cdot \operatorname{adj}(K) = \det(K) \cdot I
+\]
+(for the key in the next example, $K \cdot \operatorname{adj}(K) = -939\, I$, checked). If $\det K$ has a multiplicative inverse modulo 26, multiplying both sides by it gives $K \cdot \big((\det K)^{-1}\operatorname{adj}(K)\big) \equiv I$, which is the formula for $K^{-1}$. Conversely, if $K^{-1}$ exists then $\det(K)\det(K^{-1}) = \det(I) = 1 \pmod{26}$, so $\det K$ must be invertible. Hence \imp{a Hill key is valid if and only if $\gcd(\det K \bmod 26, 26) = 1$}, i.e.\ $\det K \bmod 26$ is odd and not 13. Only 12 of the 26 values qualify: $1, 3, 5, 7, 9, 11, 15, 17, 19, 21, 23, 25$.
+
+When the condition fails, encryption is not one-to-one. With $K = \begin{pmatrix}2&0\\0&1\end{pmatrix}$ ($\det K = 2$), the blocks \ttx{aa} $= (0, 0)$ and \ttx{na} $= (13, 0)$ both encrypt to $(0, 0) = $ \ttx{AA}, because $13 \cdot 2 = 26 \equiv 0$. Bob, receiving \ttx{AA}, cannot know which was sent.
+
+\textbf{Key space.} The slides count $26^{m \times m}$ matrices: $26^4 \approx 4.6 \times 10^5$ for $m = 2$, $26^9 \approx 5.4 \times 10^{12}$ for $m = 3$ and $26^{16} \approx 4.4 \times 10^{22}$ for $m = 4$. Only the invertible ones are keys (157{,}248 of the 456{,}976 matrices for $m = 2$, about $1.6 \times 10^{12}$ for $m = 3$), but the number grows so fast with $m$ that brute force on a large key is hopeless.
 
 \subsection{Encryption example: ``pay more money''}
-\[
-K = \begin{pmatrix}17&17&5\\21&18&21\\2&2&19\end{pmatrix}
-\qquad\text{Blocks of 3: } \ttx{pay | mor | emo | ney} \quad\text{(pad with \ttx{x} if needed)}
-\]
-Block 1, \ttx{pay} $= (15\;0\;24)$:
+\begin{worked}[: lecture / Stallings]
+\textbf{Q.} Encrypt ``pay more money'' with the Hill cipher, $C = PK \bmod 26$, \;$K = \begin{pmatrix}17&17&5\\21&18&21\\2&2&19\end{pmatrix}$.
+
+\textbf{A.} $m = 3$, so the 12 letters form four blocks \ttx{pay | mor | emo | ney} (no padding needed). Block 1, \ttx{pay} $= (15\;0\;24)$:
 \[
 \begin{aligned}
 C_1 &= 15\cdot17 + 0\cdot21 + 24\cdot2 = 255+0+48 = 303 = 11\cdot26 + \mathbf{17} &&\to \ttx{R}\\
@@ -55,27 +69,20 @@ ney & (13, 4, 24) & (353, 341, 605) & (15, 3, 7) & \textbf{PDH}\\
 \bottomrule
 \end{tabular}
 \end{center}
-Answer: \textbf{\ttx{RRLMWBKASPDH}}.
+Answer: \textbf{\ttx{RRLMWBKASPDH}}. \textbf{Check:} decryption below returns \ttx{pay more money}.
+\end{worked}
 
 \subsection{Decryption: finding $K^{-1}$}
-\begin{keybox}[title=Recipe]
-$K^{-1} = \big(\det K\big)^{-1} \cdot \operatorname{adj}(K) \bmod 26$
-\begin{enumerate}[leftmargin=1.5em]
-  \item $\det K \bmod 26$.
-  \item Its multiplicative inverse mod 26.
-  \item $\operatorname{adj}(K) \bmod 26$.
-  \item Multiply (2) by (3), reduce mod 26. Check $KK^{-1} \equiv I$.
-\end{enumerate}
-\end{keybox}
+By the previous subsection, $K^{-1} = (\det K)^{-1} \cdot \operatorname{adj}(K) \bmod 26$, and the computation is done in four steps, each of which should be shown in an exam answer: (1) $\det K \bmod 26$; (2) its multiplicative inverse modulo 26, which exists only if $\gcd(\det K, 26) = 1$; (3) $\operatorname{adj}(K) \bmod 26$; (4) the product of (2) and (3), reduced modulo 26, followed by the check $KK^{-1} \equiv I$.
 
 \textbf{Step 1: determinant} (expand along row 1, signs $+\,-\,+$):
 \[
 \det K = 17\begin{vmatrix}18&21\\2&19\end{vmatrix} - 17\begin{vmatrix}21&21\\2&19\end{vmatrix} + 5\begin{vmatrix}21&18\\2&2\end{vmatrix}
 = 17(300) - 17(357) + 5(6) = 5100 - 6069 + 30 = -939
 \]
-$-939 = -36\cdot26 - 3$, so $\det K \equiv -3 \equiv -3 + 26 = \mathbf{23} \pmod{26}$.
+$-939 = -36\cdot26 - 3$, so $\det K \equiv -3 \equiv -3 + 26 = \mathbf{23} \pmod{26}$. Since 23 is odd and not 13, the key is valid.
 
-\textbf{Step 2: inverse of 23 mod 26.} Find $x$ with $23x \bmod 26 = 1$ by trying $x = 1, 2, 3, \dots$
+\textbf{Step 2: inverse of 23 mod 26.} Find $x$ with $23x \bmod 26 = 1$ by trying $x = 1, 2, 3, \dots$ (or by the extended Euclidean algorithm, \S\ref{sec:exteuclid}):
 \begin{center}\small\setlength{\tabcolsep}{3.2pt}
 \begin{tabular}{@{}l*{17}{c}@{}}
 \toprule
@@ -87,7 +94,7 @@ $23x \bmod 26$ & 23&20&17&14&11&8&5&2&25&22&19&16&13&10&7&4&\hl{1}\\
 $23 \times 17 = 391 = 15\cdot26 + 1$, so $\mathbf{23^{-1} \equiv 17}$.
 An inverse exists only if $\gcd(\det K, 26) = 1$, i.e.\ $\det K$ is odd and not 13. Otherwise the key can't be used, because messages could not be decrypted.
 
-\textbf{Step 3: adjoint, using the $5\times5$ shortcut.}
+\textbf{Step 3: adjugate, using the $5\times5$ shortcut.} Computing nine cofactors and transposing is error-prone; the lecture's grid produces the adjugate directly, with the signs and the transpose built in.
 \begin{enumerate}[leftmargin=1.5em]
   \item Copy the first two columns to the right, then the first two rows to the bottom ($5\times5$).
   \item Delete the first row and first column. That leaves a $4\times4$ grid.
@@ -130,7 +137,7 @@ An inverse exists only if $\gcd(\det K, 26) = 1$, i.e.\ $\det K$ is odd and not 
 \equiv
 \begin{pmatrix}14&25&7\\7&1&8\\6&0&1\end{pmatrix} \pmod{26}
 \]
-(Reduce mod 26, then add 26 to each negative: $-1\to25$, $-19\to7$, $-18\to8$, $-25\to1$.)
+(Reduce mod 26, then add 26 to each negative: $-1\to25$, $-19\to7$, $-18\to8$, $-25\to1$.) The shortcut agrees with the cofactor definition: for example the entry in row 1, column 2 is the cofactor $C_{21} = -\begin{vmatrix}17&5\\2&19\end{vmatrix} = -(323 - 10) = -313$.
 
 \textbf{Step 4: combine.}
 \[
@@ -142,6 +149,10 @@ Check: $KK^{-1} = \begin{pmatrix}443&442&442\\858&495&780\\494&52&365\end{pmatri
 ($443 = 17\cdot26+1$, $442 = 17\cdot26$, \dots)
 
 \subsection{Decryption example: \ttx{RRLMWBKASPDH}}
+\begin{worked}[: lecture]
+\textbf{Q.} Decrypt \ttx{RRLMWBKASPDH} with the key of the previous example.
+
+\textbf{A.} Multiply each ciphertext block by $K^{-1}$ found above and reduce mod 26:
 \begin{center}\small
 \begin{tabular}{@{}lcccc@{}}
 \toprule
@@ -155,152 +166,94 @@ PDH & (15, 3, 7) & (273, 186, 362) & (13, 4, 24) & \textbf{ney}\\
 \end{tabular}
 \end{center}
 e.g.\ $P_1 = 17\cdot4 + 17\cdot15 + 11\cdot24 = 68 + 255 + 264 = 587 = 22\cdot26 + 15 \to \ttx{p}$.\quad Answer: \textbf{pay more money}.
+\end{worked}
 
-{\small\emph{Not in the lecture:} Hill hides single-letter frequencies well, but it is linear. If an attacker knows some plaintext--ciphertext pairs, they can solve for $K$.}
-
-\section{Polyalphabetic Ciphers}\label{sec:poly}
-
-Monoalphabetic ciphers fall to frequency analysis because every letter always gets the same substitute. \textbf{Polyalphabetic} ciphers use \textbf{different} monoalphabetic rules at different positions:
-\begin{keybox}
-\begin{enumerate}[leftmargin=1.5em]
-  \item A \textbf{set of related monoalphabetic substitution rules} is used.
-  \item A \textbf{key} decides which rule is used for each letter.
-\end{enumerate}
-\end{keybox}
-
-\subsection{Vigen\`ere cipher \hot}
-\asked{2025--26 Q1 (8 marks, the biggest question so far): one-time-pad version of Vigen\`ere, encrypt ``sendmoremoney'' with a key stream, then find the key that turns the ciphertext into ``cashnotneeded''. 2024--25 Q1(c): characters changed.}
-The rule set is the \textbf{26 Caesar ciphers} (shifts 0--25). Each key letter picks the shift for one plaintext letter. The key is \textbf{repeated} to the length of the message.
-\begin{keybox}[title=Vigen\`ere (key length $m$)]
-\vspace{-6pt}
+\subsection{A $2\times2$ example}
+For $m = 2$ the inverse has a closed form. If $K = \begin{pmatrix}a&b\\c&d\end{pmatrix}$, then $\det K = ad - bc$ and $\operatorname{adj}K = \begin{pmatrix}d&-b\\-c&a\end{pmatrix}$ (swap the diagonal, negate the other two entries), so
 \[
-C_i = \big(P_i + K_{i \bmod m}\big) \bmod 26 \qquad\qquad P_i = \big(C_i - K_{i \bmod m}\big) \bmod 26
+K^{-1} = (ad - bc)^{-1}\begin{pmatrix}d&-b\\-c&a\end{pmatrix} \bmod 26 .
 \]
-\end{keybox}
 
-\textbf{Example:} plaintext \ttx{wearediscoveredsaveyourself} (27 letters), key \ttx{deceptive} (9 letters, repeated 3 times).
-\begin{center}\footnotesize\setlength{\tabcolsep}{2.9pt}
-\begin{tabular}{@{}l*{14}{c}@{}}
+\begin{worked}[: new, Forouzan exercise style]
+\textbf{Q.} Using the Hill cipher with $C = PK \bmod 26$ and $K = \begin{pmatrix}5&8\\17&3\end{pmatrix}$, encrypt ``exam''. Find $K^{-1}$ and decrypt the result.
+
+\textbf{Encrypt.} Blocks \ttx{ex} $= (4, 23)$ and \ttx{am} $= (0, 12)$.
+\begin{center}\small
+\begin{tabular}{@{}lll@{}}
 \toprule
-Key & d&e&c&e&p&t&i&v&e&d&e&c&e&p\\
-$K$ & 3&4&2&4&15&19&8&21&4&3&4&2&4&15\\
-Plain & w&e&a&r&e&d&i&s&c&o&v&e&r&e\\
-$P$ & 22&4&0&17&4&3&8&18&2&14&21&4&17&4\\
-$(P{+}K) \bmod 26$ & 25&8&2&21&19&22&16&\hl{13}&6&17&25&6&21&19\\
-Cipher & \textbf{Z}&\textbf{I}&\textbf{C}&\textbf{V}&\textbf{T}&\textbf{W}&\textbf{Q}&\textbf{N}&\textbf{G}&\textbf{R}&\textbf{Z}&\textbf{G}&\textbf{V}&\textbf{T}\\
-\bottomrule
-\end{tabular}
-\\[4pt]
-\begin{tabular}{@{}l*{13}{c}@{}}
-\toprule
-Key & t&i&v&e&d&e&c&e&p&t&i&v&e\\
-$K$ & 19&8&21&4&3&4&2&4&15&19&8&21&4\\
-Plain & d&s&a&v&e&y&o&u&r&s&e&l&f\\
-$P$ & 3&18&0&21&4&24&14&20&17&18&4&11&5\\
-$(P{+}K) \bmod 26$ & 22&\hl{0}&21&25&7&\hl{2}&16&24&\hl{6}&\hl{11}&12&\hl{6}&9\\
-Cipher & \textbf{W}&\textbf{A}&\textbf{V}&\textbf{Z}&\textbf{H}&\textbf{C}&\textbf{Q}&\textbf{Y}&\textbf{G}&\textbf{L}&\textbf{M}&\textbf{G}&\textbf{J}\\
-\bottomrule
-\end{tabular}
-\end{center}
-Answer: \textbf{\ttx{ZICVTWQNGRZGVTWAVZHCQYGLMGJ}} (highlighted cells wrapped past 25).
-
-\textbf{Why it's stronger:} the same plaintext letter gets different ciphertext letters. \ttx{e} at position 2 (key \ttx{e}=4) $\to 8 =$ \ttx{I}; \ttx{e} at position 5 (key \ttx{p}=15) $\to 19 =$ \ttx{T}. Letter frequencies get flattened.
-
-\textbf{Cryptanalysis:} the weakness is that the \textbf{key repeats}. Once the attacker finds the key length $m$, they split the ciphertext into $m$ groups (every $m$-th letter). Each group is just a \textbf{Caesar cipher}, which falls to frequency analysis or brute force.
-
-\subsection{Autokey system \hot}
-\asked{2024--25 Q1(d): one plaintext change alters \textbf{2} ciphertext characters in auto-key (the letter itself and the one it keys).}
-To stop the key from repeating, Vigen\`ere proposed the \textbf{autokey}: the keyword is followed by the \textbf{plaintext itself}, giving a \textbf{running key} as long as the message.
-\begin{center}\small\ttfamily\setlength{\tabcolsep}{2.2pt}
-\begin{tabular}{@{}l*{27}{c}@{}}
-\rmfamily Key & \textbf{d}&\textbf{e}&\textbf{c}&\textbf{e}&\textbf{p}&\textbf{t}&\textbf{i}&\textbf{v}&\textbf{e}&w&e&a&r&e&d&i&s&c&o&v&e&r&e&d&s&a&v\\
-\rmfamily Plain & w&e&a&r&e&d&i&s&c&o&v&e&r&e&d&s&a&v&e&y&o&u&r&s&e&l&f\\
-\rmfamily Cipher & Z&I&C&V&T&W&Q&N&G&K&Z&E&I&I&G&A&S&X&S&T&S&L&V&V&W&L&A
-\end{tabular}
-\end{center}
-Answer: \textbf{\ttx{ZICVTWQNGKZEIIGASXSTSLVVWLA}}. The first 9 letters match Vigen\`ere (same key); after that the key is the plaintext (\ttx{w e a r e \dots}).
-\begin{itemize}
-  \item No period to find, so the key-length attack above fails.
-  \item Still breakable: the key is ordinary English too, so key and plaintext \textbf{share the same letter frequencies}, and statistics can still be applied.
-\end{itemize}
-
-\subsection{Vernam cipher}
-\begin{itemize}
-  \item \textbf{Gilbert Vernam}, AT\&T engineer, \textbf{1918}.
-  \item Works on \textbf{binary bits}, not letters.
-  \item Goal: a key \textbf{as long as the message} that \textbf{does not repeat}, so no statistical pattern is left.
-\end{itemize}
-\begin{minipage}[c]{0.5\textwidth}
-\begin{keybox}[title=Vernam]
-\vspace{-6pt}
-\[
-C_i = P_i \oplus K_i \qquad\qquad P_i = C_i \oplus K_i
-\]
-$\oplus$ = XOR: output 1 if the bits differ, 0 if they are equal.
-\end{keybox}
-Decryption works because XOR undoes itself:
-\[
-C_i \oplus K_i = P_i \oplus K_i \oplus K_i = P_i \oplus 0 = P_i
-\]
-\end{minipage}\hfill
-\begin{minipage}[c]{0.45\textwidth}
-\centering\small
-\begin{tabular}{cc|c}
-\toprule
-$a$ & $b$ & $a\oplus b$\\
+Block & $PK$ & mod 26\\
 \midrule
-0&0&0\\ 0&1&1\\ 1&0&1\\ 1&1&0\\
+ex & $(4\cdot5 + 23\cdot17,\; 4\cdot8 + 23\cdot3) = (411, 101)$ & $(21, 23) =$ \ttx{VX}\\
+am & $(0\cdot5 + 12\cdot17,\; 0\cdot8 + 12\cdot3) = (204, 36)$ & $(22, 10) =$ \ttx{WK}\\
 \bottomrule
 \end{tabular}
+\end{center}
+Ciphertext: \textbf{\ttx{VXWK}}. ($411 = 15\cdot26 + 21$, $101 = 3\cdot26 + 23$, $204 = 7\cdot26 + 22$.)
+
+\textbf{Inverse.} $\det K = 5\cdot3 - 8\cdot17 = 15 - 136 = -121 = -5\cdot26 + 9 \equiv 9$; $\gcd(9, 26) = 1$, so the key is valid. $9^{-1} \equiv 3$ since $9 \cdot 3 = 27 = 26 + 1$.
+\[
+K^{-1} = 3\begin{pmatrix}3&-8\\-17&5\end{pmatrix} = \begin{pmatrix}9&-24\\-51&15\end{pmatrix} \equiv \begin{pmatrix}9&2\\1&15\end{pmatrix} \pmod{26}.
+\]
+Check: $KK^{-1} = \begin{pmatrix}5\cdot9+8\cdot1 & 5\cdot2+8\cdot15\\17\cdot9+3\cdot1 & 17\cdot2+3\cdot15\end{pmatrix} = \begin{pmatrix}53&130\\156&79\end{pmatrix} \equiv I$ \checkmark\ ($53 = 2\cdot26+1$, $130 = 5\cdot26$, $156 = 6\cdot26$, $79 = 3\cdot26+1$).
+
+\textbf{Decrypt.} \ttx{VX}: $(21\cdot9 + 23\cdot1,\; 21\cdot2 + 23\cdot15) = (212, 387) \equiv (4, 23) =$ \ttx{ex}. \;\ttx{WK}: $(22\cdot9 + 10\cdot1,\; 22\cdot2 + 10\cdot15) = (208, 194) \equiv (0, 12) =$ \ttx{am}. Plaintext: \textbf{exam} \checkmark.
+\end{worked}
+
+\subsection{The slide example: a $4\times4$ key (Forouzan)}
+\begin{worked}[: slide example, corrected]
+\textbf{Q.} Encrypt ``code is ready'' with the $4\times4$ key $K$ below ($C = PK \bmod 26$), and show that $K^{-1}$ recovers it.
+
+\textbf{A.} Removing spaces gives 11 letters, so a bogus \ttx{z} is added and the blocks are \ttx{code | isre | adyz}, stacked as the rows of a $3\times4$ matrix $P$. Multiplying all blocks at once:
+\[
+\underbrace{\begin{pmatrix}2&14&3&4\\8&18&17&4\\0&3&24&25\end{pmatrix}}_{P}
+\underbrace{\begin{pmatrix}9&7&11&13\\4&7&5&6\\2&21&14&9\\3&23&21&8\end{pmatrix}}_{K}
+= \begin{pmatrix}92&267&218&169\\190&631&500&397\\135&1100&876&434\end{pmatrix}
+\equiv \underbrace{\begin{pmatrix}14&7&10&13\\8&7&6&7\\5&8&18&18\end{pmatrix}}_{C} \pmod{26}
+\]
+For example $C_{24} = 8\cdot13 + 18\cdot6 + 17\cdot9 + 4\cdot8 = 104 + 108 + 153 + 32 = 397 = 15\cdot26 + 7$. Reading $C$ row by row gives \textbf{\ttx{OHKNIHGHFISS}}. With the slide's inverse
+\[
+K^{-1} = \begin{pmatrix}2&15&22&3\\15&0&19&3\\9&9&3&11\\17&0&4&7\end{pmatrix},
+\]
+$CK^{-1} \bmod 26$ gives back $P$ (\ttx{codeisreadyz}), and Bob drops the bogus \ttx{z}. ($\det K \equiv 3 \pmod{26}$, so the key is valid.) The slide prints \ttx{OHKNIHGKLISS}; two of its entries are wrong (see the corrections box).
+\end{worked}
+
+\subsection{Why Hill hides letter frequencies}
+In $C_j = \sum_i P_i K_{ij}$ every ciphertext letter of a block depends on every plaintext letter of the block. Two consequences follow. First, a plaintext letter has no fixed substitute: what it becomes depends on its position in the block and on the other letters there. Second, changing a single plaintext letter changes up to all $m$ ciphertext letters of its block: changing $P_1$ by $\delta$ changes each $C_j$ by $\delta K_{1j}$, which is non-zero modulo 26 whenever $K_{1j}$ is invertible. With the lecture key, whose first row $17, 17, 5$ consists of invertible numbers, \ttx{pay}$\to$\ttx{RRL} but \ttx{bay}$\to$\ttx{NNT}, and \ttx{paz}$\to$\ttx{TTE}: one changed letter, three changed ciphertext letters. Since every ciphertext letter mixes $m$ plaintext letters, the peaks of single-letter frequencies are smeared out, and for $m \ge 3$ digram statistics are destroyed too.
+
+What Hill does \emph{not} hide is the block itself: it is a fixed substitution on blocks, so the same block always gives the same ciphertext block. In effect it is a monoalphabetic cipher on an alphabet of $26^m$ ``letters'' ($676$ for $m = 2$, $17{,}576$ for $m = 3$). As the slides put it, \imp{Hill ciphers do not preserve the statistics of the plaintext: Eve cannot run frequency analysis on single letters, digrams or trigrams}; an analysis of blocks of size $m$ might work, but a plaintext rarely contains enough repeated blocks for it.
+
+\subsection{Cryptanalysis: the known-plaintext attack}
+Brute force and frequency analysis both fail, but the Hill cipher has a fatal structural weakness: it is \textbf{linear}. Suppose Eve knows $m$ and has $m$ pairs of plaintext/ciphertext blocks, which may come from the same message or different messages but must be distinct. She writes the plaintext blocks as the rows of an $m \times m$ matrix $P$ and the corresponding ciphertext blocks as the rows of $C$. Each row satisfies $c_i = p_i K$, and matrix multiplication works row by row, so the stacked matrices satisfy $C = PK$. If $P$ is invertible modulo 26, multiplying on the \emph{left} by $P^{-1}$ gives $P^{-1}C = P^{-1}PK = K$:
+\[
+\boxed{K = P^{-1}C \bmod 26}
+\]
+The order matters, because matrix multiplication is not commutative ($CP^{-1}$, as printed on the slide, is a different matrix). If $P$ is not invertible, Eve uses a different set of $m$ blocks; if she does not know $m$, she tries $m = 2, 3, \dots$ and checks each candidate key by decrypting more ciphertext. A \textbf{chosen-plaintext} attack is even easier: encrypting the unit blocks \ttx{baa}, \ttx{aba}, \ttx{aab} gives the rows of $K$ directly. With the lecture key they encrypt to \ttx{RRF} $= (17, 17, 5)$, \ttx{VSV} $= (21, 18, 21)$ and \ttx{CCT} $= (2, 2, 19)$, exactly the three rows.
+
+\begin{worked}[: known-plaintext attack (Stallings)]
+\textbf{Q.} A $2\times2$ Hill cipher ($C = PK$) encrypts ``hillcipher'' to \ttx{HCRZSSXNSP}. Find the key.
+
+\textbf{A.} The pairs are \ttx{hi}$\to$\ttx{HC}, \ttx{ll}$\to$\ttx{RZ}, \ttx{ci}$\to$\ttx{SS}, \ttx{ph}$\to$\ttx{XN}, \ttx{er}$\to$\ttx{SP}. Take the first two:
+\[
+P = \begin{pmatrix}7&8\\11&11\end{pmatrix}\ (\ttx{hi}, \ttx{ll}),\qquad C = \begin{pmatrix}7&2\\17&25\end{pmatrix}\ (\ttx{HC}, \ttx{RZ}).
+\]
+$\det P = 7\cdot11 - 8\cdot11 = -11 \equiv 15$; $\gcd(15, 26) = 1$, so $P$ is invertible, and $15^{-1} \equiv 7$ ($15\cdot7 = 105 = 4\cdot26 + 1$).
+\[
+P^{-1} = 7\begin{pmatrix}11&-8\\-11&7\end{pmatrix} = \begin{pmatrix}77&-56\\-77&49\end{pmatrix} \equiv \begin{pmatrix}25&22\\1&23\end{pmatrix},
 \qquad
-\begin{tabular}{@{}r@{\;}l@{}}
-$P$ & \ttx{1011}\\
-$K$ & \ttx{0110}\\
-\midrule
-$C$ & \ttx{1101}\\
-$C\oplus K$ & \ttx{1011} $= P$
-\end{tabular}\\[2pt]
-{\footnotesize (bit example is mine, not from the lecture)}
-\end{minipage}
+K = P^{-1}C = \begin{pmatrix}25\cdot7+22\cdot17 & 25\cdot2+22\cdot25\\ 1\cdot7+23\cdot17 & 1\cdot2+23\cdot25\end{pmatrix} = \begin{pmatrix}549&600\\398&577\end{pmatrix} \equiv \mathbf{\begin{pmatrix}3&2\\8&5\end{pmatrix}}
+\]
+($549 = 21\cdot26 + 3$, $600 = 23\cdot26 + 2$, $398 = 15\cdot26 + 8$, $577 = 22\cdot26 + 5$.) \textbf{Check} with the unused third pair: \ttx{ci} $= (2, 8)$ gives $(2\cdot3 + 8\cdot8,\; 2\cdot2 + 8\cdot5) = (70, 44) \equiv (18, 18) =$ \ttx{SS} \checkmark.
+\end{worked}
 
-\begin{center}
-\begin{tikzpicture}[node distance=6mm]
-  \node[box,fill=gray!15,text width=32mm] (g1) {Cryptographic stream generator};
-  \node[draw,circle,below=6mm of g1,font=\large,inner sep=1pt] (x1) {$\oplus$};
-  \node[left=10mm of x1,font=\small] (p1) {Plaintext $P_i$};
-  \node[box,fill=gray!15,text width=32mm,right=38mm of g1] (g2) {Cryptographic stream generator};
-  \node[draw,circle,below=6mm of g2,font=\large,inner sep=1pt] (x2) {$\oplus$};
-  \node[right=10mm of x2,font=\small] (p2) {Plaintext $P_i$};
-  \draw[arr] (g1) -- node[right,font=\scriptsize]{$K_i$} (x1);
-  \draw[arr] (g2) -- node[right,font=\scriptsize]{$K_i$} (x2);
-  \draw[arr] (p1) -- (x1);
-  \draw[arr] (x1) -- node[above,font=\scriptsize]{Ciphertext $C_i$ (sent)} (x2);
-  \draw[arr] (x2) -- (p2);
-  \node[below=1mm of x1,font=\scriptsize] {encryption};
-  \node[below=1mm of x2,font=\scriptsize] {decryption};
-\end{tikzpicture}
-\end{center}
-Both sides need the \textbf{same, synchronised key stream}.
-
-\textbf{Weakness:} Vernam's machine read the key from a \textbf{loop of paper tape}, so the key eventually \textbf{repeated}. With enough ciphertext, and some known or probable plaintext, it can be broken.
-\textbf{Fix:} make the key truly random, as long as the message, and never reused. That is the \textbf{one-time pad}, which gives perfect secrecy (next topic).
-
-\begin{examtip}
-\begin{itemize}
-  \item Hill: $C = PK \bmod 26$, $P = CK^{-1} \bmod 26$. State which convention ($PK$ or $KP$) you use.
-  \item $K^{-1} = (\det K)^{-1}\operatorname{adj}K \bmod 26$. Show every step: det, inverse (table), adjoint, product, then check $KK^{-1}=I$.
-  \item Negative numbers mod 26: add 26 until the result is in $0$--$25$.
-  \item The key matrix must have $\gcd(\det K, 26) = 1$, or it can't be inverted.
-  \item Polyalphabetic = many monoalphabetic rules, and the key picks which one. Vigen\`ere = 26 Caesar ciphers.
-  \item Vigen\`ere weakness: the repeating key. Autokey fixes it (keyword + plaintext), but key and plaintext share frequencies.
-  \item Vernam: Gilbert Vernam, 1918, bits, XOR. Weakness: repeating tape. Leads to the one-time pad.
-\end{itemize}
-\end{examtip}
+The slide's $3\times3$ example works the same way: from three known blocks with $P = \left(\begin{smallmatrix}5&7&10\\13&17&7\\0&5&4\end{smallmatrix}\right)$ ($\det P \equiv 9$) and $C = \left(\begin{smallmatrix}3&6&0\\14&16&9\\3&17&11\end{smallmatrix}\right)$, Eve gets $K = P^{-1}C = \left(\begin{smallmatrix}2&3&7\\5&7&9\\1&2&11\end{smallmatrix}\right)$ (worked in \S\ref{sec:classextra}). The lesson carries over to modern ciphers: a cipher whose output is a linear function of its input is broken by a handful of known pairs, which is why DES and AES contain non-linear S-boxes (\S\ref{sec:des}, \S\ref{sec:aes}).
 
 \begin{fixbox}
 \begin{itemize}
   \item All of Gemini's numbers for this batch are correct (Hill encryption, det, adjoint, $K^{-1}$, decryption, Vigen\`ere, autokey; checked by script).
   \item Slide typos noted by Gemini: for \ttx{ney}, the slide shows the old vector $(348, 312, 538)$ instead of $(353, 341, 605)$. For \ttx{RRL}, the slide shows $(17\;17\;14)$ labelled $C$; it should be $(17\;17\;11)$ and the output is $P$.
-  \item The notes put ``key and plaintext share letter frequencies'' under Vigen\`ere cryptanalysis. That point is really about the autokey system, where the key \emph{is} plaintext, so it is placed there above.
+  \item \textbf{Slide L5 (cryptanalysis of Hill):} ``Because $C = PK$, Eve can use the relationship $K = CP^{-1}$'' is wrong; it must be $K = P^{-1}C$ (the slide's own figure on the next page does compute $P^{-1}C$). For the slide's data, $CP^{-1}$ gives a different, wrong matrix.
+  \item \textbf{Slide L5 (Hill, ``code is ready''):} with the slide's $K$, two entries of the printed $C$ are wrong: $C_{24} = 397 \bmod 26 = 7$ (slide: 11) and $C_{31} = 135 \bmod 26 = 5$ (slide: 11). The correct ciphertext is \ttx{OHKNIHGHFISS}; the slide's text \ttx{OHKNIHGKLISS} matches neither its own matrix nor the correct one. The slide's $K^{-1}$ is correct.
 \end{itemize}
 \end{fixbox}
+
+%%POLY%%
