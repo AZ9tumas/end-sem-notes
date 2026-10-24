@@ -1,0 +1,129 @@
+% Question bank for sections/16b_modes.tex and sections/24_network_security.tex (syllabus topics not on the slides).
+% Every number checked by scratchpad/w24/modes.py, qcalc.py, net.py.
+\section{Modes of Operation, Network and System Security}\label{q:netsec}
+\noindent{\small Notes: \S\ref{sec:modes} (modes), \S\ref{sec:netsec}--\S\ref{sec:syssec} (e-mail, IPSec, TLS, SET, system security).}
+
+\subsection*{Check your understanding}
+\begin{enumerate}[leftmargin=1.6em,itemsep=3pt]
+  \item \textbf{Why is ECB insecure for long messages, and how does CBC fix it?} In ECB equal plaintext blocks always give equal ciphertext blocks, so repetitions and structure of the message show through and blocks can be swapped or replayed. CBC XORs each plaintext block with the previous ciphertext block (the IV for the first) before encrypting, so equal blocks encrypt differently and every ciphertext block depends on all earlier plaintext.
+  \item \textbf{Why do CFB, OFB and CTR use only the encryption function at both ends?} In these modes the block cipher only produces a key stream that is XORed with the data; the receiver must regenerate the same key stream, which needs the same $E_K$ on the same inputs, and XORing it again cancels it. $D_K$ is never needed, so the block function need not even be invertible.
+  \item \textbf{Differentiate CFB and OFB.} CFB feeds the \emph{ciphertext} back into the shift register, so it is a self-synchronising stream cipher: a bit error damages $1 + n/s$ segments and a lost segment is recovered from after $n/s$ segments. OFB feeds the cipher \emph{output} back, so the key stream is independent of the message: a bit error damages only that bit, but a lost bit desynchronises everything after it, and the key stream can be precomputed.
+  \item \textbf{One bit of $C_i$ is flipped in CBC. Which plaintext blocks are wrong, and why?} $P_i = D_K(C'_i) \oplus C_{i-1}$ is completely garbled because the block decryption of a changed block is unrelated to the original; $P_{i+1} = D_K(C_{i+1}) \oplus C'_i$ has exactly the same bit flipped; $P_{i+2}$ onwards are correct because they do not use $C_i$.
+  \item \textbf{What happens if the same IV is used twice in OFB (or the same counter in CTR)?} Both messages are XORed with the same key stream, so $C \oplus C' = P \oplus P'$: Eve obtains the XOR of the plaintexts without the key, and knowing one plaintext reveals the other completely.
+  \item \textbf{Why must the CBC IV be unpredictable and protected?} A reused IV shows when two messages start with the same block, and a predictable IV lets a chosen-plaintext attacker test a guess $G$ of an old $P_1$ by submitting $\mathrm{IV}' \oplus \mathrm{IV} \oplus G$. Since $P_1 = D_K(C_1) \oplus \mathrm{IV}$, an attacker who changes the IV in transit flips chosen bits of $P_1$.
+  \item \textbf{Why does double DES give only about 57-bit security, and why is 3DES EDE?} The meet-in-the-middle attack tabulates $E_{K_1}(P)$ for all $2^{56}$ keys and matches $D_{K_2}(C)$ for all $2^{56}$ keys, costing $2^{57}$ operations (and $2^{56}$ memory) instead of $2^{112}$. EDE with $K_1 = K_2$ reduces to single DES, so 3DES equipment stays compatible with DES.
+  \item \textbf{Why does PGP sign before compressing and compress before encrypting?} Signing the uncompressed message lets the signature be stored and verified with the plain message and makes it independent of the (non-deterministic) compression algorithm; compressing before encrypting removes redundancy that cryptanalysis could exploit and shortens the data to encrypt (ciphertext would not compress anyway).
+  \item \textbf{What is a PGP key ID and why is it used?} The least significant 64 bits of a public key; it tells the recipient which of several key pairs was used for the session key or the signature without sending the whole public key.
+  \item \textbf{Differentiate owner trust and key legitimacy in PGP.} Owner trust, assigned by the user, says how far the key's owner is trusted to sign other people's keys; key legitimacy, computed by PGP from the trust of the signatures on the key, says how far the key is believed to belong to its user ID.
+  \item \textbf{Differentiate AH and ESP.} AH provides integrity, origin authentication and anti-replay, and its MAC also covers the immutable fields of the IP header, but it gives no confidentiality; ESP provides encryption (confidentiality), optional authentication and anti-replay, and its authentication covers only the ESP header, payload and trailer, not the IP header in front.
+  \item \textbf{Differentiate transport mode and tunnel mode.} Transport mode protects only the IP payload, keeps the original IP header and is used end to end between hosts; tunnel mode protects the entire original packet inside a new IP packet, hides the inner addresses and is used between security gateways (VPN).
+  \item \textbf{What is a security association and how is it identified?} A one-way relationship between sender and receiver that defines the security services (AH or ESP, algorithms, keys, lifetime) for its traffic; it is identified by the SPI, the IP destination address and the security protocol identifier (AH or ESP).
+  \item \textbf{How do Oakley cookies stop a clogging attack?} The responder sends a cookie (a keyed hash of the addresses, ports and a local secret) to the claimed source address and performs the Diffie--Hellman exponentiation only after the cookie is echoed; an attacker using forged addresses never receives the cookie, so he can only make the victim compute cheap hashes.
+  \item \textbf{What does the TLS Finished message achieve?} It is the first message protected under the new keys and contains a PRF value of the master secret and the whole handshake transcript; checking it confirms that both sides have the same keys and that no handshake message (e.g.\ the cipher-suite list) was altered.
+  \item \textbf{Differentiate an SSL session and an SSL connection.} A session is an association created by the handshake that fixes the security parameters and master secret and can be shared by many connections; a connection is a transient peer-to-peer transport with its own keys, MAC secrets, IVs and sequence numbers, always belonging to one session.
+  \item \textbf{What is a dual signature and why does SET need it?} $\mathrm{DS} = E(PR_c, H(H(\mathrm{PI}) \| H(\mathrm{OI})))$; it links the payment information and the order information so that the customer can prove the payment is for this order, while the merchant sees only OI and $H(\mathrm{PI})$ and the bank only PI and $H(\mathrm{OI})$.
+  \item \textbf{Name the four phases of a virus.} Dormant (idle until an event), propagation (copies itself into other programs or system areas), triggering (activated by an event or count), execution (performs its function, harmless or damaging).
+  \item \textbf{Differentiate a virus and a worm.} A virus is a fragment that needs a host program and spreads when infected programs are run or shared; a worm is an independent program that propagates itself over the network (e-mail, remote execution, remote login) without a host.
+  \item \textbf{Differentiate a packet filter and an application-level gateway.} A packet filter decides per packet from IP/TCP header fields, so it is fast and transparent but blind to application content; an application-level gateway relays traffic through a proxy for each allowed application, so it can authenticate users, restrict commands and log everything, at the cost of processing overhead.
+  \item \textbf{State the Bell--LaPadula rules and why both are needed.} No read up (a subject reads only objects at its level or below) and no write down (a subject writes only to objects at its level or above). No read up alone would let a high subject copy what it reads into a low object; the $*$-property blocks that, so information can only flow upwards.
+  \item \textbf{What are the three properties of a reference monitor?} Complete mediation (every access is checked), isolation (the monitor and its database cannot be modified by attackers) and verifiability (its correctness can be proved).
+\end{enumerate}
+
+\subsection*{Practice problems}
+\begin{enumerate}[leftmargin=1.6em,itemsep=4pt]
+  \item Use the toy cipher of \S\ref{sec:modes} with $K = 0001$, whose table is $E_K$: $0 \to 4$, $1 \to \mathrm{E}$, $2 \to 1$, $3 \to \mathrm{D}$, $4 \to \mathrm{F}$, $5 \to 2$, $6 \to 8$, $7 \to \mathrm{B}$, $8 \to \mathrm{A}$, $9 \to 3$, $\mathrm{A} \to \mathrm{C}$, $\mathrm{B} \to 6$, $\mathrm{C} \to 9$, $\mathrm{D} \to 5$, $\mathrm{E} \to 7$, $\mathrm{F} \to 0$ (hex). Encrypt $P = 0101\ 1000\ 0101$ with $\mathrm{IV} = 0001$ in ECB, CBC, CFB (full block), OFB and CTR (counters $\mathrm{IV}, \mathrm{IV}+1, \mathrm{IV}+2$), decrypt the CBC result, and comment. \hfill (8 marks)\\
+  \textbf{Solution.}
+  \begin{center}\small
+  \begin{tabular}{@{}c c c c c c c@{}}
+  \toprule
+  $i$ & $P_i$ & ECB $E_K(P_i)$ & CBC: $P_i \oplus C_{i-1} \to C_i$ & CFB: $E_K(C_{i-1}) \to C_i$ & OFB: $O_i \to C_i$ & CTR: $T_i, E_K(T_i) \to C_i$\\
+  \midrule
+  1 & 0101 & 0010 & $0101 \oplus 0001 = 0100 \to 1111$ & $E_K(0001) = 1110 \to 1011$ & $1110 \to 1011$ & $0001, 1110 \to 1011$\\
+  2 & 1000 & 1010 & $1000 \oplus 1111 = 0111 \to 1011$ & $E_K(1011) = 0110 \to 1110$ & $0111 \to 1111$ & $0010, 0001 \to 1001$\\
+  3 & 0101 & 0010 & $0101 \oplus 1011 = 1110 \to 0111$ & $E_K(1110) = 0111 \to 0010$ & $1011 \to 1110$ & $0011, 1101 \to 1000$\\
+  \bottomrule
+  \end{tabular}
+  \end{center}
+  Results: ECB \textbf{0010 1010 0010}; CBC \textbf{1111 1011 0111}; CFB \textbf{1011 1110 0010}; OFB \textbf{1011 1111 1110}; CTR \textbf{1011 1001 1000}.\\
+  CBC decryption: $D_K(1111) \oplus 0001 = 0100 \oplus 0001 = 0101$; $D_K(1011) \oplus 1111 = 0111 \oplus 1111 = 1000$; $D_K(0111) \oplus 1011 = 1110 \oplus 1011 = 0101$ $= P$ \checkmark.\\
+  Comment: ECB repeats $C_1 = C_3$ because $P_1 = P_3$; the other modes hide it. CFB, OFB and CTR share $C_1 = P_1 \oplus E_K(\mathrm{IV}) = 1011$, since all three start with the mask $E_K(\mathrm{IV})$.
+
+  \item With the same toy cipher, encrypt $P = 1010\ 1010\ 0011$ in CFB mode with $s = 2$ bits (six 2-bit segments) and $\mathrm{IV} = 0110$. Then the leftmost bit of the second ciphertext segment is flipped; decrypt and state which segments are wrong. \hfill (6 marks)\\
+  \textbf{Solution.} $C_i = P_i \oplus \mathrm{MSB}_2(E_K(SR_i))$, $SR_{i+1} = $ (last 2 bits of $SR_i$) $\| C_i$.
+  \begin{center}\small
+  \begin{tabular}{@{}c c c c c c@{}}
+  \toprule
+  $i$ & $SR_i$ & $E_K(SR_i)$ & mask & $P_i$ & $C_i$\\
+  \midrule
+  1 & 0110 & 1000 & 10 & 10 & 00\\
+  2 & 1000 & 1010 & 10 & 10 & 00\\
+  3 & 0000 & 0100 & 01 & 10 & 11\\
+  4 & 0011 & 1101 & 11 & 10 & 01\\
+  5 & 1101 & 0101 & 01 & 00 & 01\\
+  6 & 0101 & 0010 & 00 & 11 & 11\\
+  \bottomrule
+  \end{tabular}
+  \end{center}
+  Ciphertext: \textbf{00 00 11 01 01 11}. With $C'_2 = 10$: $P'_2 = 10 \oplus 10 = 00$ (only the flipped bit wrong); $SR'_3 = 0010$, $E_K = 0001$, mask 00, $P'_3 = 11$ (wrong); $SR'_4 = 1011$, $E_K = 0110$, mask 01, $P'_4 = 00$ (wrong); $SR_5 = 1101$ is correct again, so $P_5, P_6$ are correct. \textbf{Segments 2, 3, 4 are affected} $= 1 + n/s = 1 + 4/2$ \checkmark.
+
+  \item A 1000-block file is encrypted with AES-128. During transmission one bit of ciphertext block 10 (in CFB-8, one bit of ciphertext byte $j$) is flipped. How much plaintext is damaged in ECB, CBC, CFB-8, OFB and CTR? What happens instead if one ciphertext byte is \emph{lost}? \hfill (5 marks)\\
+  \textbf{Solution.} ECB: block 10 garbled (\textbf{1 block}). CBC: block 10 garbled and the same bit of block 11 flipped (\textbf{2 blocks}). CFB-8: the same bit of byte $j$ flipped, then the bad byte stays in the 128-bit register for $128/8 = 16$ more bytes, which are garbled: $1 + 16 = $ \textbf{17 bytes}. OFB and CTR: \textbf{only that one bit}. A lost byte: CFB-8 resynchronises by itself after 16 bytes; in OFB and CTR the key stream is shifted against all later bytes, so everything after the loss is garbled until resynchronisation; in ECB and CBC the block boundaries shift and all later blocks are garbled.
+
+  \item A block cipher has a 48-bit key and a 64-bit block. (a) What is the cost of brute force on one encryption? (b) For double encryption $C = E_{K_2}(E_{K_1}(P))$, give the time and memory of the meet-in-the-middle attack. (c) How many false key pairs survive one known plaintext pair, and how many survive two? \hfill (5 marks)\\
+  \textbf{Solution.} (a) $\mathbf{2^{48}}$ trials. (b) Encrypt $P$ under all $2^{48}$ values of $K_1$ and store the middle values, then decrypt $C$ under all $2^{48}$ values of $K_2$: time $2^{48} + 2^{48} = \mathbf{2^{49}}$ encryptions instead of $2^{96}$; memory $2^{48}$ entries of $8 + 6 = 14$ bytes $\approx \mathbf{3.9 \times 10^{15}}$ bytes (about 4 PB). (c) $2^{96}$ key pairs map onto $2^{64}$ middle values, so about $2^{96}/2^{64} = \mathbf{2^{32}}$ pairs match one known pair; a second pair keeps each with probability $2^{-64}$, leaving $2^{32} \cdot 2^{-64} = 2^{-32} < 1$ false pairs, so the right key is identified.\\
+  \emph{Check}: double encryption gained only one bit ($2^{48} \to 2^{49}$).
+
+  \item (a) Radix-64 encode the ASCII string ``CNS''. (b) A 45\,000-byte message is signed (signature component 280 bytes), ZIP compresses with ratio 2.5, and the session key component is 270 bytes. Ignoring line breaks and the CRC, how many radix-64 characters are sent, and how many segments if the mailer limit is 10\,000 characters? \hfill (5 marks)\\
+  \textbf{Solution.} (a) \ttx{43 4E 53} $= 01000011\ 01001110\ 01010011 \to 010000\ 110100\ 111001\ 010011 = 16, 52, 57, 19 \to$ \textbf{Q, 0, 5, T}: ``\ttx{Q05T}''.\\
+  (b) Signed $45\,280$ bytes; compressed $45\,280/2.5 = 18\,112$; plus session key component $18\,382$; radix-64 $\lceil 18\,382/3 \rceil \times 4 = 6128 \times 4 = \mathbf{24\,512}$ characters; segments $\lceil 24\,512/10\,000 \rceil = \mathbf{3}$.\\
+  \emph{Check}: $24\,512/45\,000 = 0.54 \approx \frac{1}{2.5} \cdot \frac43 = 0.53$.
+
+  \item In PGP, Alice sets $X = 2$ and $Y = 4$, i.e.\ a signature by an always-trusted introducer weighs $\frac12$ and one by a usually-trusted introducer $\frac14$; a key is complete at weight 1. Find the legitimacy of keys signed by (a) two always-trusted introducers, (b) one always and one usually, (c) one always and two usually, (d) four usually, (e) three usually. \hfill (3 marks)\\
+  \textbf{Solution.} (a) $\frac12 + \frac12 = 1$: \textbf{complete}. (b) $\frac12 + \frac14 = \frac34$: \textbf{marginal}. (c) $\frac12 + \frac14 + \frac14 = 1$: \textbf{complete}. (d) $4 \cdot \frac14 = 1$: \textbf{complete}. (e) $\frac34$: \textbf{marginal}.
+
+  \item A 100-byte TCP segment is protected by IPSec with a 20-byte IPv4 header. Find the packet size with (a) AH (HMAC-SHA-1-96) in transport and tunnel mode, (b) ESP with 3DES-CBC (8-byte blocks, 8-byte IV) and HMAC-SHA-1-96, in transport and tunnel mode, giving the padding. \hfill (5 marks)\\
+  \textbf{Solution.} AH $= 12 + 12 = 24$ bytes. (a) Transport $20 + 24 + 100 = \mathbf{144}$; tunnel $20 + 24 + 120 = \mathbf{164}$.\\
+  (b) Encrypted part $=$ payload $+$ padding $+ 2$, a multiple of 8. Transport: $100 + 2 = 102$, padding $(-102) \bmod 8 = \mathbf{2}$, encrypted 104; total $20 + 8 + 8 + 104 + 12 = \mathbf{152}$. Tunnel: payload $= 120$, $122$, padding $\mathbf{6}$, encrypted 128; total $20 + 8 + 8 + 128 + 12 = \mathbf{176}$.\\
+  \emph{Check}: $104 = 13 \times 8$, $128 = 16 \times 8$.
+
+  \item An IPSec receiver uses an anti-replay window of $W = 8$ with right edge $N = 50$; valid packets 43, 44, 45, 47, 48, 50 have been received. Packets with numbers 46, 50, 52, 44, 49 arrive in that order, all with valid MACs. State the action for each and the final window. \hfill (4 marks)\\
+  \textbf{Solution.} Window 43--50. \textbf{46}: inside, unmarked, accept and mark. \textbf{50}: inside, already marked, replay, discard. \textbf{52}: right of the window, accept; window moves to \textbf{45--52}. \textbf{44}: now left of the window, discard. \textbf{49}: inside, unmarked, accept. Final window 45--52 with 45, 46, 47, 48, 49, 50, 52 marked (51 still awaited).
+
+  \item A server sends a 50\,000-byte HTTP response over TLS 1.0 with TLS\_RSA\_WITH\_AES\_128\_CBC\_SHA. How many records are sent and how many bytes go on the wire (record header 5 bytes; MAC 20 bytes; CBC padding including the pad-length byte up to a multiple of 16)? How long is the key block? \hfill (5 marks)\\
+  \textbf{Solution.} Records: $\lceil 50\,000/16\,384 \rceil = \mathbf{4}$: three of 16\,384 bytes and one of $50\,000 - 3 \times 16\,384 = 848$.\\
+  Full record: $16\,384 + 20 + 1 = 16\,405$, padded to $16\,416$ (11 padding bytes $+$ 1 length byte), $+5 = 16\,421$. Last: $848 + 20 + 1 = 869 \to 880$, $+5 = 885$. Total $3 \times 16\,421 + 885 = \mathbf{50\,148}$ bytes, an overhead of 148 bytes.\\
+  Key block: $2 \times 20 + 2 \times 16 + 2 \times 16 = \mathbf{104}$ bytes.
+
+  \item In SET, use the toy hash $H(x) = (7x + 3) \bmod 101$, concatenation $a \| b = 1000a + b$, and the customer's RSA key $n = 221$, $e = 5$, $d = 77$. For $\mathrm{PI} = 4321$ and $\mathrm{OI} = 555$, compute PIMD, OIMD, POMD and the dual signature, and show the bank's verification. \hfill (5 marks)\\
+  \textbf{Solution.} $\mathrm{PIMD} = 30\,250 \bmod 101 = 51$; $\mathrm{OIMD} = 3888 \bmod 101 = 50$; $\mathrm{POMD} = H(51\,050) = 357\,353 \bmod 101 = 15$; $\mathrm{DS} = 15^{77} \bmod 221 = \mathbf{19}$.\\
+  Bank (has PI, OIMD, DS): $H(H(4321) \| 50) = H(51\,050) = 15$ and $19^5 \bmod 221 = 15$: equal, so the payment is genuine and bound to this order. The merchant does the same with $H(\mathrm{PIMD} \| H(\mathrm{OI}))$.\\
+  \emph{Check}: $5 \times 77 = 385 = 2 \times 192 + 1$, with $\phi(221) = 12 \times 16 = 192$.
+
+  \item Network 192.168.5.0/24 has a mail server 192.168.5.25 and an SSH server 192.168.5.10. Policy: accept mail from anyone to the mail server; allow SSH to 192.168.5.10 only from the administrator's home address 203.0.113.7; let inside hosts use outside web servers (HTTPS) and DNS (UDP 53); block everything else, including spoofed inside addresses. Write the packet-filter rule table. \hfill (6 marks)\\
+  \textbf{Solution.}
+  \begin{center}\small\setlength{\tabcolsep}{3.5pt}
+  \begin{tabular}{@{}c l l l l l l l l@{}}
+  \toprule
+  \# & Dir & Source & Src port & Destination & Dst port & Proto/flag & Action & Purpose\\
+  \midrule
+  1 & in & 192.168.5.0/24 & * & * & * & * & deny & anti-spoofing\\
+  2 & in & * & * & 192.168.5.25 & 25 & TCP & allow & incoming mail\\
+  3 & out & 192.168.5.25 & 25 & * & * & TCP, ACK & allow & mail server replies\\
+  4 & in & 203.0.113.7 & * & 192.168.5.10 & 22 & TCP & allow & admin SSH\\
+  5 & out & 192.168.5.10 & 22 & 203.0.113.7 & * & TCP, ACK & allow & SSH replies\\
+  6 & out & 192.168.5.0/24 & $>1023$ & * & 443 & TCP & allow & web requests\\
+  7 & in & * & 443 & 192.168.5.0/24 & $>1023$ & TCP, ACK & allow & web replies\\
+  8 & out & 192.168.5.0/24 & * & * & 53 & UDP & allow & DNS queries\\
+  9 & in & * & 53 & 192.168.5.0/24 & * & UDP & allow & DNS answers\\
+  10 & * & * & * & * & * & * & deny & default discard\\
+  \bottomrule
+  \end{tabular}
+  \end{center}
+  The rules are checked top-down and the first match wins. The ACK requirement in rules 3, 5 and 7 admits only packets of connections opened from the other side. Rule 9 cannot use ACK, since UDP has no connection state, so it admits any packet from source port 53; a stateful firewall would admit only answers to queries actually sent.
+
+  \item Levels U $<$ C $<$ S $<$ TS. Alice is cleared to S, Bob to C. Under Bell--LaPadula, which operations are allowed: (a) Alice reads a TS file; (b) Alice reads a C file; (c) Alice writes a C file; (d) Bob writes a TS file; (e) Bob reads an S file; (f) Alice writes an S file? (g) Bob (C) runs a program written by Alice; can it copy a C file into a U file? \hfill (4 marks)\\
+  \textbf{Solution.} (a) \textbf{No} (read up). (b) \textbf{Yes} (read down). (c) \textbf{No} (write down: Alice could leak S data into C). (d) \textbf{Yes} (write up, blind append). (e) \textbf{No} (read up). (f) \textbf{Yes} (same level). (g) The program runs at Bob's level C; it may read the C file, but writing to a U file is a write down, so the reference monitor \textbf{refuses} it, whatever the ACL of the U file says. This is exactly how a trusted system stops a Trojan horse.
+
+  \item ``Draw and explain'' outlines. (a) The SSL/TLS handshake. (b) IPSec transport and tunnel mode packets for AH and ESP. (c) A screened subnet firewall. \hfill (8 marks each)\\
+  \textbf{Model answers.} (a) Draw Client and Server lifelines and the four phases (figure in \S\ref{sec:tls}). Phase 1: client\_hello (version, 32-byte random, session ID, cipher suites, compression) and server\_hello (chosen version, random, session ID, one suite). Phase 2: certificate, server\_key\_exchange (signed DH parameters, over both randoms), certificate\_request, server\_hello\_done. Phase 3: client certificate, client\_key\_exchange (pre-master secret under the server's RSA key or $g^x$), certificate\_verify (signature on the transcript). Phase 4: change\_cipher\_spec and finished from each side. Then explain the master secret $= \mathrm{PRF}(\text{pre-master}, \text{``master secret''}, R_C \| R_S)$, why the randoms prevent replay, and how Finished detects tampering. (b) Draw the five rows (original, AH transport, AH tunnel, ESP transport, ESP tunnel) with the authenticated and encrypted spans (figure in \S\ref{sec:ipsec}); state that transport mode protects the payload end to end and tunnel mode wraps the whole packet in a new header between gateways, and that AH authenticates the immutable outer header fields while ESP authenticates only from its own header on. (c) Draw Internet -- outer router -- DMZ (bastion host, public servers) -- inner router -- internal network (figure in \S\ref{sec:syssec}); explain the bastion host, the three levels of defence, that the outer router advertises only the DMZ to the Internet and the inner router only the DMZ to the inside, so no direct route exists between the Internet and the internal network; compare with the single- and dual-homed screened host configurations.
+\end{enumerate}

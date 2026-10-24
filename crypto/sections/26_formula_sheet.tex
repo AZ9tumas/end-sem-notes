@@ -93,6 +93,7 @@ Everything below is derived and explained in the chapter named in the right-hand
 \fsrow{Diffie--Hellman}{$R_1 = g^x$, $R_2 = g^y \bmod p$; $K = R_2^x = R_1^y = g^{xy} \bmod p$; MITM: Eve's $z$ gives $g^{xz}$ (Alice--Eve) and $g^{yz}$ (Eve--Bob)}{\S\ref{sec:keymgmt}}
 \fsrow{Lamport one-time password}{server stores $(n, h^n(P))$; user sends $h^{n-1}(P)$; accept iff $h(\text{received}) = $ stored; then store $(n - 1, h^{n-1}(P))$}{\S\ref{sec:entityauth}}
 \fsrow{Fiat--Shamir}{$n = pq$, $v = s^2 \bmod n$; $x = r^2$, $c \in \{0, 1\}$, $y = r s^c$; accept iff $y^2 \equiv x v^c$; cheating $2^{-k}$ in $k$ rounds}{\S\ref{sec:entityauth}}
+\fsrow{Feige--Fiat--Shamir}{secrets $s_1..s_k$, public $v_i = (s_i^2)^{-1} \bmod n$; $x = r^2$, challenge bits $c_i$, $y = r\prod s_i^{c_i}$; accept iff $y^2 \prod v_i^{c_i} \equiv x$; cheating $2^{-k}$ per round}{\S\ref{sec:entityauth}}
 \fsrow{Guillou--Quisquater}{$s^e v \equiv 1 \pmod n$; $x = r^e$, $c \in [1, e]$, $y = r s^c$; accept iff $y^e v^c \equiv x$}{\S\ref{sec:entityauth}}
 \fsrow{BB84}{keep positions where bases agree ($\approx \frac12$); intercept--resend Eve causes $25\%$ errors in the sifted key}{\S\ref{sec:othertech}}
 \bottomrule
