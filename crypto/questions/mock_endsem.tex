@@ -1,15 +1,19 @@
 % Mock end-sem paper in the style of the CSN15403 mid-sem papers (textbook-phrased, numericals with full justification).
 % Every number recomputed by script (scratchpad/mock/mock3.py).
 \clearpage
-\section{Mock End-Sem Paper}\label{q:mock}
+\section{Mock End-Sem Papers}\label{q:mock}
 
-\begin{keybox}[title=Instructions (format assumed for practice)]
-Time: 3 hours. Maximum marks: 50. Attempt all questions. Precise answers with proper justification will be considered for complete marks; show every intermediate value in numericals and draw a labelled diagram for every protocol. Sit it in one go with a timer, then mark yourself against the model answers that follow.
+Two mocks follow. \textbf{Paper A} sweeps the post-mid-sem syllabus in ten shorter questions. \textbf{Paper B} copies the real format exactly (six questions, 150 minutes, 50 marks, a context paragraph and then theory plus a small-number numerical) and targets what the two real papers have not asked yet, so treat it as the predicted paper.
+
+\subsection{Mock Paper A: topic sweep}
+
+\begin{keybox}[title=Instructions]
+Time: 150 minutes. Maximum marks: 50. Attempt all questions. Precise answers with proper justification will be considered for complete marks; show every intermediate value in numericals and draw a labelled diagram for every protocol. Sit it in one go with a timer, then mark yourself against the model answers that follow.
 \end{keybox}
 
 \begin{enumerate}[leftmargin=2em,itemsep=6pt,label=\textbf{Q\arabic*.}]
 \item (a) Differentiate a modification detection code (MDC), a message authentication code (MAC) and a digital signature with respect to the security services provided and the keys used. \hfill [3]\\
-(b) Draw the structure of HMAC and explain why it uses two nested hash computations instead of $h(K \,|\, M)$. \hfill [4]
+(b) Draw the structure of HMAC and explain why it uses two nested hash computations instead of $h(K \,|\, M)$. \hfill [3]
 
 \item Alice uses RSA digital signatures with $p = 11$, $q = 17$ and public exponent $e = 7$.\\
 (a) Find her private exponent $d$ using the extended Euclidean algorithm. \hfill [2]\\
@@ -23,23 +27,23 @@ Time: 3 hours. Maximum marks: 50. Attempt all questions. Precise answers with pr
 \item In the Digital Signature Standard take $p = 23$, $q = 11$, $e_0 = 5$, the private key $d = 4$, the random secret $r = 3$ and the digest $h(M) = 7$. Compute $e_1$, $e_2$, the signature $(S_1, S_2)$ and verify it. \hfill [5]
 
 \item (a) Alice and Bob run Diffie--Hellman with $p = 353$ and $g = 3$; Alice picks $x = 97$ and Bob picks $y = 233$. Compute $R_1$, $R_2$ and the shared key. \hfill [3]\\
-(b) Eve mounts a man-in-the-middle attack with her secret $z = 50$. Compute the key Alice shares with Eve and the key Eve shares with Bob, and explain how the station-to-station protocol prevents this. \hfill [4]
+(b) Eve mounts a man-in-the-middle attack with her secret $z = 50$. Compute the key Alice shares with Eve and the key Eve shares with Bob, and explain how the station-to-station protocol prevents this. \hfill [3]
 
-\item Draw the Kerberos (version 4) protocol and explain each message. Why is the ticket-granting server separate from the authentication server? List three differences between Kerberos v4 and v5. \hfill [6]
+\item Draw the Kerberos (version 4) protocol and explain each message. Why is the ticket-granting server separate from the authentication server? List three differences between Kerberos v4 and v5. \hfill [5]
 
 \item In the Fiat--Shamir protocol a trusted centre publishes $n = 77$. Alice's secret is $s = 9$.\\
-(a) Compute Alice's public value $v$. In one round Alice chooses $r = 15$. Show the commitment, the response and Bob's check for both possible challenges $c = 0$ and $c = 1$. \hfill [3]\\
+(a) Compute Alice's public value $v$. In one round Alice chooses $r = 15$. Show the commitment, the response and Bob's check for both possible challenges $c = 0$ and $c = 1$. \hfill [2]\\
 (b) How does an impostor who does not know $s$ succeed with probability $1/2$ in a round, and how many rounds make her success probability less than one in a million? \hfill [2]
 
-\item (a) Compare CBC and CTR modes with respect to parallelism, error propagation and the requirement on the IV/counter. \hfill [3]\\
-(b) In BB84 quantum key distribution, explain why an eavesdropper who measures and resends every photon is detected, and derive the error rate she introduces. \hfill [3]
+\item (a) Compare CBC and CTR modes with respect to parallelism, error propagation and the requirement on the IV/counter. \hfill [2]\\
+(b) In BB84 quantum key distribution, explain why an eavesdropper who measures and resends every photon is detected, and derive the error rate she introduces. \hfill [2]
 
-\item Write short notes on any two: (a) X.509 certificate format, (b) salting of passwords, (c) the dual signature in SET, (d) types of firewalls. \hfill [4]
+\item Write short notes on any two: (a) X.509 certificate format, (b) salting of passwords, (c) the dual signature in SET, (d) types of firewalls. \hfill [3]
 
-\item On the elliptic curve $E_{11}(1, 6)$: $y^2 = x^3 + x + 6 \pmod{11}$, with $G = (2, 7)$, compute $2G$ and $3G$. \hfill [4]
+\item On the elliptic curve $E_{11}(1, 6)$: $y^2 = x^3 + x + 6 \pmod{11}$, with $G = (2, 7)$, compute $2G$ and $3G$. \hfill [3]
 \end{enumerate}
 
-\subsection*{Model answers}
+\subsubsection*{Model answers (Paper A)}
 
 \textbf{Q1 (a).} An \emph{MDC} is a plain hash $h(M)$: it uses no key and gives only \emph{integrity}, and only if the digest itself reaches the receiver over a safe channel, since anyone can recompute it for a forged message. A \emph{MAC} is a keyed hash $h(K, M)$ under a secret key shared by the two parties: it gives integrity and \emph{message (data-origin) authentication}, but not nonrepudiation, because the receiver holds the same key and could have produced the MAC himself. A \emph{digital signature} is computed with the sender's \emph{private} key and verified with her \emph{public} key: it gives integrity, authentication and \emph{nonrepudiation}, since only the signer could have produced it. None of the three gives confidentiality. (Details: \S\ref{sec:mac}, \S\ref{sec:dsig}.)
 
@@ -118,3 +122,79 @@ $x_3 = \lambda^2 - 2x_1 = 64 - 4 = 60 \equiv 5$, $\;y_3 = \lambda(x_1 - x_3) - y
 Adding $2G + G = (5, 2) + (2, 7)$: $\lambda = (7 - 2)(2 - 5)^{-1} = 5 \cdot (-3)^{-1} = 5 \cdot 8^{-1} = 5 \cdot 7 = 35 \equiv 2$.
 $x_3 = 4 - 5 - 2 = -3 \equiv 8$, $\;y_3 = 2(5 - 8) - 2 = -8 \equiv 3$. So $3G = \mathbf{(8, 3)}$.
 Check: $3^2 = 9$ and $8^3 + 8 + 6 = 526 = 47 \cdot 11 + 9$ \checkmark.
+
+%====================================================================
+\clearpage
+\subsection{Mock Paper B: the real format (predicted paper)}
+
+\begin{keybox}[title=Instructions]
+Duration: 150 minutes. Max.\ marks: 50. Attempt all questions and in the same order. Precise answer with proper justification will be considered to get complete marks.
+\end{keybox}
+
+\begin{enumerate}[leftmargin=2em,itemsep=7pt,label=\textbf{Q\arabic*.}]
+\item Elliptic curve cryptography achieves with a 160-bit key the security that RSA needs 1024 bits for, which is why it is used on constrained devices. (a) Explain the point addition and point doubling rules over GF$(p)$ and the elliptic-curve discrete logarithm problem. \hfill [3]\\
+(b) Bob uses $E_{17}(2, 2)$: $y^2 = x^3 + 2x + 2 \pmod{17}$ with $e_1 = (5, 1)$ and private key $d = 7$. Find his public key. Alice encrypts the plaintext point $P = (6, 3)$ with $r = 4$; find $(C_1, C_2)$ and show how Bob decrypts. \hfill [7]
+
+\item The Digital Signature Standard signs a digest of the message with a pair of numbers modulo a small prime $q$. (a) Explain key generation, signing and verification, and prove that a valid signature always verifies. \hfill [4]\\
+(b) Let $p = 607$, $q = 101$, $e_0 = 3$, $d = 39$, $r = 23$ and $h(M) = 89$. Find $e_1$, $e_2$, $(S_1, S_2)$ and verify the signature. \hfill [6]
+
+\item Zero-knowledge protocols let a claimant prove that she knows a secret without revealing it. (a) Explain the Guillou--Quisquater protocol and prove its verification condition; compare it with Fiat--Shamir in rounds and cheating probability. \hfill [4]\\
+(b) With $n = 13 \times 23$, $e = 5$ and Alice's secret $s = 17$, find her public value $v$. In one round Alice picks $r = 71$ and Bob sends the challenge $c = 3$; compute $x$, $y$ and Bob's check. \hfill [6]
+
+\item Kerberos is an authentication service that lets a user log in once and then use many servers. Draw the Kerberos protocol, explain each message and the purpose of the ticket and the authenticator, and explain why the ticket-granting server is separate from the authentication server. \hfill [7]
+
+\item (a) Explain HMAC with a diagram. Why is the security of a MAC said to depend on the underlying hash? \hfill [4]\\
+(b) A hash function produces 64-bit digests. Using the birthday problems, estimate the number of messages Eve must hash to find (i) a message with a given digest, (ii) any two messages with the same digest, with probability at least $1/2$. \hfill [3]
+
+\item (a) RSA decryption is about four times faster with the Chinese remainder theorem. With $p = 11$, $q = 13$ and $e = 7$, find $d$ and decrypt $C = 136$ using the CRT. \hfill [6]\\
+(b) Write short notes on: (i) X.509 certificate (ii) avalanche effect (iii) Playfair cipher. \hfill [6]
+\end{enumerate}
+
+\subsubsection*{Model answers (Paper B)}
+
+\textbf{Q1 (a).} For $P = (x_1, y_1)$, $Q = (x_2, y_2)$ on $y^2 = x^3 + ax + b$ over GF$(p)$: if $P \ne \pm Q$, $\lambda = (y_2 - y_1)(x_2 - x_1)^{-1}$; if $P = Q$ (doubling), $\lambda = (3x_1^2 + a)(2y_1)^{-1}$; in both cases $x_3 = \lambda^2 - x_1 - x_2$, $y_3 = \lambda(x_1 - x_3) - y_1 \pmod p$. $P + (-P) = O$ (the point at infinity) with $-P = (x_1, -y_1)$. Scalar multiplication $k \times P$ is repeated doubling and adding, which is fast; the ECDLP, finding $d$ from $e_1$ and $e_2 = d \times e_1$, has no sub-exponential algorithm (only Pollard rho, $\approx\sqrt q$ steps), which is why short keys suffice.
+
+\textbf{Q1 (b).} Public key $e_2 = 7 \times e_1$ by doubling and adding (all mod 17):
+\begin{center}\small
+\begin{tabular}{@{}llll@{}}
+\toprule
+Step & $\lambda$ & $x_3$ & $y_3$\\
+\midrule
+$2e_1 = 2(5, 1)$ & $(75 + 2)/2 \equiv 9 \cdot 2^{-1} = 9 \cdot 9 = 81 \equiv 13$ & $169 - 10 \equiv 6$ & $13(5 - 6) - 1 \equiv 3$\\
+$3e_1 = (6, 3) + (5, 1)$ & $(1 - 3)/(5 - 6) = 2$ & $4 - 11 \equiv 10$ & $2(6 - 10) - 3 \equiv 6$\\
+$6e_1 = 2(10, 6)$ & $302/12 \equiv 13 \cdot 12^{-1} = 13 \cdot 10 = 130 \equiv 11$ & $121 - 20 \equiv 16$ & $11(10 - 16) - 6 \equiv 13$\\
+$7e_1 = (16, 13) + (5, 1)$ & $(1 - 13)/(5 - 16) \equiv 5/6 = 5 \cdot 3 = 15$ & $225 - 21 \equiv 0$ & $15(16 - 0) - 13 \equiv 6$\\
+\bottomrule
+\end{tabular}
+\end{center}
+Public key $(a, b, p, e_1, e_2) = (2, 2, 17, (5, 1), (0, 6))$, private $d = 7$.
+Encryption: $C_1 = 4e_1 = 2(6, 3)$: $\lambda = (108 + 2)/6 \equiv 8 \cdot 6^{-1} = 8 \cdot 3 = 24 \equiv 7$, $x = 49 - 12 \equiv 3$, $y = 7(6 - 3) - 3 = 18 \equiv 1$, so $C_1 = (3, 1)$.
+$4e_2$: $2(0, 6)$ has $\lambda = 2/12 \equiv 2 \cdot 10 = 20 \equiv 3$, giving $(9, 1)$; $2(9, 1)$ has $\lambda = 245/2 \equiv 7 \cdot 9 = 63 \equiv 12$, giving $(7, 6)$.
+$C_2 = P + 4e_2 = (6, 3) + (7, 6)$: $\lambda = 3/1 = 3$, $x = 9 - 13 \equiv 13$, $y = 3(6 - 13) - 3 = -24 \equiv 10$, so $C_2 = (13, 10)$. \textbf{Ciphertext} $((3, 1), (13, 10))$.
+Decryption: $d \times C_1 = 7(3, 1) = 28e_1$, and $e_1$ has order 19, so $28e_1 = 9e_1 = (7, 6)$ (equal to $4e_2$, as it must be). $P = C_2 - (7, 6) = (13, 10) + (7, 11)$: $\lambda = 1/(-6) \equiv 1 \cdot 11^{-1} = 14$, $x = 196 - 20 \equiv 6$, $y = 14(13 - 6) - 10 = 88 \equiv 3$, i.e.\ $\mathbf{(6, 3)} = P$ \checkmark.
+
+\textbf{Q2 (a).} As in End-Sem 2023--24 Q2(a): $e_1 = e_0^{(p-1)/q}$ of order $q$, $e_2 = e_1^d$; $S_1 = (e_1^r \bmod p) \bmod q$, $S_2 = (h(M) + dS_1) r^{-1} \bmod q$; verify $V = (e_1^{h(M)S_2^{-1}} e_2^{S_1 S_2^{-1}} \bmod p) \bmod q = S_1$, because the exponent $h(M)S_2^{-1} + dS_1S_2^{-1} = (h(M) + dS_1)S_2^{-1} \equiv r \pmod q$ and $e_1$ has order $q$.
+
+\textbf{Q2 (b).} $606 = 6 \times 101$. $e_1 = 3^6 = 729 \bmod 607 = \mathbf{122}$; $e_2 = 122^{39} \bmod 607 = \mathbf{247}$ ($39 = 100111_2$: $122 \to 316 \to 308 \to 172 \cdot 122 \equiv 346 \to 137 \cdot 122 \equiv 325 \to 7 \cdot 122 \equiv 247$).
+$e_1^{23} \bmod 607 = 552$ ($23 = 10111_2$: $122 \to 316 \to 308 \cdot 122 \equiv 549 \to 329 \cdot 122 \equiv 76 \to 313 \cdot 122 \equiv 552$), so $S_1 = 552 \bmod 101 = \mathbf{47}$.
+$r^{-1} = 23^{-1} \bmod 101 = 22$ ($506 = 5 \cdot 101 + 1$); $h + dS_1 = 89 + 1833 = 1922 \equiv 3$; $S_2 = 3 \cdot 22 = \mathbf{66}$.
+Verify: $w = 66^{-1} \bmod 101 = 75$ ($4950 = 49 \cdot 101 + 1$); $A = 89 \cdot 75 = 6675 \equiv 9$; $B = 47 \cdot 75 = 3525 \equiv 91 \pmod{101}$; $e_1^9 \bmod 607 = 346$, $e_2^{91} \bmod 607 = 570$; $346 \cdot 570 = 197220 \equiv 552 \pmod{607}$; $V = 552 \bmod 101 = 47 = S_1$ \checkmark.
+
+\textbf{Q3 (a).} Guillou--Quisquater: $n = pq$ and a public exponent $e$ with $\gcd(e, \phi(n)) = 1$; Alice's secret $s$, public $v$ with $s^e v \equiv 1 \pmod n$. Round: commitment $x = r^e \bmod n$; challenge $c \in [1, e]$; response $y = r s^c \bmod n$; Bob accepts iff $y^e v^c \equiv x \pmod n$. Proof: $y^e v^c = r^e s^{ce} v^c = r^e (s^e v)^c = x \cdot 1^c = x$. A cheater must guess $c$ out of $e$ values, so she passes a round with probability $1/e$ instead of $1/2$; hence far fewer rounds are needed than in Fiat--Shamir ($e = 2^{16}+1$ gives $< 2^{-16}$ per round), at the cost of exponentiations by $e$ instead of squarings.
+
+\textbf{Q3 (b).} $n = 299$, $\phi = 264$, $\gcd(5, 264) = 1$, $\gcd(17, 299) = 1$. $s^e = 17^5 \bmod 299 = 205$, so $v = 205^{-1} \bmod 299 = \mathbf{264}$ (check $205 \cdot 264 = 54120 = 181 \cdot 299 + 1$).
+Commitment $x = 71^5 \bmod 299 = \mathbf{262}$ ($5 = 101_2$: $71 \to 71^2 = 5041 \equiv 257 \to 257^2 \equiv 269,\ 269 \cdot 71 \equiv 262$).
+Response $y = r s^c = 71 \cdot 17^3 \bmod 299 = 71 \cdot 129 \bmod 299 = 9159 \bmod 299 = \mathbf{189}$.
+Bob's check: $y^e = 189^5 \bmod 299 = 89$, $v^c = 264^3 \bmod 299 = 181$, and $89 \cdot 181 = 16109 \equiv 262 = x$ \checkmark.
+
+\textbf{Q4.} See the model answer of Mock A Q6 and \S\ref{sec:keymgmt} (Kerberos): AS issues a TGT encrypted under the user's password-derived key; the TGS issues service tickets; the authenticator (a fresh timestamp under the session key) proves the ticket holder is its owner and stops replay; mutual authentication by $T + 1$; the TGS split gives single sign-on with one password entry.
+
+\textbf{Q5 (a).} HMAC $= h[(K^+ \oplus \text{opad}) \,\|\, h[(K^+ \oplus \text{ipad}) \,\|\, M]]$ (diagram and reasons as in Mock A Q1(b)). A MAC's forgery resistance reduces to the hash: exhaustive key search is blocked by a long key, so Eve's best routes are preimage or collision attacks on $h$, and length-extension weaknesses of the iterated hash are what the nested structure removes.
+
+\textbf{Q5 (b).} $N = 2^{64}$. (i) Problem 1: $k \approx 0.69N = 0.69 \times 2^{64} \approx 1.28 \times 10^{19}$ messages (order $2^{64}$). (ii) Problem 3: $k \approx 1.18\sqrt N = 1.18 \times 2^{32} \approx \mathbf{5.07 \times 10^9}$ (order $2^{32}$), which is feasible; hence 64-bit digests are insecure and modern hashes use at least 256 bits.
+
+\textbf{Q6 (a).} $n = 143$, $\phi = 120$, $d = 7^{-1} \bmod 120 = \mathbf{103}$ ($7 \cdot 103 = 721 = 6 \cdot 120 + 1$). CRT decryption: $d_p = d \bmod 10 = 3$, $d_q = d \bmod 12 = 7$; $C \bmod 11 = 4$, $C \bmod 13 = 6$.
+$m_p = 4^3 \bmod 11 = 64 \bmod 11 = 9$; $\;m_q = 6^7 \bmod 13$: $6^2 \equiv 10$, $6^4 \equiv 9$, $6^7 = 6^4 \cdot 6^2 \cdot 6 \equiv 9 \cdot 10 \cdot 6 = 540 \equiv 7$.
+Combine $P \equiv 9 \pmod{11}$, $P \equiv 7 \pmod{13}$: $M_1 = 13 \equiv 2 \pmod{11}$, inverse 6; $M_2 = 11$, inverse mod 13 is 6; $P = (9 \cdot 13 \cdot 6 + 7 \cdot 11 \cdot 6) \bmod 143 = (702 + 462) \bmod 143 = 1164 \bmod 143 = \mathbf{20}$. Check: $20^7 \bmod 143 = 136$ \checkmark. (Two exponentiations with 4-bit exponents on 4-bit numbers replace one with a 7-bit exponent on an 8-bit number.)
+
+\textbf{Q6 (b).} (i) X.509: the ITU-T certificate format binding a subject's name to a public key under a CA's signature; fields version, serial number, signature algorithm, issuer, validity period, subject, subject public key info, unique IDs, extensions, CA signature; revoked through CRLs (\S\ref{sec:pki}). (ii) Avalanche effect: a one-bit change in the plaintext or key changes about half of the ciphertext bits; DES shows about 34 of 64 bits changed after 16 rounds for a 1-bit plaintext change, which defeats statistical attacks (\S\ref{sec:des}). (iii) Playfair: a digraph cipher on a $5 \times 5$ key square (I/J together); split the plaintext into pairs (a filler X between doubled letters and at the end), then same row $\to$ letters to the right, same column $\to$ letters below, rectangle $\to$ the other corners on the same rows; it hides single-letter frequencies but not digram frequencies (\S\ref{sec:playfair}).

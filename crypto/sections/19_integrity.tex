@@ -300,7 +300,8 @@ In the Rabin and Davies--Meyer pictures the block $M_i$ enters as the \emph{key}
 
 \textbf{Miyaguchi--Preneel scheme.} To make the algorithm stronger, the plaintext, the cipher key and the ciphertext are all XORed together to create the new digest: $H_i = E_{H_{i-1}}(M_i) \oplus M_i \oplus H_{i-1}$. It is Matyas--Meyer--Oseas with the chaining value also fed forward. Whirlpool (below) is built on this scheme.
 
-\subsection{SHA-512: overview and parameters \new}
+\subsection{SHA-512: overview and parameters \hot}
+\asked{End-sem 2025--26 Q5 (7 marks): explain SHA-512 design: message preparation, word expansion, compression function, structure of each round.}
 \likely{``Explain SHA-512 with a block diagram: padding, word expansion, round function'' (4--5 marks).}
 
 SHA-512 is the member of the SHA-2 family with the longest digest. It follows the Merkle--Damg\aa rd scheme exactly: the message is padded and given a length field, split into 1024-bit blocks, and each block is fed with the previous 512-bit digest into a compression function; the output of the last block is the 512-bit digest.

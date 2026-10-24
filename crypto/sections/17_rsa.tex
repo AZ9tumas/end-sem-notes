@@ -83,7 +83,8 @@ $p, q$ & $n$ & $\phi(n)$ & $e$ & $d$ & Encrypt & Decrypt\\
 \end{center}
 For the slide key, the $d$-table (\S\ref{sec:exteuclid}) on $(60, 13)$ has quotients $4, 1, 1, 1, 1, 2$ and ends with $r_1 = 1$, $t_1 = -23$, so $d = -23 + 60 = 37$. A negative $t_1$ is normal; add $\phi(n)$, never $n$.
 
-\subsection{Exam-format RSA numericals \new}
+\subsection{Exam-format RSA numericals \hot}
+\asked{End-sem 2025--26 Q1(b) (6 marks): $M = 63$, $n = 77$, $e = 13$; find $d$ and the ciphertext by fast exponentiation ($d = 37$, $C = 28$).}
 \likely{Exactly this layout: $\phi(n)$, gcd check, $d$-table, two square-and-multiply tables, a check line.}
 
 Every exponentiation below uses repeated squaring (\S\ref{sec:modexp}): write the exponent as a sum of powers of 2, square repeatedly (reducing mod $n$ each time), then multiply the needed powers, reducing after each product.

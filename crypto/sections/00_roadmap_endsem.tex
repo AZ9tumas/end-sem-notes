@@ -1,11 +1,33 @@
-% End-sem priority map: syllabus, what the past mid-sem papers reveal about the examiner, what is new after the mid-sem, and the study order.
+% End-sem priority map: real end-sem format and questions (2023-24, 2025-26), what the mid-sem papers showed, prediction, study order.
 \section{What to Study First (End-Sem)}\label{sec:roadmap}
 
-\subsection{What the end-sem covers}
-The end-sem paper covers the whole course: the eighteen lecture decks of Dr.\ J Sathish Kumar (CSN15403) and the official syllabus behind them. Lectures 1--14 were the mid-sem syllabus; Lectures 15--18 (message authentication and digital signatures, key management, entity authentication, and other techniques such as DNA and quantum cryptography) have never been examined, so they are the most likely source of new long questions. The official syllabus also names topics that the slides only touch or skip, namely block-cipher modes of operation, triple DES, MD5 and the SHA family, Kerberos and X.509, PGP and S/MIME, IPSec, SSL/TLS, SET, intruders, viruses, firewalls and trusted systems. These are taught in full in \S\ref{sec:modes}, \S\ref{sec:keymgmt} and \S\ref{sec:netsec}, so that a question taken from the syllabus rather than from the slides is still covered. Finally, the teacher set eight assignment topics (WhatsApp end-to-end encryption, internet banking and UPI security, the AKS test, factorization methods, attacks on RSA, OAEP, other hash algorithms and attacks on signature schemes); a teacher who sets an assignment usually asks about it, so they have their own chapter, \S\ref{sec:assign}.
+\subsection{What the end-sem paper looks like}
+The end-sem paper of CSN15403 is \textbf{150 minutes for 50 marks}, with \textbf{six questions} to be attempted ``all, and in the same order'', and the same instruction as the mid-sem: ``precise answer with proper justification will be considered to get complete marks''. Each question opens with a paragraph of context (``Although RSA and ElGamal are secure\dots\ Justify the above statement by\dots'') and then asks for a theory part (explain the algorithm, prove its correctness, discuss its weaknesses) followed by a numerical on small numbers. A typical question is worth 5--10 marks, so about 25 minutes per question; a 10-mark numerical answer is expected to show every table (extended Euclid, square-and-multiply, point additions) and a final check. Both previous papers are solved in full in the Question Bank.
 
-\subsection{What the past papers say about the examiner}
-Both mid-sem papers (2024--25 and 2025--26, solved in the Question Bank) were taken almost word for word from the two standard textbooks: \textbf{Forouzan} (\emph{Cryptography and Network Security}) and \textbf{Stallings}. The slides are mostly Forouzan's figures, so the notes teach the textbook method wherever a slide is thin, and the worked examples are phrased the way those exercises are phrased. The instruction ``precise answer with proper justification will be considered to get complete marks'' means that every numerical must show its full working (the extended-Euclid table, the square-and-multiply trace, the signature verification with both sides computed) and every protocol answer should have a diagram with numbered messages.
+The syllabus is the whole course: the eighteen lecture decks of Dr.\ J Sathish Kumar and the official syllabus behind them. The slides are mostly Forouzan's figures and the questions follow Forouzan's (and Stallings') exercises closely, so the notes teach the textbook method wherever a slide is thin. Topics the official syllabus lists but the slides skip (modes of operation, PGP, IPSec, SSL/TLS, SET, firewalls) are in \S\ref{sec:modes} and \S\ref{sec:netsec}, and the teacher's eight assignment topics are in \S\ref{sec:assign}.
+
+\subsection{What the two end-sem papers asked}
+\begin{center}\small
+\begin{tabularx}{\textwidth}{@{}X c c l@{}}
+\toprule
+Topic & 2023--24 & 2025--26 & Where\\
+\midrule
+Digital-signature numerical + theory (DSS in 2023--24, ElGamal in 2025--26) & 10 & 9 & \S\ref{sec:dsig}\\
+Public-key encryption numerical (ECC on $E_{11}(1, 2)$; RSA with fast exponentiation) & 10 & 6 & \S\ref{sec:elgamal}, \S\ref{sec:rsa}\\
+Entity-authentication protocol: Fiat--Shamir proof and two rounds & 10 & -- & \S\ref{sec:entityauth}\\
+Diffie--Hellman ($g = 7$, $p = 23$, the slide example) + man-in-the-middle scenario & -- & 6 & \S\ref{sec:keymgmt}\\
+Miller--Rabin algorithm, test 1019 & -- & 7 & \S\ref{sec:primes}\\
+SHA-512 design (preparation, expansion, compression, round) & -- & 7 & \S\ref{sec:integrity}\\
+CRT secret sharing (2, 3, 2 modulo 3, 5, 7) & -- & 5 & \S\ref{sec:primes}\\
+DES and double DES: issues, meet-in-the-middle, fixes & -- & 4 & \S\ref{sec:des}\\
+Primitive roots of GF(19) (inside the ElGamal question) & -- & part & \S\ref{sec:fermat}\\
+Short notes: Hill cipher, steganography, Euler's theorem & -- & 6 & \S\ref{sec:hill}, \S\ref{sec:stego}, \S\ref{sec:fermat}\\
+\bottomrule
+\end{tabularx}
+\end{center}
+(The 2023--24 copy has only Q1--Q3 filled in, so 30 of its 50 marks are known.) Four patterns stand out. First, \textbf{a signature scheme with numbers appeared both years} (19 of the 80 known marks), always with ``explain key generation, signing, verifying'' and ``prove correctness''; Schnorr, RSA and ECDSA signatures are the ones not yet asked. Second, \textbf{a public-key numerical appeared both years} (ECC, then RSA), and the 2025--26 ElGamal question also needed primitive roots, so the number-theory toolkit is examined through these. Third, the post-mid-sem protocols (Fiat--Shamir, Diffie--Hellman) were asked as \emph{explain + small-number run + attack scenario}; Kerberos, the KDC protocols, Lamport passwords, Guillou--Quisquater and station-to-station are the natural next ones. Fourth, Lectures 10--14 (Miller--Rabin, CRT, SHA-512), which the mid-sem papers never touched, were asked in the end-sem, and the classical ciphers shrank to short notes.
+
+\subsection{What the two mid-sem papers asked}
 \begin{center}\small
 \begin{tabularx}{\textwidth}{@{}l X c c l@{}}
 \toprule
@@ -22,24 +44,26 @@ Both mid-sem papers (2024--25 and 2025--26, solved in the Question Bank) were ta
 \bottomrule
 \end{tabularx}
 \end{center}
-Three patterns are worth carrying into the end-sem. Each paper had one block-cipher question (DES one year, AES the other), so expect one again, possibly on modes of operation this time. The extended Euclidean algorithm appeared twice in each paper, and in the end-sem it reappears inside RSA key generation, ElGamal and DSS signatures and the CRT, so it is still the single most reusable skill. Finally, classical ciphers carried a large share of the mid-sem marks; in an end-sem they are usually reduced to one short question.
+The extended Euclidean algorithm was the single most-asked skill of the mid-sem, and in the end-sem it reappears inside every RSA, ElGamal and DSS numerical (computing $d$, $r^{-1}$, $S_2^{-1}$), so it is still the most reusable thing to master.
 
-\subsection{What is most likely after the mid-sem \new}
-The prediction below comes from the syllabus, the slides and the textbook exercises, not from an end-sem paper (none was available), so treat it as a ranking rather than a promise.
+\subsection{Prediction for this year}
+The ranking combines the two real end-sem papers with the post-mid-sem lectures that have not yet been examined. A marker \hot\ means the topic was asked in an end-sem; \new\ means it has not been asked yet but fits the pattern.
 \begin{center}\small
 \begin{tabularx}{\textwidth}{@{}l X l@{}}
 \toprule
  & Likely question & Where\\
 \midrule
-\hot\new & RSA, ElGamal and DSS digital signatures: generate keys, sign, verify (small numbers); prove verification works & \S\ref{sec:dsig}\\
-\hot\new & Diffie--Hellman key agreement with numbers, the man-in-the-middle attack, station-to-station & \S\ref{sec:keymgmt}\\
-\hot\new & MAC vs MDC vs signature; HMAC and CMAC with diagrams & \S\ref{sec:mac}\\
-\hot\new & Kerberos (draw and explain), KDC protocols, X.509 certificates and PKI & \S\ref{sec:keymgmt}\\
-\hot\new & Passwords (hashing, salting, Lamport one-time passwords), challenge--response, Fiat--Shamir zero knowledge, biometrics & \S\ref{sec:entityauth}\\
-\new & RSA numericals, CRT, Miller--Rabin, ElGamal/ECC point arithmetic, birthday attack & \S\ref{sec:rsa}--\S\ref{sec:integrity}\\
-\new & DNA cryptography, BB84 quantum key distribution, steganography vs watermarking & \S\ref{sec:othertech}\\
-\new & Modes of operation (ECB, CBC, CFB, OFB, CTR), double/triple DES & \S\ref{sec:modes}\\
-\new & PGP, IPSec (AH vs ESP, transport vs tunnel), SSL/TLS handshake, SET dual signature, firewalls & \S\ref{sec:netsec}\\
+\hot & A signature scheme: keys, sign, verify with small numbers, proof of correctness, criticism/attacks (DSS, ElGamal again with new numbers; or Schnorr, RSA, ECDSA) & \S\ref{sec:dsig}\\
+\hot & A public-key numerical: RSA with extended Euclid and square-and-multiply (possibly with CRT decryption), ElGamal, or ECC encryption on a small curve & \S\ref{sec:rsa}, \S\ref{sec:elgamal}\\
+\hot & Diffie--Hellman + man-in-the-middle; station-to-station & \S\ref{sec:keymgmt}\\
+\hot & Zero knowledge: Fiat--Shamir, or \new\ Feige--Fiat--Shamir / Guillou--Quisquater rounds & \S\ref{sec:entityauth}\\
+\hot & Miller--Rabin, CRT (secret sharing, RSA speed-up), primitive roots & \S\ref{sec:primes}, \S\ref{sec:fermat}\\
+\hot & SHA-512 structure; birthday attack numbers & \S\ref{sec:integrity}\\
+\new & Kerberos (draw and explain), Needham--Schroeder/Otway--Rees, X.509 and PKI & \S\ref{sec:keymgmt}, \S\ref{sec:pki}\\
+\new & MDC vs MAC vs signature; HMAC and CMAC with diagrams & \S\ref{sec:mac}\\
+\new & Passwords: hashing, salting, Lamport one-time passwords; challenge--response; biometrics & \S\ref{sec:entityauth}\\
+\hot & DES/2DES/3DES weaknesses; \new\ modes of operation; AES round operations & \S\ref{sec:des}, \S\ref{sec:modes}, \S\ref{sec:aes}\\
+\new & Short notes: DNA cryptography, quantum key distribution (BB84), watermarking, Playfair, Euler/Fermat, avalanche effect, X.509 & \S\ref{sec:othertech} and others\\
 \new & Assignment topics: AKS, Pollard $p-1$ and rho, attacks on RSA, OAEP, SHA family, WhatsApp, UPI & \S\ref{sec:assign}\\
 \bottomrule
 \end{tabularx}
@@ -48,12 +72,12 @@ The prediction below comes from the syllabus, the slides and the textbook exerci
 \subsection{Study order}
 The order puts the most marks per hour first and reuses earlier skills in later topics.
 \begin{enumerate}[leftmargin=1.6em,itemsep=2pt]
-\item \textbf{Number-theory toolkit} (\S\ref{sec:modexp}, \S\ref{sec:exteuclid}, \S\ref{sec:fermat}, \S\ref{sec:primes}). Be fluent with square-and-multiply, the extended-Euclid table, Fermat/Euler exponent reduction and the CRT table; every public-key numerical below is built from these four.
-\item \textbf{Public-key encryption} (\S\ref{sec:rsa}, \S\ref{sec:elgamal}). RSA key generation, encryption and decryption; ElGamal; elliptic-curve point addition and doubling.
-\item \textbf{Hash, MAC and signatures} (\S\ref{sec:integrity}, \S\ref{sec:mac}, \S\ref{sec:dsig}). The three resistance properties and the birthday bound, then HMAC/CMAC, then each signature scheme with a worked example and its proof of correctness.
-\item \textbf{Key management and entity authentication} (\S\ref{sec:keymgmt}, \S\ref{sec:entityauth}). Practise drawing every protocol from memory with numbered messages, and say in one line what each nonce, timestamp or signature prevents.
-\item \textbf{Block ciphers} (\S\ref{sec:modern}--\S\ref{sec:modes}). DES round and key schedule, AES round operations, modes of operation.
-\item \textbf{Remaining syllabus} (\S\ref{sec:othertech}, \S\ref{sec:netsec}, \S\ref{sec:assign}). Read once for theory questions; learn the comparison tables.
-\item \textbf{Classical ciphers} (Part~I). One pass of Playfair, Vigen\`ere/one-time pad, Hill and transposition, since one short question is still likely.
-\item Finally, the formula sheet (\S\ref{sec:formulas}) the night before, and the timed mock end-sem paper in the Question Bank.
+\item \textbf{Number-theory toolkit} (\S\ref{sec:modexp}, \S\ref{sec:exteuclid}, \S\ref{sec:fermat}, \S\ref{sec:primes}). Square-and-multiply, the extended-Euclid table, Fermat/Euler exponent reduction, primitive roots, the CRT table and Miller--Rabin. Every numerical in both end-sem papers was built from these.
+\item \textbf{Signatures} (\S\ref{sec:dsig}). RSA, ElGamal, Schnorr, DSS and ECDSA: key generation, signing, verifying, proof of correctness and one worked example each; then the criticism of DSS and the attacks (reused $r$, existential forgery).
+\item \textbf{Public-key encryption} (\S\ref{sec:rsa}, \S\ref{sec:elgamal}). RSA with CRT decryption; ElGamal; ECC point arithmetic and ECC encryption/decryption; why ECC keys are short.
+\item \textbf{Protocols} (\S\ref{sec:keymgmt}, \S\ref{sec:entityauth}). Diffie--Hellman with the man-in-the-middle scenario, station-to-station, Kerberos, Fiat--Shamir and its relatives, Lamport passwords. Practise drawing each from memory with numbered messages, and say in one line what each nonce, timestamp or signature prevents.
+\item \textbf{Hashing and MACs} (\S\ref{sec:integrity}, \S\ref{sec:mac}). SHA-512 end to end, the birthday numbers, HMAC and CMAC.
+\item \textbf{Block ciphers} (\S\ref{sec:modern}--\S\ref{sec:modes}). DES, double and triple DES, AES, modes of operation.
+\item \textbf{Short-note topics} (\S\ref{sec:othertech}, \S\ref{sec:netsec}, \S\ref{sec:assign}, Part~I). One paragraph each for DNA and quantum cryptography, steganography/watermarking, the classical ciphers and the network-security protocols.
+\item Finally, the formula sheet (\S\ref{sec:formulas}) the night before, and Mock Paper B in the Question Bank under exam conditions (150 minutes).
 \end{enumerate}

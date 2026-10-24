@@ -160,7 +160,7 @@ The two \ttx{04}'s in row 1 both become \ttx{F2}, showing that SubBytes alone do
 Single-bit changes spread: \ttx{5A} and \ttx{5B} differ in one bit, but $S(\ttx{5A}) = \ttx{BE}$ and $S(\ttx{5B}) = \ttx{39}$ differ in four bits ($\ttx{BE} \oplus \ttx{39} = \ttx{87} = 1000\,0111$).
 
 \subsection{ShiftRows (permutation) \hot}
-\asked{2025--26 Q4(a) (part of 6 marks): ShiftRows on a given state. Solved in full after AddRoundKey below.}
+\asked{Mid-sem 2025--26 Q4(a) (part of 6 marks): ShiftRows on a given state. Solved in full after AddRoundKey below.}
 
 \textbf{Problem and idea.} SubBytes changes each byte on its own, and MixColumns (next) mixes only the four bytes inside one column. Without a step that moves bytes \emph{between} columns, the four columns would never interact, and AES would be four independent 32-bit ciphers running side by side, each attackable separately. ShiftRows is that step: it permutes bytes so that each column's four bytes end up in four different columns.
 
@@ -223,7 +223,7 @@ Answer: $(\ttx{DB}, \ttx{13}, \ttx{53}, \ttx{45}) \to \mathbf{(\ttx{8E}, \ttx{4D
 A second check comes from the exam state below: column 0 after ShiftRows is $(\ttx{87}, \ttx{6E}, \ttx{46}, \ttx{A6})$. With $02 \cdot \ttx{87} = \ttx{0E} \oplus \ttx{1B} = \ttx{15}$, $03 \cdot \ttx{6E} = \ttx{DC} \oplus \ttx{6E} = \ttx{B2}$, the first output byte is $\ttx{15} \oplus \ttx{B2} \oplus \ttx{46} \oplus \ttx{A6} = \ttx{47}$, and the whole column becomes $(\ttx{47}, \ttx{37}, \ttx{94}, \ttx{ED})$, which is exactly column 0 of the state given in part (b) of that question (Stallings' figures chain ShiftRows $\to$ MixColumns $\to$ AddRoundKey).
 
 \subsection{AddRoundKey (key adding) \hot}
-\asked{2025--26 Q4(b) (part of 6 marks): AddRoundKey of a given state with a given key matrix.}
+\asked{Mid-sem 2025--26 Q4(b) (part of 6 marks): AddRoundKey of a given state with a given key matrix.}
 
 \textbf{Problem and idea.} The three steps above are fixed and public, so on their own they would be a keyless scrambling that anyone can undo. \imp{AddRoundKey is the only step that uses the key}: it XORs the 128-bit round key into the state. It proceeds column by column, like MixColumns, but where MixColumns multiplies each column by a constant matrix, AddRoundKey \emph{adds} a key word to it: in round $i$, column $c$ becomes $s_c \oplus w_{4i + c}$. Equivalently, write the round key as a $4 \times 4$ matrix whose columns are the four words and XOR the two matrices entry by entry.
 

@@ -344,7 +344,8 @@ In password authentication the claimant must send her secret to the verifier, wh
 
 \textbf{The cave example.} A cave has an entrance that splits into a left and a right passage, which meet at a door deep inside that opens only with a magic word. Alice claims to know the word. Bob waits outside while Alice walks to the door along a passage of her choice. Bob then comes to the fork and calls out ``left'' or ``right'', and Alice must come out of that passage. If she knows the word, she can always do it, passing through the door if needed. If she does not, she succeeds only when Bob happens to call the passage she entered, with probability $1/2$; after $k$ repetitions her chance of fooling Bob is $(1/2)^k$. Bob learns nothing about the word, and a video of the session would not convince anyone else, since Alice and a friend could have agreed the calls in advance. Entering a passage is the commitment, Bob's call is the challenge, and coming out is the response; Fiat--Shamir is this cave in modular arithmetic.
 
-\subsection{Fiat--Shamir protocol \hot\new}
+\subsection{Fiat--Shamir protocol \hot}
+\asked{End-sem 2023--24 Q3 (10 marks): zero knowledge as the fix for password eavesdropping, proof of Fiat--Shamir, two rounds with $p = 569$, $q = 683$, $s = 157$.}
 \likely{``Explain Fiat--Shamir with a diagram; prove that an honest claimant passes; show that a dishonest one passes a round with probability $1/2$; how many rounds for a given confidence?'' plus a small numerical (5--6 marks).}
 
 \textbf{Setup.} A trusted third party chooses two large primes $p$ and $q$ and calculates $n = p \times q$. The value of $n$ is announced to the public; $p$ and $q$ are kept secret. Alice, the claimant, chooses a secret number $s$ between 1 and $n - 1$ (exclusive), which must be coprime to $n$, and calculates

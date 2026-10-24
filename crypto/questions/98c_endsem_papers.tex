@@ -1,0 +1,252 @@
+% MNNIT CSN15403 END-semester papers 2023-24 (file labelled 2024-25) and 2025-26, fully solved.
+% Every number recomputed by script (scratchpad/endsem/p1.py ... p4.py).
+\clearpage
+\section{Previous End-Sem Papers (CSN15403), Fully Solved}\label{q:endsem}
+
+\begin{keybox}[title=What the two end-sem papers tell you]
+\textbf{Format.} 150 minutes, 50 marks, six questions, ``attempt all questions and in the same order'', and the same instruction as the mid-sem: ``precise answer with proper justification''. Each question opens with a paragraph of context (``Justify the above statement by\dots'') and then asks for a theory part and a numerical on small numbers.\\
+\textbf{What was asked.} Every paper had a \emph{digital-signature numerical} (DSS in 2023--24, ElGamal in 2025--26) and a \emph{public-key numerical} (ECC encryption in 2023--24, RSA in 2025--26), and the protocols of the post-mid-sem lectures (Fiat--Shamir, Diffie--Hellman with the man-in-the-middle). The rest came from the number theory of Lectures 10--11 (Miller--Rabin, CRT), from SHA-512, from DES/double DES, and short notes (Hill, steganography, Euler).\\
+\textbf{The copy of 2023--24} (the file is named ``2024-25'' but the header says 2023--24) has only Q1--Q3 filled in; Q4--Q6 are blank boxes in the copy, so 30 of the 50 marks are known.
+\end{keybox}
+
+\begin{center}\small
+\begin{tabularx}{\textwidth}{@{}l X c l@{}}
+\toprule
+Paper & Question & Marks & Taught in\\
+\midrule
+2023--24 Q1 & ECC: why small keys suffice; ElGamal-style ECC on $E_{11}(1, 2)$ & 10 & \S\ref{sec:elgamal}\\
+2023--24 Q2 & DSS: criticism, key generation, signing, verifying; numerical & 10 & \S\ref{sec:dsig}\\
+2023--24 Q3 & Zero knowledge, Fiat--Shamir proof and two rounds & 10 & \S\ref{sec:entityauth}\\
+2025--26 Q1 & DES and double DES: issues, attacks, fixes (4); RSA with fast exponentiation (6) & 10 & \S\ref{sec:des}, \S\ref{sec:rsa}\\
+2025--26 Q2 & ElGamal signature in GF(19): primitive roots, proof, sign and verify & 9 & \S\ref{sec:fermat}, \S\ref{sec:dsig}\\
+2025--26 Q3 & Secret sharing by the CRT & 5 & \S\ref{sec:primes}\\
+2025--26 Q4 & Miller--Rabin algorithm; is 1019 prime? & 7 & \S\ref{sec:primes}\\
+2025--26 Q5 & SHA-512 design & 7 & \S\ref{sec:integrity}\\
+2025--26 Q6 & Diffie--Hellman + interception (6); short notes Hill, steganography, Euler (6) & 12 & \S\ref{sec:keymgmt}, \S\ref{sec:hill}, \S\ref{sec:stego}, \S\ref{sec:fermat}\\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+%====================================================================
+\subsection{End-Sem 2023--24, solved}
+
+\begin{keybox}[title={Q1 (10 marks)}]
+(a) Although RSA and ElGamal are secure asymmetric-key cryptosystems, their security comes with a price, their large keys. For instance, ECC over GF$(2^n)$ with $n$ of 160 bits can provide the same level of security as RSA with $n$ of 1024 bits. Justify the above statement by demonstrating the elliptic curve cryptosystem process of encryption and decryption.\\
+(b) Further, with the elliptic curve $E(1, 2)$ over the GF(11) field, solve: (i) for the point $e_1 = (2, 1)$ and $d = 3$, generate public and private keys for Bob; (ii) for the point on the curve $P = (4, 2)$ as a plaintext for Alice, create the ciphertext corresponding to the plaintext with $r = 6$.
+\end{keybox}
+
+\textbf{(a) Why 160-bit ECC matches 1024-bit RSA.} The security of RSA rests on factoring $n$ and that of ElGamal on the discrete logarithm in $\mathbb{Z}_p^*$. Both problems have \emph{sub-exponential} algorithms (the number field sieve, running in about $L_n[1/3, 1.92]$), so the modulus must be large, about 1024 bits for $2^{80}$ work (and 3072 bits for $2^{128}$). ECC rests on the elliptic-curve discrete logarithm problem (ECDLP): given $e_1$ and $e_2 = d \times e_1$, find $d$. No index-calculus or sieve method works on a general curve, so the best known attack is the generic Pollard rho, whose cost is about $\sqrt{q}$ point operations for a base point of order $q$, i.e.\ fully \emph{exponential} in the key length. A 160-bit curve therefore needs about $2^{80}$ operations, the same as 1024-bit RSA, with keys, signatures and arithmetic six times shorter; this is why ECC is preferred in smart cards and phones.
+
+\emph{The ECC cryptosystem (ElGamal simulated on the curve).} Key generation: Bob picks $E_p(a, b)$ and a point $e_1$, a private integer $d$, and computes $e_2 = d \times e_1$; public key $(a, b, p, e_1, e_2)$, private key $d$. Encryption: Alice encodes the message as a point $P$, picks a random $r$ and sends $C_1 = r \times e_1$, $C_2 = P + r \times e_2$. Decryption: Bob computes $P = C_2 - d \times C_1$. This works because $d \times C_1 = d r \times e_1 = r \times (d \times e_1) = r \times e_2$, so subtracting it removes the mask exactly. An eavesdropper sees $e_1, e_2, C_1, C_2$ and needs $d$ (or $r$), i.e.\ she must solve the ECDLP.
+
+\textbf{(b) Arithmetic on $E_{11}(1, 2)$: $y^2 = x^3 + x + 2 \pmod{11}$.} $e_1 = (2, 1)$ is on the curve ($1 = 8 + 2 + 2 = 12 \equiv 1$) and so is $P = (4, 2)$ ($4 \equiv 64 + 4 + 2 = 70$). Inverses used: $2^{-1} = 6$, $4^{-1} = 3$, $5^{-1} = 9$, $6^{-1} = 2$, $7^{-1} = 8$, $9^{-1} = 5$ (mod 11). Doubling uses $\lambda = (3x_1^2 + a)/(2y_1)$, addition $\lambda = (y_2 - y_1)/(x_2 - x_1)$, then $x_3 = \lambda^2 - x_1 - x_2$, $y_3 = \lambda(x_1 - x_3) - y_1$.
+
+\textbf{(i) Keys.} Private key $d = 3$. Public $e_2 = 3 \times e_1 = 2e_1 + e_1$:
+\begin{center}\small
+\begin{tabular}{@{}llll@{}}
+\toprule
+Step & $\lambda$ & $x_3$ & $y_3$\\
+\midrule
+$2e_1 = 2(2, 1)$ & $(3 \cdot 4 + 1)/2 = 13/2 \equiv 2 \cdot 6 = 1$ & $1 - 4 = -3 \equiv 8$ & $1(2 - 8) - 1 = -7 \equiv 4$\\
+$3e_1 = (8, 4) + (2, 1)$ & $(1 - 4)/(2 - 8) = 8/5 = 8 \cdot 9 = 72 \equiv 6$ & $36 - 10 = 26 \equiv 4$ & $6(8 - 4) - 4 = 20 \equiv 9$\\
+\bottomrule
+\end{tabular}
+\end{center}
+So $e_2 = (4, 9)$. \textbf{Bob's public key} is $(a, b, p, e_1, e_2) = (1, 2, 11, (2, 1), (4, 9))$ and his \textbf{private key} is $d = 3$.
+
+\textbf{(ii) Encryption with $r = 6$.} Compute $C_1 = 6e_1 = 2(3e_1)$ and $6e_2 = 2(3e_2)$ by doubling and adding:
+\begin{center}\small
+\begin{tabular}{@{}llll@{}}
+\toprule
+Step & $\lambda$ & $x_3$ & $y_3$\\
+\midrule
+$C_1 = 2(4, 9)$ & $(3 \cdot 16 + 1)/18 \equiv 5/7 = 5 \cdot 8 = 40 \equiv 7$ & $49 - 8 = 41 \equiv 8$ & $7(4 - 8) - 9 = -37 \equiv 7$\\
+$2e_2 = 2(4, 9)$ & (same as above) & 8 & 7\\
+$3e_2 = (8, 7) + (4, 9)$ & $(9 - 7)/(4 - 8) = 2/7 = 16 \equiv 5$ & $25 - 12 = 13 \equiv 2$ & $5(8 - 2) - 7 = 23 \equiv 1$\\
+$6e_2 = 2(2, 1)$ & (as for $2e_1$) & 8 & 4\\
+$C_2 = (4, 2) + (8, 4)$ & $(4 - 2)/(8 - 4) = 2/4 = 2 \cdot 3 = 6$ & $36 - 12 = 24 \equiv 2$ & $6(4 - 2) - 2 = 10$\\
+\bottomrule
+\end{tabular}
+\end{center}
+\textbf{Ciphertext} $C_1 = (8, 7)$, $C_2 = (2, 10)$. (Shortcut check: $e_1$ has order 8, since $4e_1 = (10, 0)$ has $y = 0$; so $3e_2 = 9e_1 = e_1$ and $6e_2 = 18e_1 = 2e_1 = (8, 4)$, as found.)
+
+\textbf{Check by decryption.} $d \times C_1 = 3(8, 7)$: $2(8, 7)$ has $\lambda = (3 \cdot 64 + 1)/14 \equiv 6/3 = 2$, giving $(10, 0)$; $(10, 0) + (8, 7)$ has $\lambda = 7/(-2) \equiv 7/9 = 35 \equiv 2$, giving $(8, 4)$. Then $P = C_2 - (8, 4) = (2, 10) + (8, 7)$: $\lambda = (7 - 10)/(8 - 2) \equiv 8/6 = 8 \cdot 2 = 16 \equiv 5$, $x = 25 - 10 = 15 \equiv 4$, $y = 5(2 - 4) - 10 = -20 \equiv 2$, i.e.\ $\mathbf{(4, 2)} = P$ \checkmark.
+
+\begin{keybox}[title={Q2 (10 marks)}]
+(a) The Digital Signature Standard (DSS) was adopted by NIST in 1994 and published as FIPS 186. However, the signing and verification process of DSS was criticised from the time it was published, due to its design. Justify your view by explaining the DSS key generation, signing process and verification process.\\
+(b) Using the DSS scheme, let $q = 59$, $p = 709$ and $d = 14$. Find values for $e_1$ and $e_2$. Choose $r = 13$. Find the values of $S_1$ and $S_2$ if $h(M) = 100$. Verify the signature.
+\end{keybox}
+
+\textbf{(a) The scheme.} \emph{Key generation:} choose a prime $p$ (512--1024 bits, a multiple of 64) and a 160-bit prime $q$ dividing $p - 1$; take a primitive root $e_0$ of $p$ and set $e_1 = e_0^{(p-1)/q} \bmod p$, which has order $q$; choose the private key $d < q$ and publish $e_2 = e_1^d \bmod p$. Public key $(e_1, e_2, p, q)$, private key $d$. \emph{Signing} with a fresh secret $r$ ($0 < r < q$): $S_1 = (e_1^r \bmod p) \bmod q$, $S_2 = (h(M) + d S_1)\, r^{-1} \bmod q$. \emph{Verifying}: check $0 < S_1, S_2 < q$, compute $w = S_2^{-1} \bmod q$, $A = h(M) w$, $B = S_1 w \bmod q$ and $V = (e_1^{A} e_2^{B} \bmod p) \bmod q$; accept iff $V = S_1$. \emph{Proof:} $A + dB = (h(M) + d S_1) S_2^{-1} \equiv r \pmod q$ by the definition of $S_2$, and $e_1$ has order $q$, so $e_1^A e_2^B = e_1^{A + dB} = e_1^{r} \pmod p$, whose reduction mod $q$ is $S_1$.
+
+\emph{Why it was criticised.} (1) It was designed by the NSA in secret and chosen over the already-established RSA, which raised fears of a trapdoor and forced vendors to support two standards. (2) It can only sign; unlike RSA it cannot encrypt or distribute keys. (3) Verification needs two exponentiations and is \emph{slower} than RSA verification with a small $e$ (signing is fast, since $e_1^r$ can be precomputed). (4) The original 512-bit modulus was too small, so FIPS 186 was revised to allow 512--1024 bits and later 2048--3072 bits. (5) Its security collapses if the per-signature secret $r$ is ever reused or predictable: two signatures with the same $r$ give $r = (h(M) - h(M'))(S_2 - S_2')^{-1} \bmod q$ and then $d$. In its favour, its signatures are short (two numbers mod a 160-bit $q$) and the hash removes the existential forgeries of plain RSA/ElGamal.
+
+\textbf{(b) Numerical.} $p - 1 = 708 = 12 \times 59$, so $q \mid p - 1$ \checkmark. The smallest primitive root of 709 is $e_0 = 2$ ($2^{354}, 2^{236}, 2^{12} \ne 1$), so
+\[
+e_1 = 2^{708/59} = 2^{12} \bmod 709 = (2^{10} \cdot 4) \bmod 709 = (315 \cdot 4) \bmod 709 = \mathbf{551}.
+\]
+(Another primitive root gives another valid $e_1$; state yours.) $e_2 = e_1^{d} = 551^{14} \bmod 709$ and $e_1^{r} = 551^{13} \bmod 709$ by square-and-multiply:
+\begin{center}\small
+\begin{tabular}{@{}lcccc@{\qquad}lcccc@{}}
+\toprule
+\multicolumn{5}{@{}l}{$551^{14}$, $14 = 1110_2$} & \multicolumn{5}{l@{}}{$551^{13}$, $13 = 1101_2$}\\
+\midrule
+bit & 1 & 1 & 1 & 0 & bit & 1 & 1 & 0 & 1\\
+square & 1 & 149 & 464 & 399 & square & 1 & 149 & 464 & 469\\
+$\times 551$ & 551 & 564 & 424 & -- & $\times 551$ & 551 & 564 & -- & 343\\
+\bottomrule
+\end{tabular}
+\end{center}
+So $e_2 = \mathbf{399}$, public key $(551, 399, 709, 59)$. Signing: $S_1 = 343 \bmod 59 = \mathbf{48}$; $r^{-1} = 13^{-1} \bmod 59 = 50$ ($13 \cdot 50 = 650 = 11 \cdot 59 + 1$); $h(M) + d S_1 = 100 + 672 = 772 \equiv 5 \pmod{59}$; $S_2 = 5 \cdot 50 = 250 \bmod 59 = \mathbf{14}$.
+
+Verifying: $w = 14^{-1} \bmod 59 = 38$ ($14 \cdot 38 = 532 = 9 \cdot 59 + 1$); $A = 100 \cdot 38 = 3800 \bmod 59 = 24$; $B = 48 \cdot 38 = 1824 \bmod 59 = 54$; $e_1^{24} \bmod 709 = 171$, $e_2^{54} \bmod 709 = 172$; $V = (171 \cdot 172 \bmod 709) \bmod 59 = 343 \bmod 59 = 48 = S_1$ \checkmark, so the signature is accepted.
+
+\begin{keybox}[title={Q3 (10 marks)}]
+(a) In password authentication, the claimant needs to send her secret (the password) to the verifier; this is subject to eavesdropping by the attacker. In addition, a dishonest verifier could reveal the password to others or use it to impersonate the claimant. Propose a solution for this scenario and justify the Fiat--Shamir method with necessary proof.\\
+(b) For $p = 569$, $q = 683$ and $s = 157$, show two rounds of the Fiat--Shamir protocol with challenges $c = 0$ and $c = 1$ by calculating the values $n, v, x, y$ with respect to $r = 203{,}122$ and $r = 153{,}271$.
+\end{keybox}
+
+\textbf{(a) Solution: zero-knowledge authentication.} Instead of revealing the secret, the claimant \emph{proves that she knows it} by answering random challenges whose answers are useless to anyone who sees them. Such a protocol is \emph{complete} (an honest claimant always passes), \emph{sound} (a claimant without the secret is caught with high probability) and \emph{zero-knowledge} (the transcript reveals nothing about the secret, since the verifier could have produced an identical-looking transcript himself). Neither the eavesdropper nor the verifier ever sees $s$, so neither can reuse it.
+
+\emph{Fiat--Shamir.} A trusted third party chooses primes $p, q$ and publishes $n = pq$, keeping $p, q$ secret. Alice chooses a secret $s$ coprime to $n$ and registers $v = s^2 \bmod n$ as her public key. One round: (1) \emph{commitment}: Alice picks a random $r$ and sends $x = r^2 \bmod n$; (2) \emph{challenge}: Bob sends a random bit $c \in \{0, 1\}$; (3) \emph{response}: Alice sends $y = r s^c \bmod n$; (4) \emph{verification}: Bob accepts the round iff $y^2 \equiv x v^c \pmod n$.
+\emph{Proof of completeness}: $y^2 = r^2 s^{2c} = (r^2)(s^2)^c = x v^c \pmod n$.
+\emph{Soundness}: Eve without $s$ must commit to $x$ before seeing $c$. If she expects $c = 0$ she sends $x = r^2$ and answers $y = r$; if she expects $c = 1$ she picks $y$ and sends $x = y^2 v^{-1}$. One $x$ cannot serve both, because answers $y_0, y_1$ with $y_0^2 = x$ and $y_1^2 = x v$ would give $(y_1 y_0^{-1})^2 = v$, i.e.\ a square root of $v$ (equivalent to $s$, and computing square roots mod $n$ is as hard as factoring $n$). So she survives a round with probability $1/2$ and $k$ rounds with $2^{-k}$ (20 rounds: about $10^{-6}$).
+\emph{Zero knowledge}: for $c = 0$ Bob sees a random square root of a random square, which has nothing to do with $s$; for $c = 1$ he sees $rs$ with $r$ random, which is uniformly distributed and hides $s$. A fresh $r$ is essential: if the same $r$ were used with both challenges, $y_1 y_0^{-1} = s$ would leak.
+
+\textbf{(b) Two rounds.} $n = 569 \times 683 = \mathbf{388627}$, $\gcd(157, n) = 1$, $v = 157^2 \bmod n = 24649 \bmod 388627 = \mathbf{24649}$.
+\begin{center}\small
+\begin{tabular}{@{}cccccc@{}}
+\toprule
+Round & $r$ & $x = r^2 \bmod n$ & $c$ & $y = r s^c \bmod n$ & check $y^2 \bmod n$ vs $x v^c \bmod n$\\
+\midrule
+1 & 203122 & 350056 & 0 & 203122 & $350056 = 350056$ \checkmark\\
+2 & 153271 & 274545 & 1 & $153271 \cdot 157 = 24063547 \to 357300$ & $97754 = 274545 \cdot 24649 \bmod n = 97754$ \checkmark\\
+\midrule
+\multicolumn{6}{@{}l}{\emph{Other challenge for each $r$ (if the question means both challenges per round):}}\\
+1 & 203122 & 350056 & 1 & $203122 \cdot 157 = 31890154 \to 22740$ & $233690 = 350056 \cdot 24649 \bmod n = 233690$ \checkmark\\
+2 & 153271 & 274545 & 0 & 153271 & $274545 = 274545$ \checkmark\\
+\bottomrule
+\end{tabular}
+\end{center}
+Both rounds pass, so after two rounds Bob's confidence is $1 - 2^{-2} = 75\%$; more rounds are run in practice.
+
+%====================================================================
+\subsection{End-Sem 2025--26, solved}
+
+\begin{keybox}[title={Q1 (4 + 6 marks)}]
+(a) Data Encryption Standard is a symmetric-key block cipher considered under Feistel ciphers. DES and Double DES were not successful. Discuss the issues and attacks in DES and Double DES and justify how these limitations were addressed.\\
+(b) Captain America wants to send a message to Thor using RSA such that Thanos should not get it. The message is 63, the modulus is 77. Choose the encryption exponent as 13. Find the decryption exponent and the ciphertext using the fast exponentiation method.
+\end{keybox}
+
+\textbf{(a) DES.} DES encrypts 64-bit blocks in 16 Feistel rounds with a \textbf{56-bit} effective key. Its issues: (1) the key space $2^{56} \approx 7.2 \times 10^{16}$ is too small: brute force became practical (the EFF ``Deep Crack'' machine found a key in 56 hours in 1998, and with distributed.net in under a day in 1999); (2) the S-box design criteria were kept secret, raising trapdoor suspicions; (3) it has 4 weak keys, 6 pairs of semi-weak keys and the complementation property $E_{\bar K}(\bar P) = \overline{E_K(P)}$, which halves brute-force work; (4) differential cryptanalysis needs $2^{47}$ chosen plaintexts and linear cryptanalysis $2^{43}$ known plaintexts, fewer than brute force though impractical; (5) the 64-bit block causes birthday collisions after about $2^{32}$ blocks.
+\textbf{Double DES} $C = E_{K_2}(E_{K_1}(P))$ looks like a 112-bit key but falls to the \emph{meet-in-the-middle} attack: with one known pair $(P, C)$, encrypt $P$ under all $2^{56}$ keys $K_1$ and store the middle values, decrypt $C$ under all $2^{56}$ keys $K_2$ and look for a match $E_{K_1}(P) = D_{K_2}(C)$. The cost is about $2^{56} + 2^{56} = 2^{57}$ operations (plus $2^{56}$ memory), only twice single DES, and a second pair removes false matches.
+\textbf{The fix.} Triple DES (EDE): $C = E_{K_3}(D_{K_2}(E_{K_1}(P)))$. Meet-in-the-middle on three stages still leaves $2^{112}$ work, so the 2-key version ($K_3 = K_1$) gives 112-bit and the 3-key version 168-bit keys (about $2^{112}$ effective security); the middle \emph{decryption} makes it backward compatible with single DES when $K_1 = K_2$. The long-term fix was AES (2001): 128-bit blocks, 128/192/256-bit keys and a public design.
+
+\textbf{(b) RSA.} $n = 77 = 7 \times 11$, $\phi(n) = 6 \times 10 = 60$, $\gcd(13, 60) = 1$. $d = 13^{-1} \bmod 60$:
+\begin{center}\small
+\begin{tabular}{@{}rrrrrrr@{}}
+\toprule
+$q$ & $r_1$ & $r_2$ & $r$ & $t_1$ & $t_2$ & $t$\\
+\midrule
+4 & 60 & 13 & 8 & 0 & 1 & $-4$\\
+1 & 13 & 8 & 5 & 1 & $-4$ & 5\\
+1 & 8 & 5 & 3 & $-4$ & 5 & $-9$\\
+1 & 5 & 3 & 2 & 5 & $-9$ & 14\\
+1 & 3 & 2 & 1 & $-9$ & 14 & $-23$\\
+2 & 2 & 1 & 0 & 14 & $-23$ & 60\\
+ & \textbf{1} & 0 & & $\mathbf{-23}$ & 60 & \\
+\bottomrule
+\end{tabular}
+\end{center}
+$d = -23 \bmod 60 = \mathbf{37}$ (check $13 \times 37 = 481 = 8 \times 60 + 1$).
+Ciphertext $C = 63^{13} \bmod 77$, $13 = 1101_2$:
+\begin{center}\small
+\begin{tabular}{@{}lcccc@{}}
+\toprule
+bit & 1 & 1 & 0 & 1\\
+square & 1 & $63^2 = 3969 \equiv 42$ & $28^2 = 784 \equiv 14$ & $14^2 = 196 \equiv 42$\\
+$\times 63$ & 63 & $42 \cdot 63 = 2646 \equiv 28$ & -- & $42 \cdot 63 \equiv 28$\\
+\bottomrule
+\end{tabular}
+\end{center}
+$C = \mathbf{28}$. \emph{Check}: Thor computes $28^{37} \bmod 77$ ($37 = 100101_2$): $28 \to 14 \to 42 \to 70 \cdot 28 \equiv 35 \to 70 \to 49 \cdot 28 \equiv 63$ \checkmark. (Note $63 = 7 \times 9$ shares the factor 7 with $n$, so $C$ is also a multiple of 7; RSA still decrypts correctly for such messages, but in practice padding makes this case impossible to exploit.)
+
+\begin{keybox}[title={Q2 (9 marks)}]
+The ElGamal signature scheme uses the private key for signature generation and the public key for verification. Consider the prime field GF(19). (i) Find the primitive roots. (ii) Prove the correctness of the algorithm with respect to verification and signatures. (iii) Let the random integer be $r = 5$, the primitive root $e_1 = 10$ and the sender's private key $d = 16$. Find $e_2$, $S_1$ and $S_2$ for the message $M = 14$ and verify the signature.
+\end{keybox}
+
+\textbf{(i) Primitive roots of 19.} $\phi(19) = 18 = 2 \cdot 3^2$, so $g$ is a primitive root iff $g^{18/2} = g^9 \not\equiv 1$ and $g^{18/3} = g^6 \not\equiv 1 \pmod{19}$. Checking $g = 2, \dots, 18$:
+\begin{center}\small
+\begin{tabular}{@{}l*{17}{c}@{}}
+\toprule
+$g$ & 2&3&4&5&6&7&8&9&10&11&12&13&14&15&16&17&18\\
+$g^9$ & 18&18&1&1&1&1&18&1&18&1&18&18&18&18&1&1&18\\
+$g^6$ & 7&7&11&7&11&1&1&11&11&1&1&11&7&11&7&7&1\\
+\bottomrule
+\end{tabular}
+\end{center}
+The primitive roots are $\mathbf{2, 3, 10, 13, 14, 15}$; there are $\phi(\phi(19)) = \phi(18) = 6$ of them, as expected.
+
+\textbf{(ii) Correctness.} Keys: $e_2 = e_1^d \bmod p$. Signing: $S_1 = e_1^r \bmod p$, $S_2 = (M - d S_1)\, r^{-1} \bmod (p - 1)$, with $\gcd(r, p - 1) = 1$. Verifying: $V_1 = e_1^M \bmod p$, $V_2 = e_2^{S_1} S_1^{S_2} \bmod p$, accept iff $V_1 = V_2$. Proof: by the definition of $S_2$, $r S_2 \equiv M - d S_1 \pmod{p - 1}$, i.e.\ $d S_1 + r S_2 = M + k(p - 1)$. Then
+\[
+V_2 = e_2^{S_1} S_1^{S_2} = (e_1^{d})^{S_1} (e_1^{r})^{S_2} = e_1^{d S_1 + r S_2} = e_1^{M + k(p-1)} = e_1^M \cdot (e_1^{p-1})^k \equiv e_1^M = V_1 \pmod p
+\]
+by Fermat's little theorem. Exponents are reduced modulo $p - 1$ (not $p$) for exactly this reason. Conversely, a forger without $d$ cannot make $S_2$ satisfy this relation for a chosen $M$ without solving a discrete logarithm.
+
+\textbf{(iii) Numerical.} $p = 19$, $e_1 = 10$, $d = 16$, $r = 5$ ($\gcd(5, 18) = 1$, $5^{-1} \bmod 18 = 11$ since $55 = 3 \cdot 18 + 1$), $M = 14$.
+$e_2 = 10^{16} \bmod 19$: $10^2 = 100 \equiv 5$, $10^4 \equiv 25 \equiv 6$, $10^8 \equiv 36 \equiv 17$, $10^{16} \equiv 289 \equiv \mathbf 4$.
+$S_1 = 10^5 = 10^4 \cdot 10 \equiv 60 \equiv \mathbf 3 \pmod{19}$.
+$S_2 = (14 - 16 \cdot 3) \cdot 11 \bmod 18 = (-34 \bmod 18) \cdot 11 = 2 \cdot 11 = 22 \bmod 18 = \mathbf 4$.
+Signature $(S_1, S_2) = (3, 4)$ sent with $M = 14$.
+Verification: $V_1 = 10^{14} = 10^8 \cdot 10^4 \cdot 10^2 \equiv 17 \cdot 6 \cdot 5 = 510 \equiv 16$; $V_2 = 4^3 \cdot 3^4 = 64 \cdot 81 \equiv 7 \cdot 5 = 35 \equiv 16 \pmod{19}$. $V_1 = V_2 = 16$, so the signature is \textbf{valid}.
+
+\begin{keybox}[title={Q3 (5 marks)}]
+A secret sharing scheme distributes a secret $S$ among $n$ parties as shares; without the cooperation of $k$ parties the secret cannot be reconstructed. The shares for $n = 3$ parties are generated with moduli 3, 5 and 7, and they are 2, 3 and 2. Recover the secret $S$.
+\end{keybox}
+Each share is $S \bmod m_i$, so $S$ solves $S \equiv 2 \pmod 3$, $S \equiv 3 \pmod 5$, $S \equiv 2 \pmod 7$. The moduli are pairwise coprime, so by the CRT there is exactly one solution modulo $M = 105$; since the scheme keeps $S < M$, that solution is the secret, and with fewer shares (a smaller product of moduli) $S$ would not be determined. $M_1 = 35 \equiv 2 \pmod 3$, inverse 2; $M_2 = 21 \equiv 1 \pmod 5$, inverse 1; $M_3 = 15 \equiv 1 \pmod 7$, inverse 1.
+\[
+S = (2 \cdot 35 \cdot 2 + 3 \cdot 21 \cdot 1 + 2 \cdot 15 \cdot 1) \bmod 105 = (140 + 63 + 30) \bmod 105 = 233 \bmod 105 = \mathbf{23}.
+\]
+Check: $23 = 7 \cdot 3 + 2 = 4 \cdot 5 + 3 = 3 \cdot 7 + 2$ \checkmark. (This is the CRT worked example of \S\ref{sec:primes} in disguise.)
+
+\begin{keybox}[title={Q4 (7 marks)}]
+Finding an algorithm to correctly and efficiently test a very large integer has always been a challenge. However, we can make the probability of error so small that it is almost certain that the algorithm has returned a correct answer. Justify the statement by elaborating on the Miller--Rabin test with the algorithm, and verify whether 1019 is prime.
+\end{keybox}
+\textbf{Idea.} Deterministic tests are either slow (trial division, $\sqrt n$ steps) or impractical (AKS). A probabilistic test is fast and its answer ``composite'' is always right, while ``prime'' is wrong with a small probability that shrinks exponentially with the number of independent bases. Miller--Rabin strengthens Fermat's test: if $n$ is an odd prime then (Fermat) $a^{n-1} \equiv 1$ and (only two square roots of 1 modulo a prime) the chain $a^m, a^{2m}, \dots, a^{2^k m}$ with $n - 1 = 2^k m$, $m$ odd, must either start at 1 or pass through $-1$ before reaching 1. A composite $n$ violates this for at least $3/4$ of the bases, so one round errs with probability at most $1/4$, and $t$ independent rounds at most $4^{-t}$ ($t = 40$ gives $< 10^{-24}$). Unlike Fermat's test, Carmichael numbers do not fool it.
+
+\textbf{Algorithm.} Write $n - 1 = 2^k m$ with $m$ odd; pick $a$ with $1 < a < n - 1$; $T = a^m \bmod n$; if $T = \pm 1$ return ``prime''; repeat $k - 1$ times: $T = T^2 \bmod n$, if $T = 1$ return ``composite'', if $T = -1$ return ``prime''; finally return ``composite''.
+
+\textbf{Test of 1019.} $1018 = 2^1 \times 509$, so $k = 1$, $m = 509 = 111111101_2$. With $a = 2$, $T = 2^{509} \bmod 1019$:
+\begin{center}\small\setlength{\tabcolsep}{4pt}
+\begin{tabular}{@{}l*{9}{c}@{}}
+\toprule
+bit & 1&1&1&1&1&1&1&0&1\\
+square & 1&4&64&80&125&341&460&630&509\\
+$\times 2$ & 2&8&128&160&250&682&920&--&1018\\
+\bottomrule
+\end{tabular}
+\end{center}
+$T = 1018 \equiv -1 \pmod{1019}$, so the test returns \textbf{``prime''} (there are no further squarings since $k - 1 = 0$). A second base agrees: $3^{509} \equiv 1$. Each base has error probability at most $1/4$, so two agreeing bases leave at most $1/16$, and more bases push it as low as desired. (Trial division by the primes up to $\lfloor\sqrt{1019}\rfloor = 31$ confirms that \textbf{1019 is prime}.)
+
+\begin{keybox}[title={Q5 (7 marks)}]
+SHA-512 is a member of the SHA-2 family and operates on 1024-bit message blocks using 64-bit words. Explain the SHA-512 design, including message preparation, word expansion, the compression function and the structure of each round.
+\end{keybox}
+Model answer in the class (Forouzan) notation; full detail in \S\ref{sec:integrity}. SHA-512 is an iterated (Merkle--Damg\aa rd) hash with a 512-bit digest, built from a compression function made from scratch.
+\emph{Message preparation.} Padding (a single 1 followed by 0s) and a 128-bit length field are appended so that $|M| + |P| + 128 \equiv 0 \pmod{1024}$, i.e.\ $|P| = (-|M| - 128) \bmod 1024$; padding is added even when $|M|$ is already a multiple of 1024. The result is split into $N$ blocks of 1024 bits. The initial digest $H_0$ is eight 64-bit words $A_0..H_0$ (first 64 bits of the fractional parts of $\sqrt 2, \sqrt 3, \dots, \sqrt{19}$).
+\emph{Word expansion.} A block gives 16 words $W_0..W_{15}$; the remaining 64 are $W_i = W_{i-16} \oplus \mathrm{RotShift}_{1\text{-}8\text{-}7}(W_{i-15}) \oplus W_{i-7} \oplus \mathrm{RotShift}_{19\text{-}61\text{-}6}(W_{i-2})$ for $16 \le i \le 79$, where $\mathrm{RotShift}_{l\text{-}m\text{-}n}(x) = \mathrm{RotR}_l(x) \oplus \mathrm{RotR}_m(x) \oplus \mathrm{ShL}_n(x)$.
+\emph{Compression function.} The previous digest is copied into registers $A..H$, which pass through 80 rounds (round $i$ uses $W_i$ and the constant $K_i$, the cube-root fractions of the first 80 primes); finally the saved digest is added word-wise modulo $2^{64}$. This feed-forward makes the step one-way, and the output of the last block is the digest.
+\emph{One round.} Two mixers compute $T_1 = H + \mathrm{Conditional}(E, F, G) + \mathrm{Rotate}(E) + W_i + K_i$ and $T_2 = \mathrm{Majority}(A, B, C) + \mathrm{Rotate}(A)$ (all $+$ modulo $2^{64}$); then $A \leftarrow T_1 + T_2$, $E \leftarrow D + T_1$, and the other words shift: $B \leftarrow A$, $C \leftarrow B$, $D \leftarrow C$, $F \leftarrow E$, $G \leftarrow F$, $H \leftarrow G$. Here $\mathrm{Conditional}(E, F, G) = (E \wedge F) \oplus (\neg E \wedge G)$ (``if $E$ then $F$ else $G$'' bitwise), $\mathrm{Majority}(A, B, C) = (A \wedge B) \oplus (B \wedge C) \oplus (C \wedge A)$ and $\mathrm{Rotate}(x) = \mathrm{RotR}_{28}(x) \oplus \mathrm{RotR}_{34}(x) \oplus \mathrm{RotR}_{39}(x)$. Conditional and Majority give non-linearity; rotations, XORs and the modular additions spread every input bit over the state (diffusion). (FIPS 180-4 differs in detail: the expansion uses additions and right shifts, and $E$ is rotated by 14, 18, 41; mention this only as a remark.) Draw the block chain $H_0 \to F \to H_1 \to \dots \to H_N$ and the one-round diagram with the two mixers.
+
+\begin{keybox}[title={Q6 (6 + 6 marks)}]
+(a) The generator is 7 and the prime is 23; Srikanth chooses his secret value 3 and JK Talpade chooses his secret value 6. Using Diffie--Hellman, show how they both create the session key. How can Rukma intercept the secret communication? Elaborate with a scenario.\\
+(b) Write short notes on: (i) Hill cipher (ii) Steganography (iii) Euler's theorem.
+\end{keybox}
+\textbf{(a) Key agreement.} Public $g = 7$, $p = 23$. Srikanth: $x = 3$, $R_1 = 7^3 = 343 \bmod 23 = \mathbf{21}$, sent to JK. JK: $y = 6$, $R_2 = 7^6 = (7^3)^2 = 21^2 = 441 \bmod 23 = \mathbf 4$, sent to Srikanth. Srikanth computes $K = R_2^x = 4^3 = 64 \bmod 23 = 18$; JK computes $K = R_1^y = 21^6 = (21^2)^3 \equiv 4^3 \equiv 18$. Both hold $K = g^{xy} = 7^{18} \bmod 23 = \mathbf{18}$, and only $R_1, R_2$ crossed the network; an eavesdropper would need a discrete logarithm ($x$ from $7^x \equiv 21$), easy here but infeasible for a 2048-bit $p$.
+
+\emph{Rukma's man-in-the-middle scenario.} Plain Diffie--Hellman does not authenticate $R_1$ and $R_2$. Rukma sits on the path and picks her own secret, say $z = 5$, with $R_3 = 7^5 \bmod 23 = 17$. She intercepts $R_1 = 21$ and sends 17 to JK instead; she intercepts $R_2 = 4$ and sends 17 to Srikanth instead. Srikanth computes $K_1 = 17^3 \bmod 23 = \mathbf{14}$, which Rukma also gets as $21^5 \bmod 23 = 14$; JK computes $K_2 = 17^6 \bmod 23 = \mathbf{12}$, which Rukma gets as $4^5 \bmod 23 = 12$. Now every message Srikanth encrypts under 14 is decrypted by Rukma, read or altered, re-encrypted under 12 and passed to JK (and vice versa), while both believe they share one key. This is the man-in-the-middle (bucket-brigade) attack. Fix: authenticate the exchanged values, as in the station-to-station protocol, where each party signs $(\text{ID} \,\|\, R_1 \,\|\, R_2)$ with its private key and sends a CA certificate; Rukma cannot forge those signatures.
+
+\textbf{(b)(i) Hill cipher.} A polygraphic substitution cipher (Lester Hill, 1929): the plaintext is split into blocks of $m$ letters (numbers 0--25) and each block row vector is multiplied by an $m \times m$ key matrix, $C = PK \bmod 26$; decryption uses $P = CK^{-1} \bmod 26$, so $K$ must be invertible mod 26 ($\gcd(\det K, 26) = 1$). Because each ciphertext letter depends on all $m$ plaintext letters of the block, single-letter frequencies are hidden; but the cipher is linear, so a known-plaintext attack with $m$ independent blocks recovers $K = P^{-1}C$. (\S\ref{sec:hill}.)
+
+\textbf{(ii) Steganography.} ``Covered writing'': hiding the \emph{existence} of a message inside an innocent cover (text, image, audio, video, network packets), whereas cryptography hides its \emph{meaning}. The commonest digital method is least-significant-bit (LSB) substitution, replacing the last bit of each pixel byte with message bits, which changes each value by at most 1 and is invisible; a $512 \times 512$ 24-bit image hides up to 96 KB. Weaknesses: once the method is known it gives no security, and statistical steganalysis or recompression can detect or destroy it, so the message is usually encrypted first. (\S\ref{sec:stego}, \S\ref{sec:othertech}.)
+
+\textbf{(iii) Euler's theorem.} If $\gcd(a, n) = 1$ then $a^{\phi(n)} \equiv 1 \pmod n$, where $\phi(n)$ counts the integers in $1..n$ coprime to $n$ (for $n = pq$, $\phi(n) = (p-1)(q-1)$). It generalises Fermat's theorem ($n$ prime, $\phi = p - 1$). Uses: reducing exponents modulo $\phi(n)$, inverses $a^{-1} \equiv a^{\phi(n)-1} \pmod n$, and the correctness of RSA, since $ed = 1 + k\phi(n)$ gives $(M^e)^d = M \cdot (M^{\phi(n)})^k \equiv M$. Example: $\phi(10) = 4$ and $3^4 = 81 \equiv 1 \pmod{10}$. (\S\ref{sec:fermat}.)

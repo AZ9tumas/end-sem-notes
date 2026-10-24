@@ -313,7 +313,8 @@ Single sign-on & no & no & yes, through the TGS\\
 \end{tabularx}
 \end{center}
 
-\subsection{Symmetric-key agreement: Diffie--Hellman \hot\new}
+\subsection{Symmetric-key agreement: Diffie--Hellman \hot}
+\asked{End-sem 2025--26 Q6(a) (6 marks): $g = 7$, $p = 23$, secrets 3 and 6 (exactly the slide example), plus how an interceptor attacks it.}
 \likely{``Explain Diffie--Hellman key exchange; prove that both parties get the same key; compute $R_1$, $R_2$, $K$ for given $p$, $g$, $x$, $y$'' (5--6 marks).}
 
 A KDC needs a trusted third party that is online for every session and a master key registered in advance. In \textbf{symmetric-key agreement}, Alice and Bob create a session key between themselves, over a public channel, without a KDC and without any earlier shared secret. The slides discuss two methods: Diffie--Hellman and station-to-station.
@@ -412,7 +413,8 @@ B computes $K = 40^{233} = 40^{128} \cdot 40^{64} \cdot 40^{32} \cdot 40^{8} \cd
 The key is $g^{xy} \bmod p$, not $g^{x+y}$ and not $R_1 \cdot R_2$. Each party raises the \emph{other's} public value to its \emph{own} secret exponent. $x$ and $y$ are never sent. Reduce modulo $p$ (not $p - 1$) after every multiplication; exponents may be reduced modulo $p - 1$ (Fermat).
 \end{trap}
 
-\subsection{Security of Diffie--Hellman: discrete logarithm and man-in-the-middle \hot\new}
+\subsection{Security of Diffie--Hellman: discrete logarithm and man-in-the-middle \hot}
+\asked{End-sem 2025--26 Q6(a): ``How can Rukma intercept the secret communication? Elaborate with a scenario.''}
 \likely{``Explain the man-in-the-middle (bucket brigade) attack on Diffie--Hellman with a diagram; compute the two keys Eve shares'' (5 marks); ``what are the requirements on $p$ and $g$?''.}
 
 The slides list two attacks: the discrete logarithm attack, which breaks the mathematics, and the man-in-the-middle attack, which does not need to.

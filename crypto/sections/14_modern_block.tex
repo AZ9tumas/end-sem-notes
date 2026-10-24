@@ -139,7 +139,7 @@ A single small component is easy to analyse and therefore easy to break; a full-
 \centerline{\small One round of the slides' 8-bit product cipher (the slide shows two such rounds).}
 
 \subsection{Feistel ciphers \hot}
-\asked{2024--25 Q6 (5 marks) opens with ``what Feistel structure is prevalent in DES'': the derivation below is that part of the answer.}
+\asked{Mid-sem 2024--25 Q6 (5 marks) opens with ``what Feistel structure is prevalent in DES'': the derivation below is that part of the answer.}
 Modern block ciphers fall into two classes. \textbf{Feistel ciphers} (DES) use invertible, self-invertible \emph{and noninvertible} components; \textbf{non-Feistel ciphers} (AES) use only invertible components. The problem the Feistel design solves is this: noninvertible components such as an expansion P-box or a $6 \to 4$ S-box mix bits very effectively, but a cipher must be decryptable, and a noninvertible component cannot be run backwards. Feistel's idea is to collect all the noninvertible parts into one function $f$ and never invert it. Its output is only ever \emph{XORed} onto the data, and since XOR is self-inverse, the receiver can cancel it by computing the same $f$ value again and XORing once more.
 
 \textbf{Step 1: the idea in its simplest form.} Let $f$ depend only on the key. Then

@@ -3,6 +3,7 @@
 % "Attack is today"), Stallings 2.2 (Hill known-plaintext "hillcipher", Vigenere/autokey "deceptive", Vernam).
 % Every number recomputed by script (scratchpad/r2/verify.py, verify2.py).
 \section{Hill Cipher}\label{sec:hill}
+\asked{End-sem 2025--26 Q6(b): short note on the Hill cipher (2 marks).}
 \likely{Hill encryption with a $2\times2$ or $3\times3$ key, then $K^{-1}$ and decryption (5--8 marks); or the known-plaintext attack $K = P^{-1}C$ (3--4 marks).}
 
 Playfair hides single-letter frequencies, but it works only on pairs, its rules are fixed geometric moves, and each digram always has the same substitute, so digram statistics still leak. The \textbf{Hill cipher}, published by the mathematician \textbf{Lester Hill in 1929}, generalises the idea to blocks of any size $m$ and replaces the geometric rules by linear algebra modulo 26. Each ciphertext letter of a block is a weighted sum of \emph{all} $m$ plaintext letters of that block, so the same plaintext letter becomes different ciphertext letters depending on its neighbours, and for $m \ge 3$ even digram frequencies are hidden. It is a \textbf{multiletter} (polygraphic) substitution cipher: $m = 2$ encrypts digraphs, $m = 3$ trigraphs, general $m$ polygraphs. Because every character of a block contributes to the encryption of every other character of the block, Forouzan classifies Hill as a \textbf{block cipher}, while the letter-by-letter ciphers before it are stream ciphers.
@@ -273,7 +274,7 @@ Monoalphabetic ciphers fall to frequency analysis because every letter always ge
 Since the occurrences of a frequent letter such as \ttx{e} are spread over several ciphertext letters, and each ciphertext letter collects several different plaintext letters, the ciphertext histogram is much flatter than the plaintext one, and Eve cannot use single-letter frequency statistics. How secure the cipher is then depends entirely on how the sequence of rules, the \textbf{key stream}, is produced. The four ciphers below are successive answers to that question: repeat a keyword (Vigen\`ere), continue the keyword with the plaintext (autokey), use an independent key stream of bits (Vernam), and finally a truly random key used once (the one-time pad, \S\ref{sec:otp}).
 
 \subsection{Vigen\`ere cipher \hot}
-\asked{2025--26 Q1 (8 marks, the biggest question so far): one-time-pad version of Vigen\`ere, encrypt ``sendmoremoney'' with a key stream, then find the key that turns the ciphertext into ``cashnotneeded''. 2024--25 Q1(c): characters changed.}
+\asked{Mid-sem 2025--26 Q1 (8 marks, the biggest question so far): one-time-pad version of Vigen\`ere, encrypt ``sendmoremoney'' with a key stream, then find the key that turns the ciphertext into ``cashnotneeded''. 2024--25 Q1(c): characters changed.}
 \likely{Encrypt or decrypt with a keyword (3--4 marks); find the key from a known plaintext ($K_i = C_i - P_i$); ``explain the Kasiski test'' (2--3 marks).}
 The Vigen\`ere cipher (16th century) uses as its rule set the \textbf{26 Caesar ciphers} with shifts 0 to 25, each named by the letter that \ttx{a} is shifted to: key letter \ttx{d} means shift 3. The key is a keyword $k_1 k_2 \dots k_m$ of length $m$, and it is \textbf{repeated} as often as needed to cover the message, so plaintext letter $i$ is encrypted with the Caesar cipher chosen by key letter $i \bmod m$. In the \textbf{Vigen\`ere tableau}, a $26 \times 26$ table whose row $k$ is the alphabet shifted by $k$, encryption is a lookup: the row of the key letter and the column of the plaintext letter meet at the ciphertext letter.
 \begin{center}
@@ -350,7 +351,7 @@ Ciphertext: \textbf{\ttx{HHWKSWXSLGNTCG}}. \textbf{Check:} $H - P = 7 - 15 = -8 
 \end{worked}
 
 \subsection{Autokey system \hot}
-\asked{2024--25 Q1(d): one plaintext change alters \textbf{2} ciphertext characters in auto-key (the letter itself and the one it keys).}
+\asked{Mid-sem 2024--25 Q1(d): one plaintext change alters \textbf{2} ciphertext characters in auto-key (the letter itself and the one it keys).}
 \likely{An autokey encryption (keyword version or Forouzan's single initial key, 2--4 marks); ``how many ciphertext characters change'' or ``why is autokey still breakable'' (1--2 marks).}
 Vigen\`ere's weakness is the period, so the obvious fix is a key that never repeats. Vigen\`ere himself proposed the \textbf{autokey system}: the keyword is followed by the \textbf{plaintext itself}, so the key is a \textbf{running key} as long as the message. In the lecture (Stallings) version with a keyword of length $m$, $k_{i+m} = P_i$. The slides (Forouzan) use the special case $m = 1$: the first subkey $k_1$ is a secret number agreed by Alice and Bob, the second subkey is the value of the first plaintext letter, the third is the second plaintext letter, and so on, so $k = (k_1, P_1, P_2, \dots)$. In both versions
 \begin{center}

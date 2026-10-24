@@ -1,7 +1,7 @@
 % Neso videos on modular exponentiation, part 1 (base reduction) and part 2 (repeated squaring) (notes8.md); Forouzan 9.4
 % (square-and-multiply, right-to-left); Stallings (fast modular exponentiation, left-to-right). Every number recomputed by script (scratchpad/r4/verify.py, v2.py).
 \section{Modular Exponentiation \hot}\label{sec:modexp}
-\asked{2024--25 Q5(ii): $100^{95} \bmod 9$, $658^{17} \bmod 17$, $145^{102} \bmod 101$. \new\ This year every RSA/ElGamal numerical also needs it (\S\ref{sec:rsa}).}
+\asked{Mid-sem 2024--25 Q5(ii): $100^{95} \bmod 9$, $658^{17} \bmod 17$, $145^{102} \bmod 101$. \new\ This year every RSA/ElGamal numerical also needs it (\S\ref{sec:rsa}).}
 
 Modular exponentiation is exponentiation performed over a modulus: \imp{$a^b \bmod m$ means $(a^b) \bmod m$, the remainder of the whole power}; the modulus does not apply to the exponent. It is the core operation of public-key cryptography. RSA encrypts with $C = P^e \bmod n$ and decrypts with $P = C^d \bmod n$, Diffie--Hellman computes $g^x \bmod p$, ElGamal and DSS are built from the same operation, and elliptic-curve cryptography uses its additive analogue, double-and-add. The lecture introduces it with $2^{33} \bmod 30$ and $3^{100} \bmod 29$.
 

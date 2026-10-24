@@ -52,7 +52,8 @@ $n$ & Square roots of 1 mod $n$ & Comment\\
 \end{center}
 The test is one-way: $n = 22 = 2 \times 11$ has only $\pm 1$, because modulo 2 there is a single square root of 1. For an odd $n$ with $r$ distinct prime factors there are $2^r$ square roots of 1 (a choice of $\pm1$ modulo each prime factor, glued by the CRT). A nontrivial root also \emph{factors} $n$: since $n \mid (x - 1)(x + 1)$ but divides neither factor, $\gcd(x \pm 1, n)$ are proper factors; for $x = 67$, $\gcd(66, 561) = 33$ and $\gcd(68, 561) = 17$.
 
-\subsection{Miller--Rabin test \new}
+\subsection{Miller--Rabin test \hot}
+\asked{End-sem 2025--26 Q4 (7 marks): explain Miller--Rabin with the algorithm and test whether 1019 is prime.}
 \likely{``Use the Miller--Rabin test with base 2 to check whether 561 (or 61, 341) is prime'': write $n - 1 = m \cdot 2^k$, then the $T$ table.}
 The Fermat test only looks at the final value $a^{n-1}$, and Carmichael numbers make that value 1 for every base. Miller--Rabin also looks at the values \emph{on the way} to $a^{n-1}$ and applies the square-root test to them, which catches Carmichael numbers too.
 
@@ -184,7 +185,8 @@ For $8051$ it succeeds immediately ($90^2 - 8051 = 49 = 7^2$, so $8051 = 97 \tim
 
 \textbf{Other methods} (named on the slides). \emph{Pollard $p - 1$} finds a prime factor $p$ quickly when $p - 1$ has only small prime factors, by computing $\gcd(a^{B!} - 1, n)$. \emph{Pollard rho} iterates $x \leftarrow x^2 + c \bmod n$ and finds a factor $p$ in about $\sqrt p$ steps from a repetition modulo $p$, detected with a gcd. The \emph{quadratic sieve} and the \emph{number field sieve} build many congruences $x^2 \equiv y^2 \pmod n$ (a generalisation of Fermat's idea) and are sub-exponential; the number field sieve is the fastest known method for large RSA moduli, but it is still far too slow for 2048-bit $n$. (A \emph{sieve of Eratosthenes}, by contrast, is the school method for \emph{listing} all primes up to a bound by crossing out multiples.)
 
-\subsection{Chinese remainder theorem \new}
+\subsection{Chinese remainder theorem \hot}
+\asked{End-sem 2025--26 Q3 (5 marks): secret sharing, shares 2, 3, 2 modulo 3, 5, 7; recover $S$ ($S = 23$).}
 \likely{Forouzan style ``Solve $x \equiv 2 \pmod 3$, $x \equiv 3 \pmod 5$, $x \equiv 2 \pmod 7$'' with the full $M$, $M_i$, $M_i^{-1}$ table and the inverses by extended Euclid; or a word problem / RSA speed-up.}
 \textbf{Problem.} We are given several congruences in one unknown with different moduli,
 \[

@@ -89,7 +89,7 @@ Field & all 5 & all 5, except 0 has no inverse; distributes over $+$ & $(+,-)$ a
 \textbf{Galois' result.} \imp{A finite field must have $p^n$ elements, $p$ prime and $n \ge 1$}; it is written GF$(p^n)$ (Galois field). The reason is short. Add 1 to itself repeatedly: $1, 1 + 1, 1 + 1 + 1, \dots$. The field is finite, so some sum $k \cdot 1$ must equal 0; let $p$ be the smallest such $k$. This $p$ must be prime, because $p = ab$ with $a, b < p$ would give $(a \cdot 1)(b \cdot 1) = 0$ with both factors non-zero, which the zero-divisor argument forbids. So the field contains a copy of $\mathbb{Z}_p$. Every element can then be written uniquely as $a_0 e_0 + a_1 e_1 + \dots + a_{n-1} e_{n-1}$ with coefficients $a_i \in \mathbb{Z}_p$ for some fixed basis $e_0, \dots, e_{n-1}$ (the field is an $n$-dimensional vector space over $\mathbb{Z}_p$). There are $p$ choices for each of the $n$ coefficients, giving $p^n$ elements. For GF$(2^n)$ the basis will be $1, x, \dots, x^{n-1}$ and the coefficients will be bits, which is exactly the polynomial representation used below.
 
 \subsection{GF$(p)$ arithmetic and division \hot}
-\asked{2024--25 Q5(i): $5 \div 3$ in GF(7).}
+\asked{Mid-sem 2024--25 Q5(i): $5 \div 3$ in GF(7).}
 GF$(p)$ is the set $\mathbb{Z}_p = \{0, 1, \dots, p - 1\}$ with addition and multiplication mod $p$. Subtraction is addition of the additive inverse, $a - b = a + (p - b)$, and division is multiplication by the multiplicative inverse, $a \div b = a \times b^{-1}$, which exists for every $b \ne 0$ because $p$ is prime. The inverse is found with the extended Euclidean algorithm, by inspection for small $p$ (look for $b \cdot y \equiv 1$), or by Fermat as $b^{-1} \equiv b^{p-2}$.
 
 The smallest field, \textbf{GF(2)} $= \{0, 1\}$, is the one every bit lives in: addition and subtraction are both \textbf{XOR} ($1 + 1 = 0$, and $-1 = 1$), multiplication is \textbf{AND}, and 1 is its own inverse under both operations. In \textbf{GF(5)} the additive inverse pairs are $(1, 4), (2, 3)$ and the multiplicative ones $(1, 1), (2, 3), (4, 4)$; in \textbf{GF(7)} they are $(1, 6), (2, 5), (3, 4)$ and $(1, 1), (2, 4), (3, 5), (6, 6)$.
@@ -239,7 +239,7 @@ $\{13\} = $ \ttx{00010011} $= x^4 + x + 1$, so $\{57\} \bullet \{13\} = $ \ttx{0
 \end{worked}
 
 \subsection{Multiplicative inverse in GF$(2^n)$: extended Euclid on polynomials \hothot}
-\asked{2024--25 Q4 (4 marks): inverse of $x^5$; 2025--26 Q2 (4 marks): inverse of $x^7$, both mod $x^8+x^4+x^3+x+1$.}
+\asked{Mid-sem 2024--25 Q4 (4 marks): inverse of $x^5$; 2025--26 Q2 (4 marks): inverse of $x^7$, both mod $x^8+x^4+x^3+x+1$.}
 Division in GF$(2^n)$ needs the inverse $a^{-1}$ with $a \otimes a^{-1} \equiv 1 \pmod{m}$. The idea is the same as for integers. The extended Euclidean algorithm on $m(x)$ and $a(x)$ produces polynomials $s, t$ with $s \cdot m + t \cdot a = \gcd(m, a)$. Since $m$ is irreducible and $a$ is a non-zero polynomial of smaller degree, the gcd is 1, so $t \cdot a = 1 + s \cdot m \equiv 1 \pmod m$, and $t$ is the inverse. As with integer inverses, only the $t$ column is needed.
 
 The table is Forouzan's integer table with two changes: the quotient $q$ comes from a polynomial long division, and every subtraction is an XOR. Start with $r_1 = m$, $r_2 = a$, $t_1 = 0$, $t_2 = 1$, and in each row compute

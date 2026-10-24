@@ -563,7 +563,8 @@ $30^{32} \cdot 30^8 = 53 \cdot 60 = 3180 \equiv 23$; \;$23 \cdot 53 = 1219 \equi
 \textbf{Verify} $M' = 72^7 \bmod 77$, $7 = 4 + 2 + 1$: $72^2 = 5184 \equiv 25$; $72^4 \equiv 25^2 = 625 \equiv 9$; \;$9 \cdot 25 = 225 \equiv 71$; \;$71 \cdot 72 = 5112 \equiv 30$. $M' = 30 = M$ \checkmark: accept.
 \end{worked}
 
-\subsection{ElGamal digital signature scheme \hot\new}
+\subsection{ElGamal digital signature scheme \hot}
+\asked{End-sem 2025--26 Q2 (9 marks): GF(19), primitive roots, proof of correctness, sign and verify with $e_1 = 10$, $d = 16$, $r = 5$, $M = 14$.}
 \likely{``Explain the ElGamal signature; prove that verification works; sign and verify with given $p, e_1, d, r$'' (5--6 marks). The slide numbers are a likely source.}
 
 The ElGamal signature uses the same keys as the ElGamal cryptosystem (\S\ref{sec:elgamal}) but a different algorithm. Alice proves knowledge of $d$, the discrete logarithm of $e_2$, without revealing it: she commits to a fresh random exponent $r$ through $S_1 = e_1^r$, and then publishes $S_2$, which ties $M$, $d$ and $r$ together by a linear equation in the exponent that only someone knowing $d$ can satisfy.
@@ -721,7 +722,8 @@ so Bob hashes exactly the string $M \,|\, e_1^r \bmod p$ that Alice hashed, and 
 $e_1^{S_2} e_2^{-S_1} = 13 \cdot 6 = 78 \equiv 9 = X$ \checkmark; \;$V = h(15 \,|\, 9) = h(159) = 5 = S_1$: \textbf{accept}.
 \end{worked}
 
-\subsection{Digital Signature Standard (DSS / DSA) \hot\new}
+\subsection{Digital Signature Standard (DSS / DSA) \hot}
+\asked{End-sem 2023--24 Q2 (10 marks): why DSS was criticised; key generation, signing, verifying; $q = 59$, $p = 709$, $d = 14$, $r = 13$, $h(M) = 100$.}
 \likely{``Explain DSS key generation, signing and verifying with a diagram; prove $V = S_1$; compare DSS with RSA'' (5--6 marks), possibly with a small numerical.}
 
 The \textbf{Digital Signature Standard} (DSS) was adopted by NIST in 1994 as FIPS 186; its algorithm is the \textbf{Digital Signature Algorithm} (DSA). It combines the two previous ideas: the ElGamal form of $S_2$ (hash plus $d S_1$, divided by $r$) and Schnorr's order-$q$ subgroup, so that $S_1$ and $S_2$ are both reduced modulo the 160-bit prime $q$.

@@ -5,7 +5,7 @@
 The \textbf{Data Encryption Standard} is the symmetric-key block cipher published by NIST (then NBS) in 1977, based on IBM's Lucifer. It encrypts a \textbf{64-bit block} with a \textbf{56-bit key} through \textbf{16 Feistel rounds}. The key is normally supplied as 64 bits, of which 8 are parity bits that are dropped, and a key schedule derives sixteen \textbf{48-bit round keys} $K_1, \dots, K_{16}$ from it. Decryption is done by the \textbf{reverse cipher}, which is the same algorithm with the round keys used in the order $K_{16}, \dots, K_1$. DES has since been replaced by AES because its key is too short, but its structure is the standard example of a Feistel cipher (Section~\ref{sec:modern}).
 
 \subsection{DES structure \hot}
-\asked{2024--25 Q6 (5 marks): Feistel structure, block diagrams of the DES algorithm and the round function, pseudocode for the S-box substitution and key generation.}
+\asked{Mid-sem 2024--25 Q6 (5 marks): Feistel structure, block diagrams of the DES algorithm and the round function, pseudocode for the S-box substitution and key generation.}
 Encryption consists of an \textbf{initial permutation} (IP) of the 64-bit plaintext, sixteen rounds, and a \textbf{final permutation} (FP). After IP the block is split into a left half $L_0$ and a right half $R_0$ of 32 bits each. Each round $i$ takes $(L_{i-1}, R_{i-1})$ and produces $(L_i, R_i)$ with a Feistel \textbf{mixer} followed by a \textbf{swapper}:
 \[
 L_i = R_{i-1}, \qquad R_i = L_{i-1} \oplus f(R_{i-1}, K_i),
@@ -319,7 +319,8 @@ bits differing & 1&6&20&29&30&33&32&29&32&39&33&28&30&31&30&29\\
 After only 3 to 4 rounds the difference is already near the ideal of 32; the remaining rounds keep it there.
 \end{worked}
 
-\subsection{Weaknesses of DES}
+\subsection{Weaknesses of DES \hot}
+\asked{End-sem 2025--26 Q1(a) (4 marks): issues and attacks in DES and double DES, and how they were addressed (triple DES, AES).}
 \textbf{Design of the S-boxes and P-boxes.} Critics point out a few irregularities, none of which has led to a practical attack:
 \begin{itemize}
   \item In S-box 4, the last three output bits can be derived in the same way as the first output bit by complementing some of the input bits.
@@ -362,7 +363,8 @@ First key & Second key & First key & Second key\\
 
 \textbf{Key complement.} Let $\bar{x}$ be the bitwise complement. Then $E_{\bar K}(\bar P) = \overline{E_K(P)}$. Proof: complementing $K$ complements every round key, and complementing the data complements $R_{i-1}$ and hence its expansion; then $E(\bar R) \oplus \bar K_i = E(R) \oplus K_i$, so the S-box inputs and $f$ are unchanged, and $\bar L \oplus f = \overline{L \oplus f}$, so every half stays complemented through all rounds (checked by script). As a result, a chosen-plaintext attacker who has $C_1 = E_K(P)$ and $C_2 = E_K(\bar P)$ can test two keys with one encryption ($K$ and $\bar K$), halving the brute-force work to $2^{55}$.
 
-\subsection{Multiple DES}
+\subsection{Multiple DES \hot}
+\asked{End-sem 2025--26 Q1(a) (4 marks): why double DES failed (meet-in-the-middle) and how triple DES fixes it.}
 The obvious fix for a short key is to encrypt several times with different keys. This only helps because DES is \textbf{not a group}: if for every $K_1$, $K_2$ there were a $K_3$ with $E_{K_2}(E_{K_1}(P)) = E_{K_3}(P)$, double encryption would just be single DES with another key. It has been shown that no such $K_3$ exists in general, so cascading DES really produces new mappings.
 
 \textbf{Double DES.} $C = E_{K_2}(E_{K_1}(P))$ and $P = D_{K_1}(D_{K_2}(C))$, with a 112-bit key $(K_1, K_2)$. One would expect $2^{112}$ trials for a brute-force attack, but the \textbf{meet-in-the-middle attack} (a known-plaintext attack) needs only about $2^{57}$. The derivation starts from the middle text $M$, the value between the two encryptions:

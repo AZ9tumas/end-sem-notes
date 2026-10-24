@@ -220,7 +220,8 @@ The second row is the negative of the first ($(18 - k)P = -kP$), and $9P = (7, 0
 
 \textbf{Elliptic curve discrete logarithm problem (ECDLP).} Given a point $P$ (ideally a generator) and $T = dP$, find $d$ with $1 \le d \le \#E$. Computing $T$ from $d$ takes about $\log_2 d$ doublings, but no shortcut is known for the reverse: on a well-chosen curve the best attack is a generic one such as \textbf{Pollard's rho}, which needs about $\sqrt{\#E}$ steps. On the toy curve the table answers it at once ($T = (4, 2) \Rightarrow d = 8$); for a 160-bit curve, $\sqrt{\#E} \approx 2^{80}$ steps is infeasible.
 
-\subsection{ECC simulating ElGamal \new}
+\subsection{ECC simulating ElGamal \hot}
+\asked{End-sem 2023--24 Q1 (10 marks): ECC encryption/decryption on $E_{11}(1, 2)$ with $e_1 = (2, 1)$, $d = 3$, $P = (4, 2)$, $r = 6$.}
 \likely{``Explain ECC encryption/decryption; verify the given example'' (the slide's $E_{67}(2, 3)$ example).}
 
 ElGamal works in any group where the discrete log is hard, so it carries over by a dictionary: multiplication mod $p$ becomes point addition, exponentiation becomes scalar multiplication, and the inverse becomes the negative point. The plaintext must be encoded as a point $P$ on the curve.
@@ -275,7 +276,8 @@ $C_2 + (10, 7)$ & $5 \cdot (-1)^{-1} = 5 \cdot 12 \equiv 8$ & $43 \equiv 4$ & $5
 \textbf{Decrypt}: $d \times C_1 = 3 \cdot (8, 12) = (10, 6)$, the same point as $r \times e_2$; negative $(10, 7)$; $(11, 2) + (10, 7) = \mathbf{(4, 2)}$ \checkmark. In multiples of $e_1$ (table above): $e_2 = 3e_1$, $C_1 = 2e_1$, $P = 8e_1$, $C_2 = (8 + 6)e_1 = 14 e_1$, and $14 - 6 = 8$ \checkmark.
 \end{worked}
 
-\subsection{Security of ECC and key size \new}
+\subsection{Security of ECC and key size \hot}
+\asked{End-sem 2023--24 Q1(a): justify that 160-bit ECC gives the security of 1024-bit RSA.}
 \likely{``Why does ECC need smaller keys than RSA for the same security? (2 marks).}
 To decrypt, Eve needs $r$ (then $P = C_2 - r \times e_2$) or $d$ (then $P = C_2 - d \times C_1$). Finding $r$ from $C_1 = r \times e_1$, or $d$ from $e_2 = d \times e_1$, is the ECDLP, which for large $p$ (or large $n$ in GF$(2^n)$) is infeasible by Pollard's rho. As in ElGamal, $r$ must be fresh for every message.
 
