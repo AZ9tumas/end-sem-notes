@@ -1,0 +1,101 @@
+% Question bank for Lecture 15 (MAC, HMAC, CMAC, digital signatures). Every number verified by script
+% (scratchpad/w20/verify_q.py, verify_all.py).
+\section{Message Authentication and Digital Signatures}\label{q:mac}
+
+\subsection*{Check your understanding}
+\begin{enumerate}[leftmargin=1.6em,itemsep=3pt]
+  \item \textbf{Why can a message digest (MDC) not authenticate the sender?} The hash function is public and keyless, so Eve can write any message $M'$, compute $h(M')$ herself and send the consistent pair $(M', h(M'))$; the digest proves only that $M$ matches $h(M)$, not who made them. An MDC therefore gives integrity only, and only if the MDC itself travels over a channel immune to change (\S\ref{sec:mac}).
+  \item \textbf{Differentiate MDC and MAC.} An MDC is $h(M)$, needs no key, must be sent over a safe channel and gives integrity only. A MAC is computed with a shared secret key (e.g.\ $h(K \,|\, M)$, HMAC, CMAC), travels with the message over an insecure channel, and gives integrity plus data-origin authentication, because only holders of $K$ can produce it.
+  \item \textbf{What are prefix, postfix and envelope MACs, and why is the prefix MAC $h(K \,|\, M)$ insecure?} Prefix: $h(K \,|\, M)$; postfix: $h(M \,|\, K)$; envelope: $h(K_1 \,|\, M \,|\, K_2)$. With an iterated (Merkle--Damg\aa rd) hash the tag of the prefix MAC is the final chaining value, so Eve can continue hashing from it and compute $h(K \,|\, M \,|\, \text{pad} \,|\, X)$ without $K$ (length extension), forging a MAC on a longer message.
+  \item \textbf{In how many ways can Eve try to forge a MAC $h(K \,|\, M)$?} Three (slide 6): exhaustive search over the key (about $2^k$ hashes) when the key is short; a preimage attack on the intercepted MAC, which reveals $X = K \,|\, M$ and hence $K$ (about $2^n$); and manipulation of known message--MAC pairs into a new valid pair (e.g.\ length extension). Hence the security of a MAC depends on the security of the underlying hash.
+  \item \textbf{Write the HMAC formula and give ipad and opad.} $\mathrm{HMAC}(K, M) = H[(K^+ \oplus \mathrm{opad}) \,\|\, H[(K^+ \oplus \mathrm{ipad}) \,\|\, M]]$, where $K^+$ is the key padded with zeros to the hash block size $b$, ipad $= $ \ttx{0x36} and opad $= $ \ttx{0x5C}, each repeated $b/8$ times.
+  \item \textbf{Why does HMAC hash twice, and why is it still fast?} The inner hash alone is a prefix MAC open to length extension; the outer hash, keyed with $K^+ \oplus \mathrm{opad}$, hides the inner chaining state, so extending the output gives no valid HMAC. Since $f(\mathrm{IV}, K^+ \oplus \mathrm{ipad})$ and $f(\mathrm{IV}, K^+ \oplus \mathrm{opad})$ depend only on the key, they are precomputed, and each message costs the plain hash plus one compression call.
+  \item \textbf{Why is plain CBC-MAC insecure for variable-length messages, and how does CMAC fix it?} If $T = E_K(X)$ is the tag of a one-block message, the two-block message $X \,\|\, (X \oplus T)$ has tag $E_K(X \oplus T \oplus T) = T$, a forgery. CMAC XORs a secret subkey $k_1$ (complete last block) or $k_2$ (padded last block) into the last block, so a former last block processed as a middle block has an unknown chaining value and the splice fails.
+  \item \textbf{How are the CMAC subkeys made?} $L = E_K(0^n)$, $k_1 = x \cdot L$, $k_2 = x \cdot k_1$ in GF$(2^n)$: shift left one bit, and if the bit shifted out was 1, XOR the constant \ttx{0x87} ($n = 128$) or \ttx{0x1B} ($n = 64$), the low terms of the field modulus.
+  \item \textbf{Differentiate a conventional and a digital signature.} Inclusion: conventional is part of the document, digital is a separate document sent with it. Verification: conventional is compared with a signature on file, digital is checked by an algorithm with the signer's public key. Relationship: conventional is one-to-many, digital is one-to-one (each message its own signature). Duplicity: a copy of a paper document can be told from the original, a digital copy cannot without a timestamp.
+  \item \textbf{Why must Alice sign with her private key and not her public key? Which keys does a signature use compared with a cryptosystem?} The public key is known to everyone, so a signature made with it could be made by anyone, i.e.\ forged. A signature uses the sender's key pair (sign with her private key, verify with her public key); a cryptosystem uses the receiver's key pair (encrypt with his public key, decrypt with his private key).
+  \item \textbf{Which gives nonrepudiation, a MAC or a digital signature?} Only the signature. A MAC is made with a key that both Alice and Bob hold, so Bob could have produced it himself; a signature can be produced only with Alice's private key, and with a trusted center archiving and countersigning the message, Alice cannot later deny it.
+  \item \textbf{Why is the digest signed instead of the message?} Public-key operations are slow and limited to values less than the modulus, so signing a long message block by block is costly and lets blocks be reordered or dropped; signing the short digest needs one operation, keeps integrity through second-preimage resistance, and destroys the algebraic structure that existential and multiplicative forgeries exploit.
+  \item \textbf{Which services does a digital signature provide, and how is confidentiality added?} Message authentication, message integrity and (with a trusted third party) nonrepudiation; not confidentiality. For privacy Alice signs with her private key and then encrypts $(M, S)$ with Bob's public key or a session key; Bob decrypts and then verifies with Alice's public key (sign, then encrypt).
+  \item \textbf{Name the attacks on signatures and the types of forgery.} Key-only (Eve has only the public key), known-message (she has some genuine pairs), chosen-message (she gets Alice to sign messages of her choice). A successful attack gives an existential forgery (a valid pair whose content Eve cannot control) or a selective forgery (a valid signature on a message Eve chose).
+  \item \textbf{Why must the ElGamal random $r$ be coprime to $p - 1$, secret and fresh?} Coprime, because $S_2$ needs $r^{-1} \bmod (p-1)$. Secret, because a known $r$ gives $d = (M - rS_2)S_1^{-1} \bmod (p-1)$. Fresh, because two signatures with the same $r$ give $r = (M - M')(S_2 - S'_2)^{-1}$ and then $d$. The same holds for DSS, Schnorr and ECDSA modulo $q$.
+  \item \textbf{Prove that DSS verification succeeds, and compare DSS with RSA.} $S_2 \equiv (h + dS_1) r^{-1}$ gives $r \equiv A + dB \pmod q$ with $A = hS_2^{-1}$, $B = S_1S_2^{-1}$; since $e_1$ has order $q$, $e_1^A e_2^B = e_1^{A + dB} = e_1^r$, so $V = (e_1^r \bmod p) \bmod q = S_1$. DSS rests on the discrete log, signs only, has 320-bit signatures, needs a fresh $r$, signs fast (precomputable) and verifies slowly; RSA rests on factoring, also encrypts, has $|n|$-bit signatures, is deterministic and verifies fast.
+\end{enumerate}
+
+\subsection*{Practice problems}
+\begin{enumerate}[leftmargin=1.6em,itemsep=4pt]
+  \item \textbf{(RSA signature, 5 marks)} Alice's RSA key uses $p = 11$, $q = 13$ and $e = 23$. Find her private key, sign $M = 9$ and verify the signature.\\
+  \textbf{Solution.} $n = 143$, $\phi(n) = 10 \cdot 12 = 120$, $\gcd(23, 120) = 1$. $d = 23^{-1} \bmod 120$:
+  \begin{center}\small
+  \begin{tabular}{@{}r|rrr|rrr@{}}
+  \toprule
+  $q$ & $r_1$ & $r_2$ & $r$ & $t_1$ & $t_2$ & $t$\\
+  \midrule
+  5 & 120 & 23 & 5 & 0 & 1 & $-5$\\
+  4 & 23 & 5 & 3 & 1 & $-5$ & 21\\
+  1 & 5 & 3 & 2 & $-5$ & 21 & $-26$\\
+  1 & 3 & 2 & 1 & 21 & $-26$ & 47\\
+  2 & 2 & 1 & 0 & $-26$ & 47 & $-120$\\
+   & \textbf{1} & 0 & & \textbf{47} & $-120$ & \\
+  \bottomrule
+  \end{tabular}
+  \end{center}
+  $d = \mathbf{47}$ (check $23 \cdot 47 = 1081 = 9 \cdot 120 + 1$).\\
+  Sign $S = 9^{47} \bmod 143$, $47 = 32 + 8 + 4 + 2 + 1$. Powers: $9^1 = 9$; $9^2 = 81$; $9^4 = 6561 = 45 \cdot 143 + 126 \to 126$; $9^8 = 126^2 = 15876 = 111 \cdot 143 + 3 \to 3$; $9^{16} = 9$; $9^{32} = 81$.\\
+  Combine: $81 \cdot 3 = 243 \equiv 100$; $100 \cdot 126 = 12600 = 88 \cdot 143 + 16 \to 16$; $16 \cdot 81 = 1296 = 9 \cdot 143 + 9 \to 9$; $9 \cdot 9 = 81$. $\Rightarrow S = \mathbf{81}$.\\
+  Verify $81^{23}$, $23 = 16 + 4 + 2 + 1$: powers of 81 are $81, 126, 3, 9, 81$ (for exponents $1, 2, 4, 8, 16$); $81 \cdot 3 \equiv 100$, $100 \cdot 126 \equiv 16$, $16 \cdot 81 \equiv 9$. $M' = \mathbf{9} = M$: accept. \emph{Check}: the script gives $9^{47} \bmod 143 = 81$ and $81^{23} \bmod 143 = 9$.
+
+  \item \textbf{(ElGamal signature, 5 marks)} In the ElGamal signature scheme, $p = 11$, $e_1 = 2$ and Alice's private key is $d = 3$. Find $e_2$. Sign $M = 5$ with $r = 7$ and verify.\\
+  \textbf{Solution.} $e_2 = 2^3 = \mathbf{8}$; public key $(2, 8, 11)$ (2 is a primitive root of 11).\\
+  $r^{-1} \bmod 10$: $10 = 1 \cdot 7 + 3$, $7 = 2 \cdot 3 + 1$; back-substituting, $1 = 7 - 2 \cdot 3 = 7 - 2(10 - 7) = 3 \cdot 7 - 2 \cdot 10$, so $7^{-1} \equiv \mathbf{3} \pmod{10}$ (check $21 = 2 \cdot 10 + 1$).\\
+  $S_1 = 2^7 \bmod 11$: $2^4 = 16 \equiv 5$, $2^7 = 5 \cdot 4 \cdot 2 = 40 \equiv \mathbf{7}$.\\
+  $S_2 = (M - dS_1)\,r^{-1} = (5 - 21) \cdot 3$; $-16 \equiv 4 \pmod{10}$; $4 \cdot 3 = 12 \equiv \mathbf{2} \pmod{10}$. Signature $(7, 2)$.\\
+  Verify: $V_1 = 2^5 = 32 \equiv \mathbf{10}$. $V_2 = 8^7 \cdot 7^2$: $8^2 = 64 \equiv 9$, $8^4 \equiv 81 \equiv 4$, $8^7 = 8^4 \cdot 8^2 \cdot 8 \equiv 4 \cdot 9 \cdot 8 = 288 \equiv 2$; $7^2 = 49 \equiv 5$; $V_2 = 2 \cdot 5 = \mathbf{10} = V_1$: accept. \emph{Check}: $dS_1 + rS_2 = 21 + 14 = 35 \equiv 5 = M \pmod{10}$.
+
+  \item \textbf{(DSS, 6 marks)} In DSS, $p = 47$, $q = 23$, $e_0 = 5$ (a primitive root of 47) and $d = 9$. Find $e_1$ and $e_2$. Sign a message with $h(M) = 15$ using $r = 7$, and verify.\\
+  \textbf{Solution.} $23 \mid 46$. $e_1 = 5^{46/23} = 25$ (order 23). Powers of 25 mod 47: $25^2 = 625 \equiv 14$, $25^4 \equiv 196 \equiv 8$, $25^8 \equiv 64 \equiv 17$, $25^{16} \equiv 289 \equiv 7$. $e_2 = 25^9 = 25^8 \cdot 25 \equiv 17 \cdot 25 = 425 \equiv \mathbf{2}$. Public $(25, 2, 47, 23)$.\\
+  Sign: $e_1^7 = 25^4 \cdot 25^2 \cdot 25 \equiv 8 \cdot 14 \cdot 25$; $112 \equiv 18$, $18 \cdot 25 = 450 \equiv 27$. $S_1 = 27 \bmod 23 = \mathbf{4}$.\\
+  $h + dS_1 = 15 + 36 = 51 \equiv 5 \pmod{23}$; $7^{-1} \bmod 23 = 10$ ($70 = 3 \cdot 23 + 1$); $S_2 = 5 \cdot 10 = 50 \equiv \mathbf{4}$. Signature $(4, 4)$.\\
+  Verify: $S_2^{-1} = 4^{-1} \bmod 23 = 6$; $A = 15 \cdot 6 = 90 \equiv 21$, $B = 4 \cdot 6 = 24 \equiv 1$.\\
+  $e_1^{21} = 25^{16} \cdot 25^4 \cdot 25 \equiv 7 \cdot 8 \cdot 25$; $56 \equiv 9$, $9 \cdot 25 = 225 \equiv 37$. $e_2^1 = 2$. $37 \cdot 2 = 74 \equiv 27 \pmod{47}$; $V = 27 \bmod 23 = \mathbf{4} = S_1$: accept. \emph{Check}: $A + dB = 21 + 9 = 30 \equiv 7 = r \pmod{23}$.
+
+  \item \textbf{(Schnorr, 5 marks)} Use the key of the previous problem ($p = 47$, $q = 23$, $e_1 = 25$, $d = 9$, $e_2 = 2$) in the Schnorr scheme, with the toy hash $h(y) = y \bmod 23$, where $M \,|\, X$ is decimal concatenation. Sign $M = 12$ with $r = 4$ and verify.\\
+  \textbf{Solution.} $X = e_1^4 \bmod 47 = 8$. $M \,|\, X = 128$, $S_1 = 128 \bmod 23 = \mathbf{13}$. $S_2 = r + dS_1 = 4 + 117 = 121 \equiv \mathbf{6} \pmod{23}$.\\
+  Verify: $e_1^{S_2} = 25^6 = 25^4 \cdot 25^2 \equiv 8 \cdot 14 = 112 \equiv 18$. $e_2^{S_1} = 2^{13} = 8192 \equiv 14$, and $14^{-1} \bmod 47 = 37$ ($14 \cdot 37 = 518 = 11 \cdot 47 + 1$), so $e_2^{-S_1} \equiv 37$. $18 \cdot 37 = 666 \equiv 8 = X$; $V = h(12 \,|\, 8) = 128 \bmod 23 = \mathbf{13} = S_1$: accept.
+
+  \item \textbf{(ECDSA, 6 marks)} On $E_{11}(1, 6)$: $y^2 = x^3 + x + 6 \pmod{11}$, the point $e_1 = (2, 7)$ has order $q = 13$, and its multiples $k e_1$ for $k = 1, \dots, 12$ are $(2,7)$, $(5,2)$, $(8,3)$, $(10,2)$, $(3,6)$, $(7,9)$, $(7,2)$, $(3,5)$, $(10,9)$, $(8,8)$, $(5,9)$, $(2,4)$. Alice's private key is $d = 7$. Sign $h(M) = 6$ with $r = 5$, and verify, computing $B \times e_2$ and the final sum with the point formulas.\\
+  \textbf{Solution.} $e_2 = 7 e_1 = (7, 2)$. $P = 5 e_1 = (3, 6)$, $S_1 = 3 \bmod 13 = \mathbf{3}$. $5^{-1} \bmod 13 = 8$; $S_2 = (6 + 7 \cdot 3) \cdot 8 = 27 \cdot 8$; $27 \equiv 1$, so $S_2 = \mathbf{8}$.\\
+  Verify: $S_2^{-1} = 8^{-1} \bmod 13 = 5$; $A = 6 \cdot 5 = 30 \equiv 4$, $B = 3 \cdot 5 = 15 \equiv 2$. $A \times e_1 = 4e_1 = (10, 2)$.\\
+  $B \times e_2 = 2(7, 2)$: $s = (3 \cdot 49 + 1)(2 \cdot 2)^{-1} = 148 \cdot 4^{-1} \equiv 5 \cdot 3 = 15 \equiv 4 \pmod{11}$; $x = 16 - 14 = 2$; $y = 4(7 - 2) - 2 = 18 \equiv 7$: $(2, 7)$.\\
+  $T = (10, 2) + (2, 7)$: $s = (7 - 2)(2 - 10)^{-1} = 5 \cdot 3^{-1} = 5 \cdot 4 = 20 \equiv 9$; $x = 81 - 12 = 69 \equiv 3$; $y = 9(10 - 3) - 2 = 61 \equiv 6$: $T = (3, 6)$.\\
+  $x \bmod 13 = \mathbf{3} = S_1$: accept. \emph{Check}: $A + dB = 4 + 14 = 18 \equiv 5 = r \pmod{13}$, so $T = 5e_1 = P$.
+
+  \item \textbf{(Recovering $d$ from a reused $r$, 5 marks)} Alice's ElGamal public key is $(e_1, e_2, p) = (5, 8, 23)$. Eve sees the signatures $(S_1, S_2) = (17, 12)$ on $M = 10$ and $(17, 11)$ on $M' = 3$. Show that Alice reused $r$, and find $r$ and $d$.\\
+  \textbf{Solution.} Both signatures have $S_1 = 17 = e_1^r$, so the same $r$ was used. Modulo $p - 1 = 22$: $S_2 r \equiv M - dS_1$ and $S'_2 r \equiv M' - dS_1$, so $(S_2 - S'_2) r \equiv M - M'$, i.e.\ $1 \cdot r \equiv 7$: $r = \mathbf{7}$ (check $5^7 \bmod 23 = 17$).\\
+  $d S_1 \equiv M - rS_2 = 10 - 84 = -74 \equiv 14 \pmod{22}$; $S_1^{-1} = 17^{-1} \bmod 22 = 13$ ($17 \cdot 13 = 221 = 10 \cdot 22 + 1$); $d = 14 \cdot 13 = 182 \equiv \mathbf{6}$. \emph{Check}: $5^6 \bmod 23 = 8 = e_2$.
+
+  \item \textbf{(RSA forgeries, 4 marks)} Alice's RSA public key is $(e, n) = (23, 143)$ (private $d = 47$). (a) Produce an existential forgery under a key-only attack with $S = 2$. (b) Eve has the genuine pairs $(2, 7)$ and $(3, 9)$. Forge a signature on $M = 6$.\\
+  \textbf{Solution.} (a) $M = 2^{23} \bmod 143$: $2^8 = 256 \equiv 113$, $2^{16} \equiv 113^2 = 12769 \equiv 42$; $2^{23} = 2^{16} \cdot 2^4 \cdot 2^2 \cdot 2 \equiv 42 \cdot 16 \cdot 4 \cdot 2$: $672 \equiv 100$, $400 \equiv 114$, $228 \equiv 85$. The pair $(\mathbf{85}, 2)$ verifies, since $S^e = 85 = M$; Eve could not choose $M$ (existential).\\
+  (b) Multiplicative property: $S = 7 \cdot 9 = \mathbf{63}$ signs $M = 2 \cdot 3 = 6$; indeed $63^{23} \bmod 143 = 6$ and Alice's own $6^{47} \bmod 143 = 63$. Signing $h(M)$ instead of $M$ defeats both forgeries.
+
+  \item \textbf{(ElGamal existential forgery, 4 marks)} With the public key $(e_1, e_2, p) = (5, 8, 23)$ and no knowledge of $d$, construct a valid ElGamal signature using $u = 2$, $v = 3$.\\
+  \textbf{Solution.} $S_1 = e_1^u e_2^v = 5^2 \cdot 8^3 \equiv 2 \cdot 6 = \mathbf{12}$ ($8^3 = 512 \equiv 6$). $v^{-1} \bmod 22 = 15$ ($45 = 2 \cdot 22 + 1$). $S_2 = -S_1 v^{-1} = -180 \equiv \mathbf{18} \pmod{22}$. $M = u S_2 = 36 \equiv \mathbf{14}$.\\
+  Check: $V_1 = 5^{14} = 5^8 \cdot 5^4 \cdot 5^2 \equiv 16 \cdot 4 \cdot 2 = 128 \equiv 13$. $V_2 = 8^{12} \cdot 12^{18}$: $8^{12} = 8^8 \cdot 8^4 \equiv 4 \cdot 2 = 8$; $12^2 \equiv 6$, $12^4 \equiv 13$, $12^8 \equiv 8$, $12^{16} \equiv 18$, $12^{18} \equiv 18 \cdot 6 = 108 \equiv 16$; $V_2 = 8 \cdot 16 = 128 \equiv 13 = V_1$. The triple $(14, 12, 18)$ is accepted (it works because $S_1 + vS_2 \equiv 0$ cancels $e_2$).
+
+  \item \textbf{(HMAC block computation, 4 marks)} HMAC-SHA-512 ($b = 1024$, $n = 512$) is used with a 160-bit key whose first byte is \ttx{A5}, on a 3000-bit message. Describe $K^+$, $S_i$, $S_o$, and count the compression-function calls.\\
+  \textbf{Solution.} $K^+$ = the 160-bit key followed by $1024 - 160 = 864$ zero bits. ipad and opad are 128 bytes of \ttx{36} and \ttx{5C}. First byte of $S_i$: $\texttt{A5} \oplus \texttt{36} = \texttt{10100101} \oplus \texttt{00110110} = \texttt{10010011} = \texttt{93}$; of $S_o$: $\texttt{A5} \oplus \texttt{5C} = \texttt{11111001} = \texttt{F9}$; the zero bytes become \ttx{36} and \ttx{5C}.\\
+  Inner hash of $S_i \| M$: $1024 + 3000 = 4024$ bits; SHA-512 padding $(-4024 - 128) \bmod 1024 = 968$ (\S\ref{sec:integrity}); total $4024 + 968 + 128 = 5120 = $ \textbf{5 blocks}.\\
+  Outer hash of $S_o \| \text{inner}$: $1024 + 512 = 1536$ bits; padding $(-1536 - 128) \bmod 1024 = 384$; total $2048 = $ \textbf{2 blocks}.\\
+  Total \textbf{7} compression calls; with $f(\mathrm{IV}, S_i)$, $f(\mathrm{IV}, S_o)$ cached, \textbf{5} per message (4 for the message, 1 for the outer block). Output: 512 bits.
+
+  \item \textbf{(CMAC subkeys, 4 marks)} A CMAC uses a 64-bit block cipher. (a) $L = E_K(0^{64}) = $ \ttx{C34F219A0017BB05}. Find $k_1$ and $k_2$. (b) Repeat for $L = $ \ttx{5A1C77E0D2B3480F}.\\
+  \textbf{Solution.} For $n = 64$ the constant is $R_{64} = $ \ttx{1B}.\\
+  (a) MSB of $L$: \ttx{C} $=$ \ttx{1100}, so 1. $L \ll 1 = $ \ttx{869E4334002F760A}; XOR \ttx{1B}: $\texttt{0A} \oplus \texttt{1B} = \texttt{11}$, so $k_1 = $ \textbf{\ttx{869E4334002F7611}}. MSB of $k_1$: \ttx{8} $=$ \ttx{1000}, so 1. $k_1 \ll 1 = $ \ttx{0D3C8668005EEC22}; $\texttt{22} \oplus \texttt{1B} = \texttt{39}$, so $k_2 = $ \textbf{\ttx{0D3C8668005EEC39}}.\\
+  (b) MSB of $L$: \ttx{5} $=$ \ttx{0101}, so 0, and $k_1 = L \ll 1 = $ \textbf{\ttx{B438EFC1A566901E}} (no XOR). MSB of $k_1$: \ttx{B} $=$ \ttx{1011}, so 1: $k_1 \ll 1 = $ \ttx{6871DF834ACD203C}, $\texttt{3C} \oplus \texttt{1B} = \texttt{27}$, $k_2 = $ \textbf{\ttx{6871DF834ACD2027}}.
+
+  \item \textbf{(DSS nonce reuse, 4 marks)} A DSS user has public key $(e_1, e_2, p, q) = (2, 13, 23, 11)$. Eve sees the signatures $(8, 2)$ on a message with $h = 5$ and $(8, 7)$ on one with $h' = 9$. Find $r$ and the private key.\\
+  \textbf{Solution.} Equal $S_1$ means the same $r$. Modulo $q = 11$: $S_2 r \equiv h + dS_1$ and $S'_2 r \equiv h' + dS_1$, so $r = (h - h')(S_2 - S'_2)^{-1} = (-4)(-5)^{-1} \equiv 7 \cdot 6^{-1} = 7 \cdot 2 = 14 \equiv \mathbf{3}$. Then $d = (S_2 r - h) S_1^{-1} = (6 - 5) \cdot 8^{-1} = 1 \cdot 7 = \mathbf{7}$ ($8 \cdot 7 = 56 \equiv 1$). \emph{Check}: $2^7 \bmod 23 = 13 = e_2$ and $(2^3 \bmod 23) \bmod 11 = 8 = S_1$.
+
+  \item \textbf{(Long answer, 6 marks)} Draw and explain how a digital signature provides nonrepudiation with a trusted center, and how confidentiality is added to a signed message.\\
+  \textbf{Model answer outline.} (1) Problem: Alice may deny a signed message; Bob's stored signature is weak evidence because Alice may have changed her keys or dispute the file. (2) Draw the Alice | Trusted center | Bob diagram (\S\ref{sec:dsig}): message 1 is $(M, S_A, \mathrm{ID}_A, \mathrm{ID}_B)$ with $S_A$ made by Alice's private key; the center checks that Alice's public key is valid, verifies $S_A$, archives $M$, the identities and a timestamp, and signs $M$ with its own private key; message 2 is $(M, S_T, \mathrm{ID}_A, \mathrm{ID}_B)$; Bob verifies $S_T$ with the center's public key. (3) Why it works: the archive, made after verifying with Alice's then-valid key, is independent evidence; the timestamp stops replay. (4) Confidentiality: a signature does not hide $M$; Alice signs with her private key, then encrypts $(M, S)$ with Bob's public key (or a session key); Bob decrypts with his private key and verifies with Alice's public key. Sign-then-encrypt keeps the signature on the plaintext, so it remains evidence and cannot be stripped and replaced by Eve.
+\end{enumerate}

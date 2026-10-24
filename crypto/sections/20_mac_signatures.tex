@@ -959,19 +959,31 @@ Hash collision & chosen-message & selective & collision-resistant hash ($n \ge 2
 \likely{``Compare RSA, ElGamal, Schnorr, DSS and ECDSA signatures'' (3--4 marks).}
 
 \begin{center}\small
-\begin{tabularx}{\textwidth}{@{}l l l X l l@{}}
+\begin{tabular}{@{}lllll@{}}
 \toprule
-Scheme & Hard problem & Private / public key & Signature & Size (typical) & Random $r$\\
+Scheme & Hard problem & Public key (private: $d$) & Signature size & Fresh random $r$\\
 \midrule
-RSA & factoring & $d$ / $(e, n)$ & $S = h(M)^d \bmod n$ & 1024--2048 bits & no\\
-ElGamal & DLP mod $p$ & $d$ / $(e_1, e_2, p)$ & $S_1 = e_1^r$, $S_2 \bmod (p - 1)$ & $2|p| = 2048$ bits & yes, $\gcd(r, p{-}1) = 1$\\
-Schnorr & DLP, order-$q$ subgroup & $d$ / $(e_1, e_2, p, q)$ & $S_1 = h(M \,|\, e_1^r)$, $S_2 = r + dS_1$ & $2 \times 160 = 320$ bits & yes\\
-DSS & DLP, order-$q$ subgroup & $d$ / $(e_1, e_2, p, q)$ & $S_1 = (e_1^r \bmod p) \bmod q$, $S_2 \bmod q$ & 320 bits & yes\\
-ECDSA & ECDLP & $d$ / $(a, b, p, q, e_1, e_2)$ & $S_1 = x(r \times e_1) \bmod q$, $S_2 \bmod q$ & 320 bits (160-bit $q$) & yes\\
+RSA & factoring $n$ & $(e, n)$ & $|n|$ = 1024--2048 bits & no\\
+ElGamal & DLP modulo $p$ & $(e_1, e_2, p)$ & $2|p| = 2048$ bits & yes, $\gcd(r, p - 1) = 1$\\
+Schnorr & DLP in order-$q$ subgroup & $(e_1, e_2, p, q)$ & $2 \times 160 = 320$ bits & yes\\
+DSS & DLP in order-$q$ subgroup & $(e_1, e_2, p, q)$ & $2 \times 160 = 320$ bits & yes\\
+ECDSA & ECDLP & $(a, b, p, q, e_1, e_2)$ & $2 \times 160 = 320$ bits & yes\\
 \bottomrule
-\end{tabularx}
+\end{tabular}
+\\[6pt]
+\begin{tabular}{@{}lll@{}}
+\toprule
+Scheme & Signature & Accept if\\
+\midrule
+RSA & $S = h(M)^d \bmod n$ & $S^e \equiv h(M) \pmod n$\\
+ElGamal & $S_1 = e_1^r \bmod p$, \ $S_2 = (M - dS_1)\,r^{-1} \bmod (p - 1)$ & $e_1^M \equiv e_2^{S_1} S_1^{S_2} \pmod p$\\
+Schnorr & $S_1 = h(M \,|\, e_1^r \bmod p)$, \ $S_2 = r + dS_1 \bmod q$ & $h(M \,|\, e_1^{S_2} e_2^{-S_1} \bmod p) = S_1$\\
+DSS & $S_1 = (e_1^r \bmod p) \bmod q$, \ $S_2 = (h(M) + dS_1)\,r^{-1} \bmod q$ & $(e_1^A e_2^B \bmod p) \bmod q = S_1$\\
+ECDSA & $S_1 = x(r \times e_1) \bmod q$, \ $S_2$ as in DSS & $x(A \times e_1 + B \times e_2) \bmod q = S_1$\\
+\bottomrule
+\end{tabular}
 \end{center}
-Verification conditions: RSA $S^e \equiv h(M)$; ElGamal $e_1^M \equiv e_2^{S_1} S_1^{S_2}$; Schnorr $h(M \,|\, e_1^{S_2} e_2^{-S_1}) = S_1$; DSS $(e_1^A e_2^B \bmod p) \bmod q = S_1$; ECDSA $x(A e_1 + B e_2) \bmod q = S_1$, with $A = h(M) S_2^{-1}$, $B = S_1 S_2^{-1} \bmod q$. RSA is the only deterministic scheme and the only one that also encrypts; the four discrete-logarithm schemes all fail completely if $r$ is reused, and the three order-$q$ schemes have 320-bit signatures.
+Here $A = h(M) S_2^{-1}$ and $B = S_1 S_2^{-1} \bmod q$. RSA is the only deterministic scheme and the only one that can also encrypt; the four discrete-logarithm schemes all fail completely if $r$ is reused, and the three order-$q$ schemes have 320-bit signatures because both components are reduced modulo the 160-bit $q$.
 
 \begin{trap}[: the usual slips in signature numericals]
 In ElGamal, $S_2$ is reduced modulo $\boldsymbol{p - 1}$ and $r^{-1}$ is taken modulo $p - 1$, never modulo $p$; in DSS, Schnorr and ECDSA everything after $e_1^r$ (or $r \times e_1$) is modulo $\boldsymbol{q}$. In ElGamal verification the base of the first factor is $e_2$ (public), not $d$. Each new message gets a new $S_1$, and that new $S_1$ must be used in $S_2$ and in $V_2$. Turn $M - dS_1$ into a non-negative residue before multiplying by $r^{-1}$.
